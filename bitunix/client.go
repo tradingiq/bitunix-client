@@ -7,15 +7,21 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 type Client struct {
-	api *api.Client
+	api                          *api.Client
+	generateNonce                func(int) ([]byte, error)
+	generateMillisecondTimestamp func() int64
 }
 
 func New(rest *api.Client, apiKey, apiString string) *Client {
 	client := &Client{
-		api: rest,
+		api:                          rest,
+		generateNonce:                security.GenerateNonce,
+		generateMillisecondTimestamp: util.CurrentTimestampMillis,
 	}
 
 	rest.SetOptions(api.WithRequestSigner(client.requestSigner(apiKey, apiString)))
@@ -25,15 +31,18 @@ func New(rest *api.Client, apiKey, apiString string) *Client {
 
 func (client *Client) requestSigner(apiKey string, apiSecret string) func(req *http.Request, body []byte) error {
 	return func(req *http.Request, body []byte) error {
-		timestamp := util.CurrentTimestampMillisString()
+		ts := client.generateMillisecondTimestamp()
+		timestamp := strconv.FormatInt(ts, 10)
 
-		randomBytes, err := security.GenerateNonce(32)
+		randomBytes, err := client.generateNonce(32)
 		if err != nil {
 			return fmt.Errorf("failed to generate nonce: %w", err)
 		}
 		nonce := base64.StdEncoding.EncodeToString(randomBytes)
 
 		queryParams := req.URL.RawQuery
+		queryParams = strings.ReplaceAll(queryParams, "&", "")
+		queryParams = strings.ReplaceAll(queryParams, "=", "")
 
 		bodyStr := string(body)
 		digestInput := nonce + timestamp + apiKey + queryParams + bodyStr
