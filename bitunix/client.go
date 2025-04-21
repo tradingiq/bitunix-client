@@ -1,10 +1,10 @@
 package bitunix
 
 import (
-	"bitunix-client/api"
-	"bitunix-client/security"
 	"encoding/base64"
 	"fmt"
+	"github.com/tradingiq/bitunix-client/api"
+	"github.com/tradingiq/bitunix-client/security"
 	"net/http"
 	"strconv"
 	"strings"

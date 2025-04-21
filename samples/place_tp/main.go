@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bitunix-client/api"
-	"bitunix-client/bitunix"
-	"bitunix-client/samples"
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/api"
+	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/samples"
 	"time"
 )
 

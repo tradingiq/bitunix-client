@@ -1,4 +1,4 @@
-module bitunix-client
+module github.com/tradingiq/bitunix-client
 
 go 1.23
 
