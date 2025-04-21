@@ -36,3 +36,24 @@ const (
 	TradeActionBuy  TradeAction = "BUY"
 	TradeActionSell TradeAction = "SELL"
 )
+
+type MarginMode string
+
+const (
+	MarginModeIsolation MarginMode = "ISOLATION "
+	MarginModeCross     MarginMode = "CROSS"
+)
+
+type TradePositionMode string
+
+const (
+	TradePositionModeOneWay TradePositionMode = "ONE_WAY"
+	TradePositionModeHedge  TradePositionMode = "HEDGE"
+)
+
+type TradeRoleType string
+
+const (
+	TradeRoleTypeTaker TradeRoleType = "TAKER"
+	TradeRoleTypeMaker TradeRoleType = "MAKER"
+)
