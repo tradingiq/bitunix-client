@@ -1,14 +1,14 @@
 package main
 
 import (
-	"bitunix-client/samples"
-	"bitunix-client/security"
 	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/coder/websocket/wsjson"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/samples"
+	"github.com/tradingiq/bitunix-client/security"
 	"net/http"
 	"net/url"
 	"time"
