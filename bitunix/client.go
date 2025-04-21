@@ -3,60 +3,73 @@ package bitunix
 import (
 	"bitunix-client/api"
 	"bitunix-client/security"
-	"bitunix-client/util"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
+func generateTimestamp() int64 { return time.Now().UnixMilli() }
+
 type Client struct {
-	api                          *api.Client
-	generateNonce                func(int) ([]byte, error)
-	generateMillisecondTimestamp func() int64
+	api *api.Client
 }
 
 func New(rest *api.Client, apiKey, apiString string) *Client {
 	client := &Client{
-		api:                          rest,
-		generateNonce:                security.GenerateNonce,
-		generateMillisecondTimestamp: util.CurrentTimestampMillis,
+		api: rest,
 	}
 
-	rest.SetOptions(api.WithRequestSigner(client.requestSigner(apiKey, apiString)))
+	rest.SetOptions(api.WithRequestSigner(createRequestSigner(apiKey, apiString, generateTimestamp, security.GenerateNonce)))
 
 	return client
 }
 
-func (client *Client) requestSigner(apiKey string, apiSecret string) func(req *http.Request, body []byte) error {
-	return func(req *http.Request, body []byte) error {
-		ts := client.generateMillisecondTimestamp()
-		timestamp := strconv.FormatInt(ts, 10)
+func generateRequestSignature(apiKey, apiSecret, queryParams, bodyStr string, timestamp int64, nonceBytes []byte) (string, string, string, error) {
+	timestampStr := strconv.FormatInt(timestamp, 10)
 
-		randomBytes, err := client.generateNonce(32)
+	nonce := base64.StdEncoding.EncodeToString(nonceBytes)
+
+	queryParams = strings.ReplaceAll(queryParams, "&", "")
+	queryParams = strings.ReplaceAll(queryParams, "=", "")
+
+	digestInput := nonce + timestampStr + apiKey + queryParams + bodyStr
+	digest := security.Sha256Hex(digestInput)
+
+	signInput := digest + apiSecret
+	signature := security.Sha256Hex(signInput)
+
+	return signature, timestampStr, nonce, nil
+}
+
+func createRequestSigner(apiKey string, apiSecret string, timestampGenerationFunc func() int64, nonceGenerationFunc func(int) ([]byte, error)) func(req *http.Request, body []byte) error {
+	return func(req *http.Request, body []byte) error {
+		ts := timestampGenerationFunc()
+
+		randomBytes, err := nonceGenerationFunc(32)
 		if err != nil {
 			return fmt.Errorf("failed to generate nonce: %w", err)
 		}
-		nonce := base64.StdEncoding.EncodeToString(randomBytes)
 
-		queryParams := req.URL.RawQuery
-		queryParams = strings.ReplaceAll(queryParams, "&", "")
-		queryParams = strings.ReplaceAll(queryParams, "=", "")
+		signature, timestamp, nonce, err := generateRequestSignature(
+			apiKey,
+			apiSecret,
+			req.URL.RawQuery,
+			string(body),
+			ts,
+			randomBytes,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to generate signature: %w", err)
+		}
 
-		bodyStr := string(body)
-		digestInput := nonce + timestamp + apiKey + queryParams + bodyStr
-
-		digest := security.Sha256Hex(digestInput)
-
-		signInput := digest + apiSecret
-		signature := security.Sha256Hex(signInput)
-
-		req.Header.Set("api-key", apiKey)
-		req.Header.Set("sign", signature)
-		req.Header.Set("timestamp", timestamp)
-		req.Header.Set("nonce", nonce)
-		req.Header.Set("language", "en-US")
+		req.Header.Add("Api-Key", apiKey)
+		req.Header.Add("Sign", signature)
+		req.Header.Add("Timestamp", timestamp)
+		req.Header.Add("Nonce", nonce)
+		req.Header.Add("Language", "en-US")
 
 		return nil
 	}

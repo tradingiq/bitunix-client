@@ -1,14 +1,14 @@
 package bitunix
 
 import (
-	"bitunix-client/api"
 	"bitunix-client/security"
+	"bytes"
 	"context"
 	"encoding/base64"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -25,16 +25,56 @@ func MockMillisecondTimestampGenerator(timestamp int64) func() int64 {
 	}
 }
 
-func TestDeterministicSignature(t *testing.T) {
+func TestGenerateSignature(t *testing.T) {
+	fixedNonceBytes := make([]byte, 32)
+	for i := range fixedNonceBytes {
+		fixedNonceBytes[i] = byte(i)
+	}
+	var fixedTimestamp int64 = 1744918230067
 
-	var capturedRequest *http.Request
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedRequest = r.Clone(context.Background()) // Save the request for verification
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"success":true}`))
-	}))
-	defer server.Close()
+	apiKey := "test-api-key"
+	apiSecret := "test-api-secret"
+	queryParamsRaw := "Alter=schwede&alter=schwede&param=value"
+	bodyStr := `{"test":"data"}`
 
+	signature, timestamp, nonce, err := generateRequestSignature(
+		apiKey,
+		apiSecret,
+		queryParamsRaw,
+		bodyStr,
+		fixedTimestamp,
+		fixedNonceBytes,
+	)
+
+	if err != nil {
+		t.Fatalf("Signature generation failed: %v", err)
+	}
+
+	expectedNonce := base64.StdEncoding.EncodeToString(fixedNonceBytes)
+	expectedTimestamp := strconv.FormatInt(fixedTimestamp, 10)
+
+	queryParams := strings.ReplaceAll(queryParamsRaw, "&", "")
+	queryParams = strings.ReplaceAll(queryParams, "=", "")
+
+	digestInput := expectedNonce + expectedTimestamp + apiKey + queryParams + bodyStr
+	digest := security.Sha256Hex(digestInput)
+	signInput := digest + apiSecret
+	expectedSignature := security.Sha256Hex(signInput)
+
+	if signature != expectedSignature {
+		t.Errorf("Expected signature %s, got %s", expectedSignature, signature)
+	}
+
+	if timestamp != expectedTimestamp {
+		t.Errorf("Expected timestamp %s, got %s", expectedTimestamp, timestamp)
+	}
+
+	if nonce != expectedNonce {
+		t.Errorf("Expected nonce %s, got %s", expectedNonce, nonce)
+	}
+}
+
+func TestRequestSigner(t *testing.T) {
 	fixedNonceBytes := make([]byte, 32)
 	for i := range fixedNonceBytes {
 		fixedNonceBytes[i] = byte(i)
@@ -42,21 +82,23 @@ func TestDeterministicSignature(t *testing.T) {
 	fixedNonce := base64.StdEncoding.EncodeToString(fixedNonceBytes)
 	var fixedTimestamp int64 = 1744918230067
 
-	apiClient, _ := api.New(server.URL)
-	client := New(apiClient, "test-api-key", "test-api-secret")
-	client.generateNonce = MockNonceGenerator(fixedNonceBytes)
-	client.generateMillisecondTimestamp = MockMillisecondTimestampGenerator(fixedTimestamp)
-
-	ctx := context.Background()
 	requestBody := []byte(`{"test":"data"}`)
 	query := url.Values{}
 	query.Set("Alter", "schwede")
 	query.Set("alter", "schwede")
 	query.Set("param", "value")
 
-	_, err := client.api.Post(ctx, "/test", query, requestBody)
+	uri, _ := url.Parse("https://openapidoc.bitunix.com/")
+	uri.RawQuery = query.Encode()
+	uri.Path = "/test"
+
+	req, _ := http.NewRequestWithContext(context.Background(), "POST", uri.String(), bytes.NewReader(requestBody))
+
+	requestSigner := createRequestSigner("test-api-key", "test-api-secret", MockMillisecondTimestampGenerator(fixedTimestamp), MockNonceGenerator(fixedNonceBytes))
+	err := requestSigner(req, requestBody)
 	if err != nil {
-		t.Fatalf("Request failed: %v", err)
+
+		t.Errorf("Unable to sign request")
 	}
 
 	// ascii ordered!
@@ -67,15 +109,15 @@ func TestDeterministicSignature(t *testing.T) {
 	signInput := digest + "test-api-secret"
 	expectedSignature := security.Sha256Hex(signInput)
 
-	if capturedRequest.Header.Get("sign") != expectedSignature {
-		t.Errorf("Expected signature %s, got %s", expectedSignature, capturedRequest.Header.Get("sign"))
+	if req.Header.Get("sign") != expectedSignature {
+		t.Errorf("Expected signature %s, got %s", expectedSignature, req.Header.Get("sign"))
 	}
 
-	if capturedRequest.Header.Get("nonce") != fixedNonce {
-		t.Errorf("Expected nonce %s, got %s", fixedNonce, capturedRequest.Header.Get("nonce"))
+	if req.Header.Get("nonce") != fixedNonce {
+		t.Errorf("Expected nonce %s, got %s", fixedNonce, req.Header.Get("nonce"))
 	}
 
-	if capturedRequest.Header.Get("timestamp") != strconv.FormatInt(fixedTimestamp, 10) {
-		t.Errorf("Expected timestamp %d, got %s", fixedTimestamp, capturedRequest.Header.Get("timestamp"))
+	if req.Header.Get("timestamp") != strconv.FormatInt(fixedTimestamp, 10) {
+		t.Errorf("Expected timestamp %d, got %s", fixedTimestamp, req.Header.Get("timestamp"))
 	}
 }
