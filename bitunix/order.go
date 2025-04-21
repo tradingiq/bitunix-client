@@ -78,7 +78,7 @@ type OrderResponse struct {
 }
 
 type OrderResponseData struct {
-	OrderId  int    `json:"orderId"`
+	OrderId  string `json:"orderId"`
 	ClientId string `json:"clientId"`
 }
 
