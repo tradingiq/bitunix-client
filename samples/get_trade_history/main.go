@@ -23,7 +23,7 @@ func bitunixExample() {
 	bitunixClient := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
 
 	params := bitunix.TradeHistoryParams{
-		Limit: 50,
+		PositionID: "8623335020855713906",
 	}
 
 	ctx := context.Background()
