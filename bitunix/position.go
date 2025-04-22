@@ -124,41 +124,57 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 	feeFloat, err := strconv.ParseFloat(aux.Fee, 64)
 	if err == nil {
 		p.Fee = feeFloat
+	} else {
+		return err
 	}
 
 	funding, err := strconv.ParseFloat(aux.Funding, 64)
 	if err == nil {
 		p.Funding = funding
+	} else {
+		return err
 	}
 
 	realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
 	if err == nil {
 		p.RealizedPNL = realizedPNL
+	} else {
+		return err
 	}
 
 	liqPrice, err := strconv.ParseFloat(aux.LiqPrice, 64)
 	if err == nil {
 		p.LiqPrice = liqPrice
+	} else {
+		return err
 	}
 
 	maxQty, err := strconv.ParseFloat(aux.MaxQty, 64)
 	if err == nil {
 		p.MaxQty = maxQty
+	} else {
+		return err
 	}
 
 	entryPrice, err := strconv.ParseFloat(aux.EntryPrice, 64)
 	if err == nil {
 		p.EntryPrice = entryPrice
+	} else {
+		return err
 	}
 
 	closePrice, err := strconv.ParseFloat(aux.ClosePrice, 64)
 	if err == nil {
 		p.ClosePrice = closePrice
+	} else {
+		return err
 	}
 
 	liqQty, err := strconv.ParseFloat(aux.LiqQty, 64)
 	if err == nil {
 		p.LiqQty = liqQty
+	} else {
+		return err
 	}
 
 	return nil

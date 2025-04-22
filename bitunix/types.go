@@ -40,7 +40,7 @@ const (
 type MarginMode string
 
 const (
-	MarginModeIsolation MarginMode = "ISOLATION "
+	MarginModeIsolation MarginMode = "ISOLATION"
 	MarginModeCross     MarginMode = "CROSS"
 )
 

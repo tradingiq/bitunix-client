@@ -89,6 +89,7 @@ func (client *Client) PlaceOrder(ctx context.Context, request *OrderRequest) (*O
 	}
 
 	responseBody, err := client.api.Post(ctx, "/api/v1/futures/trade/place_order", nil, marshaledRequest)
+
 	response := &OrderResponse{}
 	if err := json.Unmarshal(responseBody, response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
