@@ -108,26 +108,36 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 	quantity, err := strconv.ParseFloat(aux.Quantity, 64)
 	if err == nil {
 		t.Quantity = quantity
+	} else {
+		return err
 	}
 
 	price, err := strconv.ParseFloat(aux.Price, 64)
 	if err == nil {
 		t.Price = price
+	} else {
+		return err
 	}
 
 	fee, err := strconv.ParseFloat(aux.Fee, 64)
 	if err == nil {
 		t.Fee = fee
+	} else {
+		return err
 	}
 
 	realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
 	if err == nil {
 		t.RealizedPNL = realizedPNL
+	} else {
+		return err
 	}
 
 	createTime, err := strconv.ParseInt(aux.CreateTime, 10, 64)
 	if err == nil {
 		t.CreateTime = time.Unix(0, createTime*1000000)
+	} else {
+		return err
 	}
 
 	return nil
