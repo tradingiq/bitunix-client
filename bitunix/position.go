@@ -4,12 +4,39 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 )
 
-func (client *Client) GetPositionHistory(ctx context.Context) (*PositionHistoryResponse, error) {
-	responseBody, err := client.api.Get(ctx, "/api/v1/futures/position/get_history_positions", nil)
+func (client *Client) GetPositionHistory(ctx context.Context, params *PositionHistoryParams) (*PositionHistoryResponse, error) {
+	queryParams := url.Values{}
+
+	if params.Symbol != "" {
+		queryParams.Add("symbol", params.Symbol)
+	}
+
+	if params.PositionID != "" {
+		queryParams.Add("positionId", params.PositionID)
+	}
+
+	if params.StartTime != nil {
+		queryParams.Add("startTime", strconv.FormatInt(params.StartTime.UnixMilli(), 10))
+	}
+
+	if params.EndTime != nil {
+		queryParams.Add("endTime", strconv.FormatInt(params.EndTime.UnixMilli(), 10))
+	}
+
+	if params.Skip > 0 {
+		queryParams.Add("skip", strconv.FormatInt(params.Skip, 10))
+	}
+
+	if params.Limit > 0 {
+		queryParams.Add("limit", strconv.FormatInt(params.Limit, 10))
+	}
+
+	responseBody, err := client.api.Get(ctx, "/api/v1/futures/position/get_history_positions", queryParams)
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +46,16 @@ func (client *Client) GetPositionHistory(ctx context.Context) (*PositionHistoryR
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	return response, err
+	return response, nil
+}
+
+type PositionHistoryParams struct {
+	Symbol     string
+	PositionID string
+	StartTime  *time.Time
+	EndTime    *time.Time
+	Skip       int64
+	Limit      int64
 }
 
 type PositionHistoryResponse struct {
@@ -37,17 +73,17 @@ type HistoricalPosition struct {
 	MaxQty       float64   `json:"-"`
 	EntryPrice   float64   `json:"-"`
 	ClosePrice   float64   `json:"-"`
-	LiqQty       float64   `json:"-"`            // Liquidated quantity
-	Side         string    `json:"side"`         // LONG or SHORT
-	PositionMode string    `json:"positionMode"` // ONE_WAY or HEDGE
-	MarginMode   string    `json:"marginMode"`   // ISOLATION or CROSS
+	LiqQty       float64   `json:"-"`
+	Side         string    `json:"side"`
+	PositionMode string    `json:"positionMode"`
+	MarginMode   string    `json:"marginMode"`
 	Leverage     string    `json:"leverage"`
-	Fee          float64   `json:"-"` // Deducted transaction fees
-	Funding      float64   `json:"-"` // Total funding fee during the position
-	RealizedPNL  float64   `json:"-"` // Realized PnL (excludes funding fee and transaction fee)
-	LiqPrice     float64   `json:"-"` // Estimated liquidation price
-	Ctime        time.Time `json:"-"` // Create timestamp
-	Mtime        time.Time `json:"-"` // Latest modify timestamp
+	Fee          float64   `json:"-"`
+	Funding      float64   `json:"-"`
+	RealizedPNL  float64   `json:"-"`
+	LiqPrice     float64   `json:"-"`
+	Ctime        time.Time `json:"-"`
+	Mtime        time.Time `json:"-"`
 }
 
 func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
@@ -90,7 +126,7 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 		p.Fee = feeFloat
 	}
 
-	funding, err := strconv.ParseFloat(aux.Fee, 64)
+	funding, err := strconv.ParseFloat(aux.Funding, 64)
 	if err == nil {
 		p.Funding = funding
 	}
