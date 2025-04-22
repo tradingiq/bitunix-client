@@ -12,7 +12,6 @@ import (
 	"testing"
 )
 
-// MockNonceGenerator returns a predetermined nonce for testing
 func MockNonceGenerator(bytes []byte) func(int) ([]byte, error) {
 	return func(length int) ([]byte, error) {
 		return bytes[:length], nil
@@ -101,7 +100,6 @@ func TestRequestSigner(t *testing.T) {
 		t.Errorf("Unable to sign request")
 	}
 
-	// ascii ordered!
 	queryParams := "Alterschwedealterschwedeparamvalue"
 	bodyStr := `{"test":"data"}`
 	digestInput := fixedNonce + strconv.FormatInt(fixedTimestamp, 10) + "test-api-key" + queryParams + bodyStr

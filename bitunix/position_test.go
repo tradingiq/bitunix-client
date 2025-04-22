@@ -45,7 +45,7 @@ func TestGetPositionHistory(t *testing.T) {
 		if r.URL.Path != "/api/v1/futures/position/get_history_positions" {
 			t.Errorf("Expected request path /api/v1/futures/position/get_history_positions, got %s", r.URL.Path)
 		}
-		
+
 		if r.Method != http.MethodGet {
 			t.Errorf("Expected request method GET, got %s", r.Method)
 		}
@@ -81,7 +81,7 @@ func TestGetPositionHistory(t *testing.T) {
 	startTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 	endTime := time.Date(2022, 1, 31, 0, 0, 0, 0, time.UTC)
 
-	params := &PositionHistoryParams{
+	params := PositionHistoryParams{
 		Symbol:     "BTCUSDT",
 		PositionID: "pos123",
 		StartTime:  &startTime,

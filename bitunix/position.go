@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (client *Client) GetPositionHistory(ctx context.Context, params *PositionHistoryParams) (*PositionHistoryResponse, error) {
+func (client *Client) GetPositionHistory(ctx context.Context, params PositionHistoryParams) (*PositionHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {
@@ -38,7 +38,7 @@ func (client *Client) GetPositionHistory(ctx context.Context, params *PositionHi
 
 	responseBody, err := client.api.Get(ctx, "/api/v1/futures/position/get_history_positions", queryParams)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get position history: %w", err)
 	}
 
 	response := &PositionHistoryResponse{}
@@ -110,14 +110,14 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 
 	ctime, err := strconv.ParseInt(aux.Ctime, 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse ctime: %w", err)
 	}
 
 	p.Ctime = time.Unix(0, ctime*1000000)
 
 	mtime, err := strconv.ParseInt(aux.Mtime, 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse mtime: %w", err)
 	}
 	p.Mtime = time.Unix(0, mtime*1000000)
 
@@ -125,56 +125,56 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 	if err == nil {
 		p.Fee = feeFloat
 	} else {
-		return err
+		return fmt.Errorf("failed to parse fee: %w", err)
 	}
 
 	funding, err := strconv.ParseFloat(aux.Funding, 64)
 	if err == nil {
 		p.Funding = funding
 	} else {
-		return err
+		return fmt.Errorf("failed to parse funding: %w", err)
 	}
 
 	realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
 	if err == nil {
 		p.RealizedPNL = realizedPNL
 	} else {
-		return err
+		return fmt.Errorf("failed to parse realizedPNL: %w", err)
 	}
 
 	liqPrice, err := strconv.ParseFloat(aux.LiqPrice, 64)
 	if err == nil {
 		p.LiqPrice = liqPrice
 	} else {
-		return err
+		return fmt.Errorf("failed to parse liqPrice: %w", err)
 	}
 
 	maxQty, err := strconv.ParseFloat(aux.MaxQty, 64)
 	if err == nil {
 		p.MaxQty = maxQty
 	} else {
-		return err
+		return fmt.Errorf("failed to parse maxQty: %w", err)
 	}
 
 	entryPrice, err := strconv.ParseFloat(aux.EntryPrice, 64)
 	if err == nil {
 		p.EntryPrice = entryPrice
 	} else {
-		return err
+		return fmt.Errorf("failed to parse entryPrice: %w", err)
 	}
 
 	closePrice, err := strconv.ParseFloat(aux.ClosePrice, 64)
 	if err == nil {
 		p.ClosePrice = closePrice
 	} else {
-		return err
+		return fmt.Errorf("failed to parse closePrice: %w", err)
 	}
 
 	liqQty, err := strconv.ParseFloat(aux.LiqQty, 64)
 	if err == nil {
 		p.LiqQty = liqQty
 	} else {
-		return err
+		return fmt.Errorf("failed to parse liqQty: %w", err)
 	}
 
 	return nil

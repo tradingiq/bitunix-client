@@ -5,7 +5,7 @@ import (
 )
 
 func TestTypes(t *testing.T) {
-	// Test StopType constants
+
 	if StopTypeLastPrice != "LAST_PRICE" {
 		t.Errorf("Expected StopTypeLastPrice to be 'LAST_PRICE', got '%s'", StopTypeLastPrice)
 	}
@@ -14,7 +14,6 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected StopTypeMarkPrice to be 'MARK_PRICE', got '%s'", StopTypeMarkPrice)
 	}
 
-	// Test OrderType constants
 	if OrderTypeLimit != "LIMIT" {
 		t.Errorf("Expected OrderTypeLimit to be 'LIMIT', got '%s'", OrderTypeLimit)
 	}
@@ -23,7 +22,6 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected OrderTypeMarket to be 'MARKET', got '%s'", OrderTypeMarket)
 	}
 
-	// Test TimeInForce constants
 	if TimeInForceIOC != "IOC" {
 		t.Errorf("Expected TimeInForceIOC to be 'IOC', got '%s'", TimeInForceIOC)
 	}
@@ -40,7 +38,6 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected TimeInForcePostOnly to be 'POST_ONLY', got '%s'", TimeInForcePostOnly)
 	}
 
-	// Test TradeSide constants
 	if TradeSideOpen != "OPEN" {
 		t.Errorf("Expected TradeSideOpen to be 'OPEN', got '%s'", TradeSideOpen)
 	}
@@ -49,7 +46,6 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected TradeSideClose to be 'CLOSE', got '%s'", TradeSideClose)
 	}
 
-	// Test TradeAction constants
 	if TradeActionBuy != "BUY" {
 		t.Errorf("Expected TradeActionBuy to be 'BUY', got '%s'", TradeActionBuy)
 	}
@@ -58,7 +54,6 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected TradeActionSell to be 'SELL', got '%s'", TradeActionSell)
 	}
 
-	// Test MarginMode constants
 	if MarginModeIsolation != "ISOLATION" {
 		t.Errorf("Expected MarginModeIsolation to be 'ISOLATION ', got '%s'", MarginModeIsolation)
 	}
@@ -67,7 +62,6 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected MarginModeCross to be 'CROSS', got '%s'", MarginModeCross)
 	}
 
-	// Test TradePositionMode constants
 	if TradePositionModeOneWay != "ONE_WAY" {
 		t.Errorf("Expected TradePositionModeOneWay to be 'ONE_WAY', got '%s'", TradePositionModeOneWay)
 	}
@@ -76,7 +70,6 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected TradePositionModeHedge to be 'HEDGE', got '%s'", TradePositionModeHedge)
 	}
 
-	// Test TradeRoleType constants
 	if TradeRoleTypeTaker != "TAKER" {
 		t.Errorf("Expected TradeRoleTypeTaker to be 'TAKER', got '%s'", TradeRoleTypeTaker)
 	}
