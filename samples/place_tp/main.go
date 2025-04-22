@@ -24,8 +24,8 @@ func bitunixExample() {
 
 	ctx := context.Background()
 
-	request := bitunix.NewTPSLOrderBuilder("BTCUSDT", "1988277607969914382").
-		WithTakeProfit(100000, 0.001, bitunix.StopTypeLastPrice, bitunix.OrderTypeLimit, 100050).
+	request := bitunix.NewTPSLOrderBuilder("BTCUSDT", "50000").
+		WithTakeProfit(80000, 0.001, bitunix.StopTypeLastPrice, bitunix.OrderTypeLimit, 70000).
 		Build()
 
 	response, err := bitunixClient.PlaceTpSlOrder(ctx, &request)
