@@ -9,13 +9,11 @@ import (
 	"testing"
 )
 
-// MockAPI is a helper to mock the API responses
 type MockAPI struct {
 	server *httptest.Server
 	client *Client
 }
 
-// NewMockAPI creates a new mock API server and client
 func NewMockAPI(handler http.HandlerFunc) *MockAPI {
 	server := httptest.NewServer(handler)
 	apiClient, _ := NewTestClient(server.URL)
@@ -26,7 +24,6 @@ func NewMockAPI(handler http.HandlerFunc) *MockAPI {
 	}
 }
 
-// Close closes the mock API server
 func (m *MockAPI) Close() {
 	m.server.Close()
 }
@@ -71,7 +68,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 
 	builder := NewOrderBuilder(symbol, side, tradeSide, qty)
 
-	// Test WithOrderType
 	orderType := OrderTypeLimit
 	builder.WithOrderType(orderType)
 	order := builder.Build()
@@ -79,7 +75,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithOrderType: Expected order type %s, got %s", orderType, order.OrderType)
 	}
 
-	// Test WithPrice
 	price := 50000.0
 	builder.WithPrice(price)
 	order = builder.Build()
@@ -87,7 +82,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithPrice: Expected price %f, got %f", price, *order.Price)
 	}
 
-	// Test WithPositionID
 	positionID := "position123"
 	builder.WithPositionID(positionID)
 	order = builder.Build()
@@ -95,7 +89,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithPositionID: Expected position ID %s, got %s", positionID, order.PositionID)
 	}
 
-	// Test WithReduceOnly
 	reduceOnly := true
 	builder.WithReduceOnly(reduceOnly)
 	order = builder.Build()
@@ -103,7 +96,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithReduceOnly: Expected reduce only %v, got %v", reduceOnly, order.ReduceOnly)
 	}
 
-	// Test WithTimeInForce
 	tif := TimeInForceIOC
 	builder.WithTimeInForce(tif)
 	order = builder.Build()
@@ -111,7 +103,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithTimeInForce: Expected time in force %s, got %s", tif, order.Effect)
 	}
 
-	// Test WithClientID
 	clientID := "client123"
 	builder.WithClientID(clientID)
 	order = builder.Build()
@@ -119,7 +110,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithClientID: Expected client ID %s, got %s", clientID, order.ClientID)
 	}
 
-	// Test WithTakeProfit
 	tpPrice := 55000.0
 	tpStopType := StopTypeLastPrice
 	tpOrderType := OrderTypeLimit
@@ -135,7 +125,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithTakeProfit: Expected TP order type %s, got %s", tpOrderType, order.TpOrderType)
 	}
 
-	// Test WithTakeProfitPrice
 	tpOrderPrice := 54500.0
 	builder.WithTakeProfitPrice(tpOrderPrice)
 	order = builder.Build()
@@ -143,7 +132,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithTakeProfitPrice: Expected TP order price %f, got %f", tpOrderPrice, *order.TpOrderPrice)
 	}
 
-	// Test WithStopLoss
 	slPrice := 45000.0
 	slStopType := StopTypeMarkPrice
 	slOrderType := OrderTypeMarket
@@ -159,7 +147,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithStopLoss: Expected SL order type %s, got %s", slOrderType, order.SlOrderType)
 	}
 
-	// Test WithStopLossPrice
 	slOrderPrice := 45500.0
 	builder.WithStopLossPrice(slOrderPrice)
 	order = builder.Build()
@@ -208,7 +195,6 @@ func TestOrderRequestMarshalJSON(t *testing.T) {
 		t.Fatalf("Failed to unmarshal JSON: %v", err)
 	}
 
-	// Check that numeric fields are serialized as strings
 	if m["price"] != "50000" {
 		t.Errorf("Expected price to be marshaled as string \"50000\", got %v", m["price"])
 	}
@@ -244,12 +230,10 @@ func TestPlaceOrder(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(mockResponse))
 
-		// Verify the request path
 		if r.URL.Path != "/api/v1/futures/trade/place_order" {
 			t.Errorf("Expected request path /api/v1/futures/trade/place_order, got %s", r.URL.Path)
 		}
 
-		// Verify method
 		if r.Method != http.MethodPost {
 			t.Errorf("Expected request method POST, got %s", r.Method)
 		}
@@ -259,7 +243,6 @@ func TestPlaceOrder(t *testing.T) {
 	qty := 1.0
 	price := 50000.0
 
-	// Create order request
 	orderReq := &OrderRequest{
 		Symbol:      "BTCUSDT",
 		TradeAction: TradeActionBuy,
@@ -270,13 +253,11 @@ func TestPlaceOrder(t *testing.T) {
 		ClientID:    "client123",
 	}
 
-	// Place order
 	response, err := mockAPI.client.PlaceOrder(context.Background(), orderReq)
 	if err != nil {
 		t.Fatalf("PlaceOrder returned error: %v", err)
 	}
 
-	// Verify response
 	if response.Code != 0 {
 		t.Errorf("Expected code 0, got %d", response.Code)
 	}
@@ -291,14 +272,12 @@ func TestPlaceOrder(t *testing.T) {
 	}
 }
 
-// Helper function to create a test client with a specific baseURL
 func NewTestClient(baseURL string) (*api.Client, error) {
 	apiClient, err := api.New(baseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add a no-op request signer
 	apiClient.SetOptions(api.WithRequestSigner(func(req *http.Request, body []byte) error {
 		return nil
 	}))

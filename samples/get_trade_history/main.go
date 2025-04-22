@@ -22,7 +22,7 @@ func bitunixExample() {
 	}
 	bitunixClient := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
 
-	params := &bitunix.TradeHistoryParams{
+	params := bitunix.TradeHistoryParams{
 		Limit: 50,
 	}
 
