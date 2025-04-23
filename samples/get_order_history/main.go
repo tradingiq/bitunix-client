@@ -41,7 +41,7 @@ func bitunixExample() {
 	log.WithField("response", response).Debug("Get Order History")
 
 	fmt.Printf("Found %d orders\n", len(response.Data.Orders))
-	fmt.Printf("Total orders: %d\n\n", response.Data.Total)
+	fmt.Printf("Total orders: %s\n\n", response.Data.Total)
 
 	for i, order := range response.Data.Orders {
 		fmt.Printf("Order %d:\n", i+1)
