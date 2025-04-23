@@ -17,10 +17,10 @@ const (
 type TimeInForce string
 
 const (
-	TimeInForceIOC      TimeInForce = "IOC"       // Immediate or cancel
-	TimeInForceFOK      TimeInForce = "FOK"       // Fill or kill
-	TimeInForceGTC      TimeInForce = "GTC"       // Good till canceled (default value)
-	TimeInForcePostOnly TimeInForce = "POST_ONLY" // POST only
+	TimeInForceIOC      TimeInForce = "IOC"
+	TimeInForceFOK      TimeInForce = "FOK"
+	TimeInForceGTC      TimeInForce = "GTC"
+	TimeInForcePostOnly TimeInForce = "POST_ONLY"
 )
 
 type TradeSide string
@@ -40,7 +40,7 @@ const (
 type MarginMode string
 
 const (
-	MarginModeIsolation MarginMode = "ISOLATION "
+	MarginModeIsolation MarginMode = "ISOLATION"
 	MarginModeCross     MarginMode = "CROSS"
 )
 
@@ -56,4 +56,11 @@ type TradeRoleType string
 const (
 	TradeRoleTypeTaker TradeRoleType = "TAKER"
 	TradeRoleTypeMaker TradeRoleType = "MAKER"
+)
+
+type PositionMode string
+
+const (
+	PositionModeOneWay PositionMode = "ONE_WAY"
+	PositionModeHedge  PositionMode = "HEDGE"
 )

@@ -117,6 +117,10 @@ func (client *Client) PlaceTpSlOrder(ctx context.Context, request *TPSLOrderRequ
 	}
 
 	responseBody, err := client.api.Post(ctx, "/api/v1/futures/tpsl/place_order", nil, marshaledRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to place order request: %w", err)
+	}
+
 	response := &TPSLOrderResponse{}
 	if err := json.Unmarshal(responseBody, response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)

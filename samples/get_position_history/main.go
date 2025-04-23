@@ -22,8 +22,12 @@ func bitunixExample() {
 	}
 	bitunixClient := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
 
+	params := bitunix.PositionHistoryParams{
+		Limit: 2,
+	}
+
 	ctx := context.Background()
-	response, err := bitunixClient.GetPositionHistory(ctx)
+	response, err := bitunixClient.GetPositionHistory(ctx, params)
 	if err != nil {
 		fmt.Println(err)
 	}

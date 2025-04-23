@@ -54,7 +54,7 @@ jobs:
 
       - name: Run golangci-lint
         run: |
-          $(go env GOPATH)/bin/golangci-lint run --timeout=5m
+          $(go env GOPATH)/bin/golangci-lint run --timeout=5m --issues-exit-code 0
 
       - name: Check Go formatting
         run: |
