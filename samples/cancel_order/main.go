@@ -24,8 +24,7 @@ func cancelOrderExample() {
 
 	// Create a request to cancel orders by providing either order IDs or client IDs
 	cancelRequest := bitunix.NewCancelOrderBuilder("BTCUSDT").
-		WithOrderID("11111").        // Cancel by order ID
-		WithClientID("client22222"). // Cancel by client ID
+		WithOrderID("1915122868439269376"). // Cancel by client ID
 		Build()
 
 	ctx := context.Background()

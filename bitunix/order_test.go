@@ -290,7 +290,6 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 	symbol := "BTCUSDT"
 	builder := NewCancelOrderBuilder(symbol)
 
-	// Test WithOrderID
 	orderID := "order123"
 	builder.WithOrderID(orderID)
 	cancelOrder := builder.Build()
@@ -305,7 +304,6 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithOrderID: Expected empty client ID, got %s", cancelOrder.OrderList[0].ClientID)
 	}
 
-	// Test WithClientID
 	clientID := "client123"
 	builder.WithClientID(clientID)
 	cancelOrder = builder.Build()
@@ -375,7 +373,6 @@ func TestCancelOrders(t *testing.T) {
 		t.Fatalf("CancelOrders returned error: %v", err)
 	}
 
-	// Check response code and message
 	if response.Code != 0 {
 		t.Errorf("Expected code 0, got %d", response.Code)
 	}
@@ -383,7 +380,6 @@ func TestCancelOrders(t *testing.T) {
 		t.Errorf("Expected message 'Success', got %s", response.Message)
 	}
 
-	// Check success list
 	if len(response.Data.SuccessList) != 1 {
 		t.Fatalf("Expected 1 item in success list, got %d", len(response.Data.SuccessList))
 	}
@@ -394,7 +390,6 @@ func TestCancelOrders(t *testing.T) {
 		t.Errorf("Expected success client ID '22222', got %s", response.Data.SuccessList[0].ClientId)
 	}
 
-	// Check failure list
 	if len(response.Data.FailureList) != 1 {
 		t.Fatalf("Expected 1 item in failure list, got %d", len(response.Data.FailureList))
 	}
