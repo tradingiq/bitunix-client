@@ -22,7 +22,6 @@ func cancelOrderExample() {
 	}
 	bitunixClient := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
 
-	// Create a request to cancel orders by providing either order IDs or client IDs
 	cancelRequest := bitunix.NewCancelOrderBuilder("BTCUSDT").
 		WithOrderID("1915122868439269376"). // Cancel by client ID
 		Build()
@@ -33,13 +32,11 @@ func cancelOrderExample() {
 		log.Fatalf("Failed to cancel orders: %v", err)
 	}
 
-	// Print successful cancellations
 	fmt.Println("Successfully canceled orders:")
 	for _, success := range response.Data.SuccessList {
 		fmt.Printf("- Order ID: %s, Client ID: %s\n", success.OrderId, success.ClientId)
 	}
 
-	// Print failed cancellations
 	fmt.Println("Failed to cancel orders:")
 	for _, failure := range response.Data.FailureList {
 		fmt.Printf("- Order ID: %s, Client ID: %s, Error: %s (Code: %s)\n",
