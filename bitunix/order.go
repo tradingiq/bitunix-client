@@ -93,13 +93,13 @@ type OrderResponseData struct {
 }
 
 type CancelOrderResponse struct {
-	Code    int                   `json:"code"`
-	Message string                `json:"msg"`
+	Code    int                     `json:"code"`
+	Message string                  `json:"msg"`
 	Data    CancelOrderResponseData `json:"data"`
 }
 
 type CancelOrderResponseData struct {
-	SuccessList []CancelOrderResult `json:"successList"`
+	SuccessList []CancelOrderResult  `json:"successList"`
 	FailureList []CancelOrderFailure `json:"failureList"`
 }
 

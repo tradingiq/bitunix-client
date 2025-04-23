@@ -294,7 +294,7 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 	orderID := "order123"
 	builder.WithOrderID(orderID)
 	cancelOrder := builder.Build()
-	
+
 	if len(cancelOrder.OrderList) != 1 {
 		t.Fatalf("Expected 1 item in order list, got %d", len(cancelOrder.OrderList))
 	}
@@ -309,7 +309,7 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 	clientID := "client123"
 	builder.WithClientID(clientID)
 	cancelOrder = builder.Build()
-	
+
 	if len(cancelOrder.OrderList) != 2 {
 		t.Fatalf("Expected 2 items in order list, got %d", len(cancelOrder.OrderList))
 	}
