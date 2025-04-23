@@ -45,7 +45,7 @@ func TestGetOrderHistory(t *testing.T) {
 						"positionMode": "HEDGE",
 						"marginMode": "CROSS",
 						"leverage": 10,
-						"price": "40000",
+						"price": "MARKET",
 						"side": "BUY",
 						"orderType": "LIMIT",
 						"effect": "GTC",
@@ -66,7 +66,7 @@ func TestGetOrderHistory(t *testing.T) {
 						"mtime": "1659076680000"
 					}
 				],
-				"total": 1
+				"total": "1"
 			}
 		}`
 
@@ -141,8 +141,8 @@ func TestGetOrderHistory(t *testing.T) {
 		t.Errorf("unexpected leverage: %d", order.Leverage)
 	}
 
-	if order.Price != 40000 {
-		t.Errorf("unexpected price: %f", order.Price)
+	if order.Price != "MARKET" {
+		t.Errorf("unexpected price: %s", order.Price)
 	}
 
 	if order.Side != TradeActionBuy {
@@ -226,7 +226,7 @@ func TestOrderHistoryParamsMarshaling(t *testing.T) {
 		"positionMode": "HEDGE",
 		"marginMode": "CROSS",
 		"leverage": 10,
-		"price": "40000",
+		"price": "MARKET",
 		"side": "BUY",
 		"orderType": "LIMIT",
 		"effect": "GTC",
@@ -265,8 +265,8 @@ func TestOrderHistoryParamsMarshaling(t *testing.T) {
 		t.Errorf("unexpected trade quantity: %f", order.TradeQuantity)
 	}
 
-	if order.Price != 40000 {
-		t.Errorf("unexpected price: %f", order.Price)
+	if order.Price != "MARKET" {
+		t.Errorf("unexpected price: %s", order.Price)
 	}
 
 	if order.Fee != 0.6 {
