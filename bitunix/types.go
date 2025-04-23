@@ -57,3 +57,10 @@ const (
 	TradeRoleTypeTaker TradeRoleType = "TAKER"
 	TradeRoleTypeMaker TradeRoleType = "MAKER"
 )
+
+type PositionMode string
+
+const (
+	PositionModeOneWay PositionMode = "ONE_WAY"
+	PositionModeHedge  PositionMode = "HEDGE"
+)
