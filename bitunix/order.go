@@ -29,6 +29,16 @@ type OrderRequest struct {
 	SlOrderPrice *float64    `json:"-"`
 }
 
+type CancelOrderParam struct {
+	OrderID  string `json:"orderId,omitempty"`
+	ClientID string `json:"clientId,omitempty"`
+}
+
+type CancelOrderRequest struct {
+	Symbol    string             `json:"symbol"`
+	OrderList []CancelOrderParam `json:"orderList"`
+}
+
 func (r *OrderRequest) MarshalJSON() ([]byte, error) {
 	type Alias OrderRequest
 
@@ -82,6 +92,29 @@ type OrderResponseData struct {
 	ClientId string `json:"clientId"`
 }
 
+type CancelOrderResponse struct {
+	Code    int                   `json:"code"`
+	Message string                `json:"msg"`
+	Data    CancelOrderResponseData `json:"data"`
+}
+
+type CancelOrderResponseData struct {
+	SuccessList []CancelOrderResult `json:"successList"`
+	FailureList []CancelOrderFailure `json:"failureList"`
+}
+
+type CancelOrderResult struct {
+	OrderId  string `json:"orderId"`
+	ClientId string `json:"clientId"`
+}
+
+type CancelOrderFailure struct {
+	OrderId   string `json:"orderId"`
+	ClientId  string `json:"clientId"`
+	ErrorMsg  string `json:"errorMsg"`
+	ErrorCode string `json:"errorCode"`
+}
+
 func (client *Client) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
@@ -94,6 +127,25 @@ func (client *Client) PlaceOrder(ctx context.Context, request *OrderRequest) (*O
 	}
 
 	response := &OrderResponse{}
+	if err := json.Unmarshal(responseBody, response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return response, nil
+}
+
+func (client *Client) CancelOrders(ctx context.Context, request *CancelOrderRequest) (*CancelOrderResponse, error) {
+	marshaledRequest, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal cancel order request: %w", err)
+	}
+
+	responseBody, err := client.api.Post(ctx, "/api/v1/futures/trade/cancel_orders", nil, marshaledRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to cancel orders request: %w", err)
+	}
+
+	response := &CancelOrderResponse{}
 	if err := json.Unmarshal(responseBody, response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -178,5 +230,36 @@ func (b *OrderBuilder) WithStopLossPrice(orderPrice float64) *OrderBuilder {
 }
 
 func (b *OrderBuilder) Build() OrderRequest {
+	return b.request
+}
+
+type CancelOrderBuilder struct {
+	request CancelOrderRequest
+}
+
+func NewCancelOrderBuilder(symbol string) *CancelOrderBuilder {
+	return &CancelOrderBuilder{
+		request: CancelOrderRequest{
+			Symbol:    symbol,
+			OrderList: make([]CancelOrderParam, 0),
+		},
+	}
+}
+
+func (b *CancelOrderBuilder) WithOrderID(orderID string) *CancelOrderBuilder {
+	b.request.OrderList = append(b.request.OrderList, CancelOrderParam{
+		OrderID: orderID,
+	})
+	return b
+}
+
+func (b *CancelOrderBuilder) WithClientID(clientID string) *CancelOrderBuilder {
+	b.request.OrderList = append(b.request.OrderList, CancelOrderParam{
+		ClientID: clientID,
+	})
+	return b
+}
+
+func (b *CancelOrderBuilder) Build() CancelOrderRequest {
 	return b.request
 }

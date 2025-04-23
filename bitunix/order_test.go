@@ -272,6 +272,146 @@ func TestPlaceOrder(t *testing.T) {
 	}
 }
 
+func TestCancelOrderBuilderCreation(t *testing.T) {
+	symbol := "BTCUSDT"
+
+	builder := NewCancelOrderBuilder(symbol)
+	cancelOrder := builder.Build()
+
+	if cancelOrder.Symbol != symbol {
+		t.Errorf("Expected symbol %s, got %s", symbol, cancelOrder.Symbol)
+	}
+	if len(cancelOrder.OrderList) != 0 {
+		t.Errorf("Expected empty order list, got %d items", len(cancelOrder.OrderList))
+	}
+}
+
+func TestCancelOrderBuilderMethods(t *testing.T) {
+	symbol := "BTCUSDT"
+	builder := NewCancelOrderBuilder(symbol)
+
+	// Test WithOrderID
+	orderID := "order123"
+	builder.WithOrderID(orderID)
+	cancelOrder := builder.Build()
+	
+	if len(cancelOrder.OrderList) != 1 {
+		t.Fatalf("Expected 1 item in order list, got %d", len(cancelOrder.OrderList))
+	}
+	if cancelOrder.OrderList[0].OrderID != orderID {
+		t.Errorf("WithOrderID: Expected order ID %s, got %s", orderID, cancelOrder.OrderList[0].OrderID)
+	}
+	if cancelOrder.OrderList[0].ClientID != "" {
+		t.Errorf("WithOrderID: Expected empty client ID, got %s", cancelOrder.OrderList[0].ClientID)
+	}
+
+	// Test WithClientID
+	clientID := "client123"
+	builder.WithClientID(clientID)
+	cancelOrder = builder.Build()
+	
+	if len(cancelOrder.OrderList) != 2 {
+		t.Fatalf("Expected 2 items in order list, got %d", len(cancelOrder.OrderList))
+	}
+	if cancelOrder.OrderList[1].ClientID != clientID {
+		t.Errorf("WithClientID: Expected client ID %s, got %s", clientID, cancelOrder.OrderList[1].ClientID)
+	}
+	if cancelOrder.OrderList[1].OrderID != "" {
+		t.Errorf("WithClientID: Expected empty order ID, got %s", cancelOrder.OrderList[1].OrderID)
+	}
+}
+
+func TestCancelOrders(t *testing.T) {
+	mockResponse := `{
+		"code": 0,
+		"msg": "Success",
+		"data": {
+			"successList": [
+				{
+					"orderId": "11111",
+					"clientId": "22222"
+				}
+			],
+			"failureList": [
+				{
+					"orderId": "33333",
+					"clientId": "44444",
+					"errorMsg": "Order not found",
+					"errorCode": "10001"
+				}
+			]
+		}
+	}`
+
+	mockAPI := NewMockAPI(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(mockResponse))
+
+		if r.URL.Path != "/api/v1/futures/trade/cancel_orders" {
+			t.Errorf("Expected request path /api/v1/futures/trade/cancel_orders, got %s", r.URL.Path)
+		}
+
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected request method POST, got %s", r.Method)
+		}
+	})
+	defer mockAPI.Close()
+
+	cancelOrderReq := &CancelOrderRequest{
+		Symbol: "BTCUSDT",
+		OrderList: []CancelOrderParam{
+			{
+				OrderID: "11111",
+			},
+			{
+				ClientID: "22223",
+			},
+		},
+	}
+
+	response, err := mockAPI.client.CancelOrders(context.Background(), cancelOrderReq)
+	if err != nil {
+		t.Fatalf("CancelOrders returned error: %v", err)
+	}
+
+	// Check response code and message
+	if response.Code != 0 {
+		t.Errorf("Expected code 0, got %d", response.Code)
+	}
+	if response.Message != "Success" {
+		t.Errorf("Expected message 'Success', got %s", response.Message)
+	}
+
+	// Check success list
+	if len(response.Data.SuccessList) != 1 {
+		t.Fatalf("Expected 1 item in success list, got %d", len(response.Data.SuccessList))
+	}
+	if response.Data.SuccessList[0].OrderId != "11111" {
+		t.Errorf("Expected success order ID '11111', got %s", response.Data.SuccessList[0].OrderId)
+	}
+	if response.Data.SuccessList[0].ClientId != "22222" {
+		t.Errorf("Expected success client ID '22222', got %s", response.Data.SuccessList[0].ClientId)
+	}
+
+	// Check failure list
+	if len(response.Data.FailureList) != 1 {
+		t.Fatalf("Expected 1 item in failure list, got %d", len(response.Data.FailureList))
+	}
+	if response.Data.FailureList[0].OrderId != "33333" {
+		t.Errorf("Expected failure order ID '33333', got %s", response.Data.FailureList[0].OrderId)
+	}
+	if response.Data.FailureList[0].ClientId != "44444" {
+		t.Errorf("Expected failure client ID '44444', got %s", response.Data.FailureList[0].ClientId)
+	}
+	if response.Data.FailureList[0].ErrorMsg != "Order not found" {
+		t.Errorf("Expected failure error message 'Order not found', got %s", response.Data.FailureList[0].ErrorMsg)
+	}
+	if response.Data.FailureList[0].ErrorCode != "10001" {
+		t.Errorf("Expected failure error code '10001', got %s", response.Data.FailureList[0].ErrorCode)
+	}
+}
+
 func NewTestClient(baseURL string) (*api.Client, error) {
 	apiClient, err := api.New(baseURL)
 	if err != nil {
