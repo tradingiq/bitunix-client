@@ -19,36 +19,34 @@ type TradeHistoryParams struct {
 	Limit      int64
 }
 
-func (client *Client) GetTradeHistory(ctx context.Context, params *TradeHistoryParams) (*TradeHistoryResponse, error) {
+func (client *Client) GetTradeHistory(ctx context.Context, params TradeHistoryParams) (*TradeHistoryResponse, error) {
 	queryParams := url.Values{}
 
-	if params != nil {
-		if params.Symbol != "" {
-			queryParams.Add("symbol", params.Symbol)
-		}
-		if params.OrderID != "" {
-			queryParams.Add("orderId", params.OrderID)
-		}
-		if params.PositionID != "" {
-			queryParams.Add("positionId", params.PositionID)
-		}
-		if params.StartTime != nil {
-			queryParams.Add("startTime", strconv.FormatInt(params.StartTime.UnixMilli(), 10))
-		}
-		if params.EndTime != nil {
-			queryParams.Add("endTime", strconv.FormatInt(params.EndTime.UnixMilli(), 10))
-		}
-		if params.Skip > 0 {
-			queryParams.Add("skip", strconv.FormatInt(params.Skip, 10))
-		}
-		if params.Limit > 0 {
-			queryParams.Add("limit", strconv.FormatInt(params.Limit, 10))
-		}
+	if params.Symbol != "" {
+		queryParams.Add("symbol", params.Symbol)
+	}
+	if params.OrderID != "" {
+		queryParams.Add("orderId", params.OrderID)
+	}
+	if params.PositionID != "" {
+		queryParams.Add("positionId", params.PositionID)
+	}
+	if params.StartTime != nil {
+		queryParams.Add("startTime", strconv.FormatInt(params.StartTime.UnixMilli(), 10))
+	}
+	if params.EndTime != nil {
+		queryParams.Add("endTime", strconv.FormatInt(params.EndTime.UnixMilli(), 10))
+	}
+	if params.Skip > 0 {
+		queryParams.Add("skip", strconv.FormatInt(params.Skip, 10))
+	}
+	if params.Limit > 0 {
+		queryParams.Add("limit", strconv.FormatInt(params.Limit, 10))
 	}
 
 	responseBody, err := client.api.Get(ctx, "/api/v1/futures/trade/get_history_trades", queryParams)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get trade history: %w", err)
 	}
 
 	response := &TradeHistoryResponse{}
@@ -56,7 +54,7 @@ func (client *Client) GetTradeHistory(ctx context.Context, params *TradeHistoryP
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	return response, err
+	return response, nil
 }
 
 type TradeHistoryResponse struct {
@@ -108,26 +106,36 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 	quantity, err := strconv.ParseFloat(aux.Quantity, 64)
 	if err == nil {
 		t.Quantity = quantity
+	} else {
+		return fmt.Errorf("invalid quantity: %w", err)
 	}
 
 	price, err := strconv.ParseFloat(aux.Price, 64)
 	if err == nil {
 		t.Price = price
+	} else {
+		return fmt.Errorf("invalid price: %w", err)
 	}
 
 	fee, err := strconv.ParseFloat(aux.Fee, 64)
 	if err == nil {
 		t.Fee = fee
+	} else {
+		return fmt.Errorf("invalid fee: %w", err)
 	}
 
 	realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
 	if err == nil {
 		t.RealizedPNL = realizedPNL
+	} else {
+		return fmt.Errorf("invalid realized pnl: %w", err)
 	}
 
 	createTime, err := strconv.ParseInt(aux.CreateTime, 10, 64)
 	if err == nil {
 		t.CreateTime = time.Unix(0, createTime*1000000)
+	} else {
+		return fmt.Errorf("invalid create time: %w", err)
 	}
 
 	return nil
