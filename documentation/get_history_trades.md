@@ -12,15 +12,15 @@ Get history trades, sort by create time desc
 
 ## Request Parameters
 
-| Parameter  | Type   | Required | Description                                                               |
-|------------|--------|----------|---------------------------------------------------------------------------|
-| symbol     | string | false    | Trading pair                                                              |
-| orderId    | string | false    | order id                                                                  |
-| positionId | string | false    | position id                                                               |
-| startTime  | int64  | false    | Start timestamp Unix timestamp in milliseconds format, e.g. 1597026383085 |
-| endTime    | int64  | false    | Start timestamp Unix timestamp in milliseconds format, e.g. 1597026683085 |
-| skip       | int64  | false    | skip order count default: 0                                               |
-| limit      | int64  | false    | Number of queries: Maximum: 100, default: 10                              |
+| Parameter  | Notes                         | Type   | Required | Description                                                               |
+|------------|-------------------------------|--------|----------|---------------------------------------------------------------------------|
+| symbol     |                               | string | false    | Trading pair                                                              |
+| orderId    |                               | string | false    | order id                                                                  |
+| positionId | #broken: doesnt filter trades | string | false    | position id                                                               |
+| startTime  |                               | int64  | false    | Start timestamp Unix timestamp in milliseconds format, e.g. 1597026383085 |
+| endTime    |                               | int64  | false    | Start timestamp Unix timestamp in milliseconds format, e.g. 1597026683085 |
+| skip       |                               | int64  | false    | skip order count default: 0                                               |
+| limit      |                               | int64  | false    | Number of queries: Maximum: 100, default: 10                              |
 
 ## Request Example
 
@@ -55,8 +55,8 @@ curl -X 'GET' --location 'https://fapi.bitunix.com/api/v1/futures/trade/get_hist
 | > fee          | string  | fee                                                                                                                                                                                          |
 | > realizedPNL  | string  | realized pnl                                                                                                                                                                                 |
 | > ctime        | int64   | create timestamp                                                                                                                                                                             |
-| > roleType     | string  | Trader tag<br>**TAKER**: maker<br>**MAKER**: maker                                                                                                                                           |
-| total          | int64   | total count                                                                                                                                                                                  |
+| > roleType     |         | string                                                                                                                                                                                       | Trader tag<br>**TAKER**: taker<br>**MAKER**: maker                                                                                                                                           |
+| total          |         | string                                                                                                                                                                                       | total count                                                                                                                                                                                  |
 
 ## Response Example
 
@@ -66,12 +66,25 @@ curl -X 'GET' --location 'https://fapi.bitunix.com/api/v1/futures/trade/get_hist
   "data": {
     "tradeList": [
       {
-        "tradeId": "123",
-        "orderId": "11111",
-        "qty": "1",
-        "price": "60000",
-        "symbol": "BTCUSDT",
-        "positionMode": "HEDGE"
+        "tradeId" : "12345",
+        "orderId" : "123",
+        "marginCoin" : null,
+        "symbol" : "BTCUSDT",
+        "qty" : "0.0005",
+        "positionMode" : "HEDGE",
+        "marginMode" : "ISOLATION",
+        "leverage" : 20,
+        "price" : "91077.2",
+        "side" : "BUY",
+        "orderType" : "MARKET",
+        "effect" : null,
+        "clientId" : null,
+        "reduceOnly" : true,
+        "status" : null,
+        "fee" : "0.019126212",
+        "realizedPNL" : "-0.15985",
+        "ctime" : "1745335541000",
+        "roleType" : "MAKER"
       }
     ],
     "total": 1
