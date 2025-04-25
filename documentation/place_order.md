@@ -35,6 +35,8 @@ Place order
 
 ## Request Example
 
+##### #broken: sample shows "MARK" but table lists "MARK_PRICE" or "LAST_PRICE" 
+
 ```bash
 curl -X 'POST' --location 'https://fapi.bitunix.com/api/v1/futures/trade/place_order' \
    -H "api-key:*******" \
@@ -45,6 +47,7 @@ curl -X 'POST' --location 'https://fapi.bitunix.com/api/v1/futures/trade/place_o
    -H "Content-Type: application/json" \
  --data '{"symbol":"BTCUSDT","side":"BUY","price":"60000","qty":"0.5","positionId":"111","tradeSide":"CLOSE","orderType":"LIMIT","reduceOnly":false,"effect":"GTC","clientId":"1110000aaa","tpPrice":"61000","tpStopType":"MARK","tpOrderType":"LIMIT","tpOrderPrice":"61000.1"}'
 ```
+
 
 ## Response Parameters
 
