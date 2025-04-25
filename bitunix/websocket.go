@@ -1,8 +1,12 @@
 package bitunix
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"github.com/tradingiq/bitunix-client/samples"
 	"github.com/tradingiq/bitunix-client/security"
+	"time"
 )
 
 type HeartbeatMessage struct {
@@ -31,11 +35,57 @@ type LoginParams struct {
 	Sign      string `json:"sign"`
 }
 
-func GenerateWebsocketSignature(apiKey, apiSecret string, timestamp int64, nonceBytes []byte) (string, int64) {
+func generateWebsocketSignature(apiKey, apiSecret string, timestamp int64, nonceBytes []byte) (string, int64) {
 	preSign := fmt.Sprintf("%x%d%s", nonceBytes, timestamp, apiKey)
 
 	preSign = security.Sha256Hex(preSign)
 	sign := security.Sha256Hex(preSign + apiSecret)
 
 	return sign, timestamp
+}
+
+func KeepAliveMonitor() func() ([]byte, error) {
+	return func() ([]byte, error) {
+		msg := HeartbeatMessage{
+			Op:   "ping",
+			Ping: time.Now().Unix(),
+		}
+
+		bytes, err := json.Marshal(msg)
+		if err != nil {
+			return bytes, err
+		}
+		return bytes, err
+	}
+}
+
+func WebsocketSigner() func() ([]byte, error) {
+	return func() ([]byte, error) {
+
+		nonce, err := security.GenerateNonce(32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate nonce: %w", err)
+		}
+
+		sign, timestamp := generateWebsocketSignature(samples.Config.ApiKey, samples.Config.SecretKey, time.Now().Unix(), nonce)
+
+		loginReq := LoginMessage{
+			Op: "login",
+			Args: []LoginParams{
+				{
+					ApiKey:    samples.Config.ApiKey,
+					Timestamp: timestamp,
+					Nonce:     hex.EncodeToString(nonce),
+					Sign:      sign,
+				},
+			},
+		}
+		bytes, err := json.Marshal(loginReq)
+		if err != nil {
+			return bytes, err
+		}
+
+		return bytes, nil
+
+	}
 }

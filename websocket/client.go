@@ -32,7 +32,7 @@ func WithAuthentication(loginMessageGenerator func() ([]byte, error)) ClientOpti
 	}
 }
 
-func WithHeartbeat(interval time.Duration, messageGenerator func() ([]byte, error)) ClientOption {
+func WithKeepAliveMonitor(interval time.Duration, messageGenerator func() ([]byte, error)) ClientOption {
 	return func(ws *Client) {
 		ws.heartBeatInterval = interval
 		ws.generateHeartbeatMessage = messageGenerator

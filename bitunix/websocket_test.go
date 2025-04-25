@@ -18,7 +18,7 @@ func TestGenerateWebsocketSignature(t *testing.T) {
 	expectedPreSignHash := security.Sha256Hex(expectedPreSign)
 	expectedSign := security.Sha256Hex(expectedPreSignHash + apiSecret)
 
-	actualSign, actualTimestamp := GenerateWebsocketSignature(apiKey, apiSecret, timestamp, nonceBytes)
+	actualSign, actualTimestamp := generateWebsocketSignature(apiKey, apiSecret, timestamp, nonceBytes)
 
 	assert.Equal(t, expectedSign, actualSign, "The signature should match the expected value")
 	assert.Equal(t, timestamp, actualTimestamp, "The timestamp should be returned unchanged")
@@ -30,7 +30,7 @@ func TestGenerateWebsocketSignatureFormat(t *testing.T) {
 	timestamp := int64(1234567890)
 	nonceBytes := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 
-	sign, _ := GenerateWebsocketSignature(apiKey, apiSecret, timestamp, nonceBytes)
+	sign, _ := generateWebsocketSignature(apiKey, apiSecret, timestamp, nonceBytes)
 
 	assert.Equal(t, 64, len(sign), "Signature should be 64 characters long (32 bytes in hex)")
 
@@ -87,7 +87,7 @@ func TestGenerateWebsocketSignatureDifferentInputs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			sign, returnedTimestamp := GenerateWebsocketSignature(tc.apiKey, tc.apiSecret, tc.timestamp, tc.nonceBytes)
+			sign, returnedTimestamp := generateWebsocketSignature(tc.apiKey, tc.apiSecret, tc.timestamp, tc.nonceBytes)
 
 			assert.Equal(t, tc.timestamp, returnedTimestamp)
 
