@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/samples"
 	"github.com/tradingiq/bitunix-client/websocket"
 	"time"
 )
@@ -14,7 +15,7 @@ func main() {
 	ws := websocket.New(
 		ctx,
 		"wss://fapi.bitunix.com/private/",
-		websocket.WithAuthentication(bitunix.WebsocketSigner()),
+		websocket.WithAuthentication(bitunix.WebsocketSigner(samples.Config.ApiKey, samples.Config.SecretKey)),
 		websocket.WithKeepAliveMonitor(15*time.Second, bitunix.KeepAliveMonitor()),
 	)
 

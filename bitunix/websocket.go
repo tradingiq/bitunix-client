@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/tradingiq/bitunix-client/samples"
 	"github.com/tradingiq/bitunix-client/security"
 	"time"
 )
@@ -59,7 +58,7 @@ func KeepAliveMonitor() func() ([]byte, error) {
 	}
 }
 
-func WebsocketSigner() func() ([]byte, error) {
+func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
 	return func() ([]byte, error) {
 
 		nonce, err := security.GenerateNonce(32)
@@ -67,13 +66,13 @@ func WebsocketSigner() func() ([]byte, error) {
 			return nil, fmt.Errorf("failed to generate nonce: %w", err)
 		}
 
-		sign, timestamp := generateWebsocketSignature(samples.Config.ApiKey, samples.Config.SecretKey, time.Now().Unix(), nonce)
+		sign, timestamp := generateWebsocketSignature(apiKey, apiSecret, time.Now().Unix(), nonce)
 
 		loginReq := LoginMessage{
 			Op: "login",
 			Args: []LoginParams{
 				{
-					ApiKey:    samples.Config.ApiKey,
+					ApiKey:    apiKey, // Use the provided apiKey parameter
 					Timestamp: timestamp,
 					Nonce:     hex.EncodeToString(nonce),
 					Sign:      sign,
