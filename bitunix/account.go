@@ -8,19 +8,16 @@ import (
 	"strconv"
 )
 
-// AccountBalanceParams represents the parameters for GetAccountBalance request
 type AccountBalanceParams struct {
-	MarginCoin string // Required
+	MarginCoin string
 }
 
-// AccountBalanceResponse represents the response from GetAccountBalance
 type AccountBalanceResponse struct {
 	Code    int                 `json:"code"`
 	Message string              `json:"msg"`
 	Data    AccountBalanceEntry `json:"data"`
 }
 
-// AccountBalanceEntry represents a single account balance entry
 type AccountBalanceEntry struct {
 	MarginCoin             string            `json:"marginCoin"`
 	Available              float64           `json:"-"`
@@ -33,7 +30,6 @@ type AccountBalanceEntry struct {
 	Bonus                  float64           `json:"-"`
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface
 func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 	type Alias AccountBalanceEntry
 	aux := &struct {
@@ -119,7 +115,6 @@ func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// GetAccountBalance retrieves account balance details for the given margin coin
 func (c *API) GetAccountBalance(ctx context.Context, params AccountBalanceParams) (*AccountBalanceResponse, error) {
 	if params.MarginCoin == "" {
 		return nil, fmt.Errorf("marginCoin is required")

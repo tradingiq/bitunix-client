@@ -89,7 +89,9 @@ func (ws *Client) Connect() error {
 		}
 	}
 
-	go ws.sendHeartbeat()
+	if ws.heartBeatInterval > 0 {
+		go ws.sendHeartbeat()
+	}
 
 	return nil
 }
@@ -98,7 +100,13 @@ func (ws *Client) Close() {
 	if ws.conn != nil {
 		log.Error("closing websocket connection")
 
-		close(ws.done)
+		select {
+		case <-ws.done:
+			// Channel already closed
+		default:
+			close(ws.done)
+		}
+		
 		ws.cancel()
 		ws.conn.Close(websocket.StatusNormalClosure, "")
 	}
