@@ -70,6 +70,8 @@ curl -X 'GET'  --location 'https://fapi.bitunix.com/api/v1/futures/trade/get_his
 | total          |                                        | string  | total count                                                                                                                                                                                  |
 
 ## Response Example
+#### #broken: price is documented as actual price yet the api returns "market" as string
+
 
 ```json
 {"code":0,"data":{"orderList":[{"orderId":"11111","qty":"1","tradeQty":"0.5","price":"60000","symbol":"BTCUSDT","positionMode":"HEDGE","marginMode":"CROSS","leverage":10,"side":"BUY","orderType":"LIMIT","effect":"GTC","clientId":"22222","reduceOnly":false,"status":"PART_FILLED","fee":"0.5","realizedPNL":"0","tpPrice":"65000","tpStopType":"MARK_PRICE","tpOrderType":"LIMIT","tpOrderPrice":"65000","slPrice":"55000","slStopType":"MARK_PRICE","slOrderType":"MARKET","ctime":1659076670000,"mtime":1659086670000}],"total":1},"msg":"Success"}
