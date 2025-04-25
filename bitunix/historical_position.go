@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (c *API) GetPositionHistory(ctx context.Context, params PositionHistoryParams) (*PositionHistoryResponse, error) {
+func (c *client) GetPositionHistory(ctx context.Context, params PositionHistoryParams) (*PositionHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {

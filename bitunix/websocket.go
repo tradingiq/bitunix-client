@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type HeartbeatMessage struct {
+type heartbeatMessage struct {
 	Op   string `json:"op"`
 	Ping int64  `json:"ping"`
 }
@@ -22,12 +22,12 @@ type SubscriptionParams struct {
 	Ch string `json:"ch"`
 }
 
-type LoginMessage struct {
+type loginMessage struct {
 	Op   string        `json:"op"`
-	Args []LoginParams `json:"args"`
+	Args []loginParams `json:"args"`
 }
 
-type LoginParams struct {
+type loginParams struct {
 	ApiKey    string `json:"apiKey"`
 	Timestamp int64  `json:"timestamp"`
 	Nonce     string `json:"nonce"`
@@ -45,7 +45,7 @@ func generateWebsocketSignature(apiKey, apiSecret string, timestamp int64, nonce
 
 func KeepAliveMonitor() func() ([]byte, error) {
 	return func() ([]byte, error) {
-		msg := HeartbeatMessage{
+		msg := heartbeatMessage{
 			Op:   "ping",
 			Ping: time.Now().Unix(),
 		}
@@ -68,9 +68,9 @@ func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
 
 		sign, timestamp := generateWebsocketSignature(apiKey, apiSecret, time.Now().Unix(), nonce)
 
-		loginReq := LoginMessage{
+		loginReq := loginMessage{
 			Op: "login",
-			Args: []LoginParams{
+			Args: []loginParams{
 				{
 					ApiKey:    apiKey, // Use the provided apiKey parameter
 					Timestamp: timestamp,

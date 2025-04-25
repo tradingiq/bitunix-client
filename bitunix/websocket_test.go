@@ -57,14 +57,14 @@ func TestGenerateWebsocketSignatureDifferentInputs(t *testing.T) {
 			nonceBytes: []byte{},
 		},
 		{
-			name:       "Different API key",
+			name:       "Different client key",
 			apiKey:     "different_api_key",
 			apiSecret:  "test_api_secret",
 			timestamp:  1234567890,
 			nonceBytes: []byte{0x01, 0x02, 0x03, 0x04},
 		},
 		{
-			name:       "Different API secret",
+			name:       "Different client secret",
 			apiKey:     "test_api_key",
 			apiSecret:  "different_api_secret",
 			timestamp:  1234567890,
@@ -114,7 +114,7 @@ func TestKeepAliveMonitor(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, bytes)
 
-	var message HeartbeatMessage
+	var message heartbeatMessage
 	err = json.Unmarshal(bytes, &message)
 	require.NoError(t, err)
 
@@ -127,65 +127,65 @@ func TestKeepAliveMonitor(t *testing.T) {
 func TestWebsocketSigner(t *testing.T) {
 	apiKey := "test_api_key"
 	apiSecret := "test_api_secret"
-	
+
 	signer := WebsocketSigner(apiKey, apiSecret)
 	require.NotNil(t, signer)
-	
+
 	// Test the generator function
 	bytes, err := signer()
 	require.NoError(t, err)
 	require.NotNil(t, bytes)
-	
+
 	// Parse the login message
-	var message LoginMessage
+	var message loginMessage
 	err = json.Unmarshal(bytes, &message)
 	require.NoError(t, err)
-	
+
 	// Verify the structure
 	assert.Equal(t, "login", message.Op)
 	assert.Len(t, message.Args, 1)
-	
+
 	loginParams := message.Args[0]
-	assert.Equal(t, apiKey, loginParams.ApiKey, "The API key in the message should match the provided key")
+	assert.Equal(t, apiKey, loginParams.ApiKey, "The client key in the message should match the provided key")
 	assert.NotEmpty(t, loginParams.Nonce)
 	assert.NotEmpty(t, loginParams.Sign)
 	assert.NotZero(t, loginParams.Timestamp)
-	
+
 	// Verify the nonce is a valid hex string
 	nonceBytes, err := hex.DecodeString(loginParams.Nonce)
 	assert.NoError(t, err)
 	assert.Equal(t, 32, len(nonceBytes))
-	
+
 	// Verify signature is valid hex of expected length
 	_, err = hex.DecodeString(loginParams.Sign)
 	assert.NoError(t, err)
 	assert.Equal(t, 64, len(loginParams.Sign))
-	
-	// Test with different API keys
+
+	// Test with different client keys
 	differentApiKey := "different_api_key"
 	differentApiSecret := "different_api_secret"
-	
+
 	differentSigner := WebsocketSigner(differentApiKey, differentApiSecret)
 	differentBytes, err := differentSigner()
 	require.NoError(t, err)
-	
-	var differentMessage LoginMessage
+
+	var differentMessage loginMessage
 	err = json.Unmarshal(differentBytes, &differentMessage)
 	require.NoError(t, err)
-	
-	// Check that the different API key is actually used
+
+	// Check that the different client key is actually used
 	assert.Equal(t, differentApiKey, differentMessage.Args[0].ApiKey)
-	
+
 	// Create and verify signatures with known inputs
 	knownTimestamp := int64(1234567890)
 	knownNonce := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
-	
+
 	sign1, _ := generateWebsocketSignature(apiKey, apiSecret, knownTimestamp, knownNonce)
 	sign2, _ := generateWebsocketSignature(differentApiKey, differentApiSecret, knownTimestamp, knownNonce)
-	
+
 	// Different credentials should produce different signatures with the same inputs
-	assert.NotEqual(t, sign1, sign2, 
-		"Different API credentials should produce different signatures")
+	assert.NotEqual(t, sign1, sign2,
+		"Different client credentials should produce different signatures")
 }
 
 func TestSubscriptionMessage(t *testing.T) {
@@ -211,9 +211,9 @@ func TestSubscriptionMessage(t *testing.T) {
 }
 
 func TestLoginMessage(t *testing.T) {
-	message := LoginMessage{
+	message := loginMessage{
 		Op: "login",
-		Args: []LoginParams{
+		Args: []loginParams{
 			{
 				ApiKey:    "test_key",
 				Timestamp: 1234567890,
@@ -226,7 +226,7 @@ func TestLoginMessage(t *testing.T) {
 	bytes, err := json.Marshal(message)
 	require.NoError(t, err)
 
-	var decoded LoginMessage
+	var decoded loginMessage
 	err = json.Unmarshal(bytes, &decoded)
 	require.NoError(t, err)
 
@@ -240,7 +240,7 @@ func TestLoginMessage(t *testing.T) {
 
 func TestHeartbeatMessage(t *testing.T) {
 	timestamp := time.Now().Unix()
-	message := HeartbeatMessage{
+	message := heartbeatMessage{
 		Op:   "ping",
 		Ping: timestamp,
 	}
@@ -248,7 +248,7 @@ func TestHeartbeatMessage(t *testing.T) {
 	bytes, err := json.Marshal(message)
 	require.NoError(t, err)
 
-	var decoded HeartbeatMessage
+	var decoded heartbeatMessage
 	err = json.Unmarshal(bytes, &decoded)
 	require.NoError(t, err)
 

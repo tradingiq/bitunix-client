@@ -115,7 +115,7 @@ func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *API) GetAccountBalance(ctx context.Context, params AccountBalanceParams) (*AccountBalanceResponse, error) {
+func (c *client) GetAccountBalance(ctx context.Context, params AccountBalanceParams) (*AccountBalanceResponse, error) {
 	if params.MarginCoin == "" {
 		return nil, fmt.Errorf("marginCoin is required")
 	}

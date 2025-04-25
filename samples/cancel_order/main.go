@@ -34,12 +34,12 @@ func cancelOrderExample() {
 
 	fmt.Println("Successfully canceled orders:")
 	for _, success := range response.Data.SuccessList {
-		fmt.Printf("- Order ID: %s, API ID: %s\n", success.OrderId, success.ClientId)
+		fmt.Printf("- Order ID: %s, client ID: %s\n", success.OrderId, success.ClientId)
 	}
 
 	fmt.Println("Failed to cancel orders:")
 	for _, failure := range response.Data.FailureList {
-		fmt.Printf("- Order ID: %s, API ID: %s, Error: %s (Code: %s)\n",
+		fmt.Printf("- Order ID: %s, client ID: %s, Error: %s (Code: %s)\n",
 			failure.OrderId, failure.ClientId, failure.ErrorMsg, failure.ErrorCode)
 	}
 }
