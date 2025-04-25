@@ -11,13 +11,13 @@ import (
 
 type MockAPI struct {
 	server *httptest.Server
-	client *API
+	client *client
 }
 
 func NewMockAPI(handler http.HandlerFunc) *MockAPI {
 	server := httptest.NewServer(handler)
 	apiClient, _ := NewTestClient(server.URL)
-	client := &API{restClient: apiClient}
+	client := &client{restClient: apiClient}
 	return &MockAPI{
 		server: server,
 		client: client,

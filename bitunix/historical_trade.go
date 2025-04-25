@@ -19,7 +19,7 @@ type TradeHistoryParams struct {
 	Limit      int64
 }
 
-func (c *API) GetTradeHistory(ctx context.Context, params TradeHistoryParams) (*TradeHistoryResponse, error) {
+func (c *client) GetTradeHistory(ctx context.Context, params TradeHistoryParams) (*TradeHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {

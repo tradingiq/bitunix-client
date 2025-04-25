@@ -8,12 +8,12 @@ import (
 
 func generateTimestamp() int64 { return time.Now().UnixMilli() }
 
-type API struct {
+type client struct {
 	restClient *rest.Client
 }
 
-func New(restClient *rest.Client, apiKey, apiSecret string) *API {
-	client := &API{
+func New(restClient *rest.Client, apiKey, apiSecret string) *client {
+	client := &client{
 		restClient: restClient,
 	}
 

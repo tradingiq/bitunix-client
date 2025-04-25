@@ -110,7 +110,7 @@ func (b *TPSLOrderBuilder) Build() TPSLOrderRequest {
 	return b.request
 }
 
-func (c *API) PlaceTpSlOrder(ctx context.Context, request *TPSLOrderRequest) (*TPSLOrderResponse, error) {
+func (c *client) PlaceTpSlOrder(ctx context.Context, request *TPSLOrderRequest) (*TPSLOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal order request: %w", err)

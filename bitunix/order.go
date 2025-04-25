@@ -115,7 +115,7 @@ type CancelOrderFailure struct {
 	ErrorCode string `json:"errorCode"`
 }
 
-func (c *API) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderResponse, error) {
+func (c *client) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal order request: %w", err)
@@ -134,7 +134,7 @@ func (c *API) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderResp
 	return response, nil
 }
 
-func (c *API) CancelOrders(ctx context.Context, request *CancelOrderRequest) (*CancelOrderResponse, error) {
+func (c *client) CancelOrders(ctx context.Context, request *CancelOrderRequest) (*CancelOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal cancel order request: %w", err)

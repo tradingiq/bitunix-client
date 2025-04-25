@@ -21,7 +21,7 @@ type OrderHistoryParams struct {
 	Limit     int64
 }
 
-func (c *API) GetOrderHistory(ctx context.Context, params OrderHistoryParams) (*OrderHistoryResponse, error) {
+func (c *client) GetOrderHistory(ctx context.Context, params OrderHistoryParams) (*OrderHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {
