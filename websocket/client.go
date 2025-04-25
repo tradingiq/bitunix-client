@@ -106,7 +106,7 @@ func (ws *Client) Close() {
 		default:
 			close(ws.done)
 		}
-		
+
 		ws.cancel()
 		ws.conn.Close(websocket.StatusNormalClosure, "")
 	}

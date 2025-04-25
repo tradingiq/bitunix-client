@@ -3,16 +3,18 @@
 **Rate Limit:** 10 req/sec/uid
 
 ## Description
+
 Get account details with the given 'marginCoin'
 
 ## HTTP Request
+
 * GET `/api/v1/futures/account`
 
 ## Request Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| marginCoin | string | true | Margin coin |
+| Parameter  | Type   | Required | Description |
+|------------|--------|----------|-------------|
+| marginCoin | string | true     | Margin coin |
 
 ## Request Example
 
@@ -28,17 +30,17 @@ curl -X 'GET'  --location 'https://fapi.bitunix.com/api/v1/futures/account?margi
 
 ## Response Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| marginCoin | string | Margin Coin |
-| available | string | Available quantity in the account. This field + crossUnrealizedPNL = Actual maximum open amount |
-| frozen | string | locked quantity of orders |
-| margin | string | locked quantity of positions |
-| transfer | string | Maximum transferable amount |
-| positionMode | string | Position mode<br>**ONE_WAY**<br>**HEDGE** |
-| crossUnrealizedPNL | string | unrealizedPNL for cross positions |
-| isolationUnrealizedPNL | string | unrealizedPNL for isolation positions |
-| bonus | string | Futures Bonus |
+| Parameter              | Type   | Description                                                                                     |
+|------------------------|--------|-------------------------------------------------------------------------------------------------|
+| marginCoin             | string | Margin Coin                                                                                     |
+| available              | string | Available quantity in the account. This field + crossUnrealizedPNL = Actual maximum open amount |
+| frozen                 | string | locked quantity of orders                                                                       |
+| margin                 | string | locked quantity of positions                                                                    |
+| transfer               | string | Maximum transferable amount                                                                     |
+| positionMode           | string | Position mode<br>**ONE_WAY**<br>**HEDGE**                                                       |
+| crossUnrealizedPNL     | string | unrealizedPNL for cross positions                                                               |
+| isolationUnrealizedPNL | string | unrealizedPNL for isolation positions                                                           |
+| bonus                  | string | Futures Bonus                                                                                   |
 
 ## Response Example
 
