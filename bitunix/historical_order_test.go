@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tradingiq/bitunix-client/api"
+	"github.com/tradingiq/bitunix-client/rest"
 )
 
 func TestGetOrderHistory(t *testing.T) {
@@ -78,9 +78,9 @@ func TestGetOrderHistory(t *testing.T) {
 
 	serverURL := server.URL
 
-	client, err := api.New(serverURL)
+	client, err := rest.New(serverURL)
 	if err != nil {
-		t.Fatalf("failed to create api client: %v", err)
+		t.Fatalf("failed to create rest client: %v", err)
 	}
 	bitunixClient := New(client, "test-api-key", "test-api-secret")
 

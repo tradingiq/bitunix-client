@@ -115,13 +115,13 @@ type CancelOrderFailure struct {
 	ErrorCode string `json:"errorCode"`
 }
 
-func (client *Client) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderResponse, error) {
+func (c *API) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal order request: %w", err)
 	}
 
-	responseBody, err := client.api.Post(ctx, "/api/v1/futures/trade/place_order", nil, marshaledRequest)
+	responseBody, err := c.restClient.Post(ctx, "/api/v1/futures/trade/place_order", nil, marshaledRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to place order request: %w", err)
 	}
@@ -134,13 +134,13 @@ func (client *Client) PlaceOrder(ctx context.Context, request *OrderRequest) (*O
 	return response, nil
 }
 
-func (client *Client) CancelOrders(ctx context.Context, request *CancelOrderRequest) (*CancelOrderResponse, error) {
+func (c *API) CancelOrders(ctx context.Context, request *CancelOrderRequest) (*CancelOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal cancel order request: %w", err)
 	}
 
-	responseBody, err := client.api.Post(ctx, "/api/v1/futures/trade/cancel_orders", nil, marshaledRequest)
+	responseBody, err := c.restClient.Post(ctx, "/api/v1/futures/trade/cancel_orders", nil, marshaledRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to cancel orders request: %w", err)
 	}

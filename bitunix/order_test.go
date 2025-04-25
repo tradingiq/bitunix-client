@@ -3,7 +3,7 @@ package bitunix
 import (
 	"context"
 	"encoding/json"
-	"github.com/tradingiq/bitunix-client/api"
+	"github.com/tradingiq/bitunix-client/rest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,13 +11,13 @@ import (
 
 type MockAPI struct {
 	server *httptest.Server
-	client *Client
+	client *API
 }
 
 func NewMockAPI(handler http.HandlerFunc) *MockAPI {
 	server := httptest.NewServer(handler)
 	apiClient, _ := NewTestClient(server.URL)
-	client := &Client{api: apiClient}
+	client := &API{restClient: apiClient}
 	return &MockAPI{
 		server: server,
 		client: client,
@@ -407,13 +407,13 @@ func TestCancelOrders(t *testing.T) {
 	}
 }
 
-func NewTestClient(baseURL string) (*api.Client, error) {
-	apiClient, err := api.New(baseURL)
+func NewTestClient(baseURL string) (*rest.Client, error) {
+	apiClient, err := rest.New(baseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	apiClient.SetOptions(api.WithRequestSigner(func(req *http.Request, body []byte) error {
+	apiClient.SetOptions(rest.WithRequestSigner(func(req *http.Request, body []byte) error {
 		return nil
 	}))
 

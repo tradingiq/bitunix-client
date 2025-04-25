@@ -93,7 +93,7 @@ func TestRequestSigner(t *testing.T) {
 
 	req, _ := http.NewRequestWithContext(context.Background(), "POST", uri.String(), bytes.NewReader(requestBody))
 
-	requestSigner := createRequestSigner("test-api-key", "test-api-secret", MockMillisecondTimestampGenerator(fixedTimestamp), MockNonceGenerator(fixedNonceBytes))
+	requestSigner := RequestSigner("test-api-key", "test-api-secret", MockMillisecondTimestampGenerator(fixedTimestamp), MockNonceGenerator(fixedNonceBytes))
 	err := requestSigner(req, requestBody)
 	if err != nil {
 

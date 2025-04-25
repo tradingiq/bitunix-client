@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (client *Client) GetPositionHistory(ctx context.Context, params PositionHistoryParams) (*PositionHistoryResponse, error) {
+func (c *API) GetPositionHistory(ctx context.Context, params PositionHistoryParams) (*PositionHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {
@@ -36,7 +36,7 @@ func (client *Client) GetPositionHistory(ctx context.Context, params PositionHis
 		queryParams.Add("limit", strconv.FormatInt(params.Limit, 10))
 	}
 
-	responseBody, err := client.api.Get(ctx, "/api/v1/futures/position/get_history_positions", queryParams)
+	responseBody, err := c.restClient.Get(ctx, "/api/v1/futures/position/get_history_positions", queryParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get position history: %w", err)
 	}

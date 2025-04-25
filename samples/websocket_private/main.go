@@ -5,171 +5,91 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/coder/websocket/wsjson"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/bitunix"
 	"github.com/tradingiq/bitunix-client/samples"
 	"github.com/tradingiq/bitunix-client/security"
-	"net/http"
-	"net/url"
+	"github.com/tradingiq/bitunix-client/websocket"
 	"time"
-
-	"github.com/coder/websocket"
 )
 
-type LoginRequest struct {
-	Op   string        `json:"op"`
-	Args []LoginParams `json:"args"`
-}
+func main() {
+	ctx := context.Background()
+	ws := websocket.New(
+		ctx,
+		"wss://fapi.bitunix.com/private/",
+		websocket.WithAuthentication(func() ([]byte, error) {
+			nonce, err := security.GenerateNonce(32)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate nonce: %w", err)
+			}
 
-type LoginParams struct {
-	ApiKey    string `json:"apiKey"`
-	Timestamp int64  `json:"timestamp"`
-	Nonce     string `json:"nonce"`
-	Sign      string `json:"sign"`
-}
+			sign, timestamp := bitunix.GenerateWebsocketSignature(samples.Config.ApiKey, samples.Config.SecretKey, time.Now().Unix(), nonce)
 
-type SubscriptionRequest struct {
-	Op   string               `json:"op"`
-	Args []SubscriptionParams `json:"args"`
-}
+			loginReq := bitunix.LoginMessage{
+				Op: "login",
+				Args: []bitunix.LoginParams{
+					{
+						ApiKey:    samples.Config.ApiKey,
+						Timestamp: timestamp,
+						Nonce:     hex.EncodeToString(nonce),
+						Sign:      sign,
+					},
+				},
+			}
+			bytes, err := json.Marshal(loginReq)
+			if err != nil {
+				return bytes, err
+			}
 
-type SubscriptionParams struct {
-	Ch string `json:"ch"`
-}
-
-type HeartbeatMessage struct {
-	Op   string `json:"op"`
-	Ping int64  `json:"ping"`
-}
-
-type GenericMessage map[string]interface{}
-
-func generateSignature(apiKey, secretKey string, nonce []byte) (string, int64) {
-	timestamp := time.Now().Unix()
-	preSign := fmt.Sprintf("%x%d%s", nonce, timestamp, apiKey)
-
-	preSign = security.Sha256Hex(preSign)
-	sign := security.Sha256Hex(preSign + secretKey)
-
-	return sign, timestamp
-}
-
-func sendHeartbeat(ctx context.Context, conn *websocket.Conn, done chan struct{}) {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			heartbeat := HeartbeatMessage{
+			return bytes, nil
+		}),
+		websocket.WithHeartbeat(15*time.Second, func() ([]byte, error) {
+			msg := bitunix.HeartbeatMessage{
 				Op:   "ping",
 				Ping: time.Now().Unix(),
 			}
 
-			err := wsjson.Write(ctx, conn, heartbeat)
+			bytes, err := json.Marshal(msg)
 			if err != nil {
-				log.Printf("Error sending heartbeat: %v", err)
-				return
+				return bytes, err
 			}
-			log.Println("Heartbeat sent")
+			return bytes, err
+		}),
+	)
 
-		case <-done:
-			return
-		}
+	if err := ws.Connect(); err != nil {
+		log.Fatalf("failed to connect to WebSocket: %v", err)
 	}
-}
+	defer ws.Close()
 
-func monitorBalance(apiKey, secretKey string) {
-	wsURL := "wss://fapi.bitunix.com/private/"
-	u, err := url.Parse(wsURL)
-	if err != nil {
-		log.Fatalf("Error parsing WebSocket URL: %v", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
-	defer cancel()
-
-	log.Printf("Connecting to %s", u.String())
-	conn, _, err := websocket.Dial(ctx, u.String(), &websocket.DialOptions{
-		HTTPClient: http.DefaultClient,
-	})
-	if err != nil {
-		log.Fatalf("Error connecting to WebSocket: %v", err)
-	}
-	defer conn.Close(websocket.StatusNormalClosure, "")
-
-	var initialMsg GenericMessage
-	err = wsjson.Read(ctx, conn, &initialMsg)
-	if err != nil {
-		log.Fatalf("Error reading initial message: %v", err)
-	}
-	log.Printf("Initial message: %v", initialMsg)
-
-	nonce, _ := security.GenerateNonce(32)
-	sign, timestamp := generateSignature(apiKey, secretKey, nonce)
-
-	loginReq := LoginRequest{
-		Op: "login",
-		Args: []LoginParams{
-			{
-				ApiKey:    apiKey,
-				Timestamp: timestamp,
-				Nonce:     hex.EncodeToString(nonce),
-				Sign:      sign,
-			},
-		},
-	}
-
-	err = wsjson.Write(ctx, conn, loginReq)
-	if err != nil {
-		log.Fatalf("Error sending login request: %v", err)
-	}
-
-	var loginResp GenericMessage
-	err = wsjson.Read(ctx, conn, &loginResp)
-	if err != nil {
-		log.Fatalf("Error reading login response: %v", err)
-	}
-	log.Printf("Login response: %v", loginResp)
-
-	done := make(chan struct{})
-	go sendHeartbeat(ctx, conn, done)
-
-	subReq := SubscriptionRequest{
+	subReq := bitunix.SubscriptionMessage{
 		Op: "subscribe",
-		Args: []SubscriptionParams{
+		Args: []bitunix.SubscriptionParams{
 			{
 				Ch: "position",
 			},
 		},
 	}
-
-	err = wsjson.Write(ctx, conn, subReq)
+	bytes, err := json.Marshal(subReq)
 	if err != nil {
-		log.Fatalf("Error sending subscription request: %v", err)
+		log.Fatalf("failed to marshal subscribe to position updates: %v", err)
 	}
 
-	var subResp GenericMessage
-	err = wsjson.Read(ctx, conn, &subResp)
-	if err != nil {
-		log.Fatalf("Error reading subscription response: %v", err)
+	if err := ws.Write(bytes); err != nil {
+		log.Fatalf("failed to subscribe to position updates: %v", err)
 	}
-	log.Printf("Subscription response: %v", subResp)
 
-	for {
-		var message json.RawMessage
-		err = wsjson.Read(ctx, conn, &message)
-		if err != nil {
-			log.Printf("Connection closed: %v", err)
-			break
+	// Listen for messages until an error occurs or connection is closed
+	if err := ws.Listen(func(data []byte) error {
+		var message map[string]interface{}
+		if err := json.Unmarshal(data, &message); err != nil {
+			log.Printf("Error parsing message: %v", err)
+			return err
 		}
 
-		log.Printf("Balance update: %s", message)
+		return nil
+	}); err != nil {
+		log.Printf("WebSocket connection closed: %v", err)
 	}
-
-	close(done)
-}
-
-func main() {
-	monitorBalance(samples.Config.ApiKey, samples.Config.SecretKey)
 }
