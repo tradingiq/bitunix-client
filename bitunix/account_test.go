@@ -106,7 +106,7 @@ func TestGetAccountBalance(t *testing.T) {
 }
 
 func TestAccountBalanceParamsValidation(t *testing.T) {
-	// Test missing marginCoin parameter
+
 	client, err := rest.New("http://example.com")
 	if err != nil {
 		t.Fatalf("failed to create restClient client: %v", err)
@@ -126,7 +126,7 @@ func TestAccountBalanceParamsValidation(t *testing.T) {
 }
 
 func TestAccountBalanceEntry_UnmarshalJSON(t *testing.T) {
-	// Test valid JSON parsing
+
 	jsonData := `{
 		"marginCoin": "USDT",
 		"available": "1000.50",
@@ -181,7 +181,6 @@ func TestAccountBalanceEntry_UnmarshalJSON(t *testing.T) {
 		t.Errorf("unexpected bonus: %f", entry.Bonus)
 	}
 
-	// Test invalid JSON
 	invalidJSON := `{
 		"marginCoin": "USDT",
 		"available": "not-a-number",
