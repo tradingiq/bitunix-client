@@ -170,7 +170,7 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("failed to parse closePrice: %w", err)
 	}
 
-	if aux.LiqQty != aux.LiqQty {
+	if aux.LiqQty != "" {
 		liqQty, err := strconv.ParseFloat(aux.LiqQty, 64)
 		if err == nil {
 			p.LiqQty = liqQty
