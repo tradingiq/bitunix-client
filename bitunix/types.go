@@ -64,3 +64,5 @@ const (
 	PositionModeOneWay PositionMode = "ONE_WAY"
 	PositionModeHedge  PositionMode = "HEDGE"
 )
+
+const ChannelBalance = "balance"
