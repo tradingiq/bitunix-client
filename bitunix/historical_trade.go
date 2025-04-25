@@ -75,7 +75,7 @@ type HistoricalTrade struct {
 	MarginMode   MarginMode        `json:"marginMode"`
 	Leverage     int               `json:"leverage"`
 	Price        float64           `json:"-"`
-	Side         TradeSide         `json:"side"`
+	Side         TradeAction       `json:"side"`
 	OrderType    OrderType         `json:"orderType"`
 	Effect       string            `json:"effect"`
 	ClientID     string            `json:"clientId"`

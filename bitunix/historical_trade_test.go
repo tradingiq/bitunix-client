@@ -23,7 +23,7 @@ func TestGetTradeHistory(t *testing.T) {
 					"marginMode": "CROSS",
 					"leverage": 10,
 					"price": "50000",
-					"side": "OPEN",
+					"side": "BUY",
 					"orderType": "LIMIT",
 					"effect": "GTC",
 					"clientId": "client123",
@@ -147,7 +147,7 @@ func TestGetTradeHistory(t *testing.T) {
 		t.Errorf("Expected price 50000, got %f", trade.Price)
 	}
 
-	if trade.Side != TradeSideOpen {
+	if trade.Side != TradeActionBuy {
 		t.Errorf("Expected side 'OPEN', got %s", trade.Side)
 	}
 
@@ -195,7 +195,7 @@ func TestHistoricalTradeUnmarshalJSON(t *testing.T) {
 		"marginMode": "CROSS",
 		"leverage": 10,
 		"price": "50000",
-		"side": "OPEN",
+		"side": "BUY",
 		"orderType": "LIMIT",
 		"effect": "GTC",
 		"clientId": "client123",
@@ -244,7 +244,7 @@ func TestHistoricalTradeUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected price 50000, got %f", trade.Price)
 	}
 
-	if trade.Side != TradeSideOpen {
+	if trade.Side != TradeActionBuy {
 		t.Errorf("Expected side 'OPEN', got %s", trade.Side)
 	}
 
