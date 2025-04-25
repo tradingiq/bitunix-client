@@ -3,7 +3,7 @@ package bitunix
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/tradingiq/bitunix-client/api"
+	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/security"
 	"net/http"
 	"strconv"
@@ -13,16 +13,16 @@ import (
 
 func generateTimestamp() int64 { return time.Now().UnixMilli() }
 
-type Client struct {
-	api *api.Client
+type API struct {
+	restClient *rest.Client
 }
 
-func New(rest *api.Client, apiKey, apiString string) *Client {
-	client := &Client{
-		api: rest,
+func New(restClient *rest.Client, apiKey, apiSecret string) *API {
+	client := &API{
+		restClient: restClient,
 	}
 
-	rest.SetOptions(api.WithRequestSigner(createRequestSigner(apiKey, apiString, generateTimestamp, security.GenerateNonce)))
+	restClient.SetOptions(rest.WithRequestSigner(createRequestSigner(apiKey, apiSecret, generateTimestamp, security.GenerateNonce)))
 
 	return client
 }

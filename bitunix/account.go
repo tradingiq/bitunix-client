@@ -120,7 +120,7 @@ func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 }
 
 // GetAccountBalance retrieves account balance details for the given margin coin
-func (client *Client) GetAccountBalance(ctx context.Context, params AccountBalanceParams) (*AccountBalanceResponse, error) {
+func (c *API) GetAccountBalance(ctx context.Context, params AccountBalanceParams) (*AccountBalanceResponse, error) {
 	if params.MarginCoin == "" {
 		return nil, fmt.Errorf("marginCoin is required")
 	}
@@ -128,7 +128,7 @@ func (client *Client) GetAccountBalance(ctx context.Context, params AccountBalan
 	queryParams := url.Values{}
 	queryParams.Add("marginCoin", params.MarginCoin)
 
-	responseBody, err := client.api.Get(ctx, "/api/v1/futures/account", queryParams)
+	responseBody, err := c.restClient.Get(ctx, "/api/v1/futures/account", queryParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get account balance: %w", err)
 	}

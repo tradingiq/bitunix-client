@@ -19,7 +19,7 @@ type TradeHistoryParams struct {
 	Limit      int64
 }
 
-func (client *Client) GetTradeHistory(ctx context.Context, params TradeHistoryParams) (*TradeHistoryResponse, error) {
+func (c *API) GetTradeHistory(ctx context.Context, params TradeHistoryParams) (*TradeHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {
@@ -44,7 +44,7 @@ func (client *Client) GetTradeHistory(ctx context.Context, params TradeHistoryPa
 		queryParams.Add("limit", strconv.FormatInt(params.Limit, 10))
 	}
 
-	responseBody, err := client.api.Get(ctx, "/api/v1/futures/trade/get_history_trades", queryParams)
+	responseBody, err := c.restClient.Get(ctx, "/api/v1/futures/trade/get_history_trades", queryParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get trade history: %w", err)
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/tradingiq/bitunix-client/api"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/samples"
 	"time"
 )
@@ -16,7 +16,7 @@ func main() {
 
 func cancelOrderExample() {
 	log.SetLevel(log.DebugLevel)
-	apiClient, err := api.New("https://fapi.bitunix.com/", api.WithDebug(), api.WithDefaultTimeout(30*time.Second))
+	apiClient, err := rest.New("https://fapi.bitunix.com/", rest.WithDebug(), rest.WithDefaultTimeout(30*time.Second))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,12 +34,12 @@ func cancelOrderExample() {
 
 	fmt.Println("Successfully canceled orders:")
 	for _, success := range response.Data.SuccessList {
-		fmt.Printf("- Order ID: %s, Client ID: %s\n", success.OrderId, success.ClientId)
+		fmt.Printf("- Order ID: %s, API ID: %s\n", success.OrderId, success.ClientId)
 	}
 
 	fmt.Println("Failed to cancel orders:")
 	for _, failure := range response.Data.FailureList {
-		fmt.Printf("- Order ID: %s, Client ID: %s, Error: %s (Code: %s)\n",
+		fmt.Printf("- Order ID: %s, API ID: %s, Error: %s (Code: %s)\n",
 			failure.OrderId, failure.ClientId, failure.ErrorMsg, failure.ErrorCode)
 	}
 }

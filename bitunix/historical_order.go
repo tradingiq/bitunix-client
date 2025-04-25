@@ -21,7 +21,7 @@ type OrderHistoryParams struct {
 	Limit     int64
 }
 
-func (client *Client) GetOrderHistory(ctx context.Context, params OrderHistoryParams) (*OrderHistoryResponse, error) {
+func (c *API) GetOrderHistory(ctx context.Context, params OrderHistoryParams) (*OrderHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {
@@ -52,7 +52,7 @@ func (client *Client) GetOrderHistory(ctx context.Context, params OrderHistoryPa
 		queryParams.Add("limit", strconv.FormatInt(params.Limit, 10))
 	}
 
-	responseBody, err := client.api.Get(ctx, "/api/v1/futures/trade/get_history_orders", queryParams)
+	responseBody, err := c.restClient.Get(ctx, "/api/v1/futures/trade/get_history_orders", queryParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get order history: %w", err)
 	}
