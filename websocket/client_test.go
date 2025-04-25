@@ -63,7 +63,7 @@ func TestClientOptions(t *testing.T) {
 
 	client := New(ctx, wsURL,
 		WithAuthentication(loginGenerator),
-		WithHeartbeat(heartbeatInterval, heartbeatGenerator),
+		WithKeepAliveMonitor(heartbeatInterval, heartbeatGenerator),
 	)
 
 	assert.Equal(t, wsURL, client.wsURL)
@@ -127,7 +127,7 @@ func TestHeartbeat(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := New(ctx, wsURL, WithHeartbeat(100*time.Millisecond, func() ([]byte, error) {
+	client := New(ctx, wsURL, WithKeepAliveMonitor(100*time.Millisecond, func() ([]byte, error) {
 		return []byte(`{"op":"ping","args":[]}`), nil
 	}))
 
