@@ -87,7 +87,7 @@ func TestStopTypeNormalize(t *testing.T) {
 		{StopType("last_price"), StopTypeLastPrice},
 		{StopType("MARK_PRICE"), StopTypeMarkPrice},
 		{StopType("mark_price"), StopTypeMarkPrice},
-		// Special cases that should be normalized
+
 		{StopType("LAST"), StopTypeLastPrice},
 		{StopType("last"), StopTypeLastPrice},
 		{StopType("Last"), StopTypeLastPrice},
@@ -114,14 +114,14 @@ func TestStopTypeParse(t *testing.T) {
 		{"last_price", StopTypeLastPrice, false},
 		{"MARK_PRICE", StopTypeMarkPrice, false},
 		{"mark_price", StopTypeMarkPrice, false},
-		// Special cases
+
 		{"LAST", StopTypeLastPrice, false},
 		{"last", StopTypeLastPrice, false},
 		{"Last", StopTypeLastPrice, false},
 		{"MARK", StopTypeMarkPrice, false},
 		{"mark", StopTypeMarkPrice, false},
 		{"Mark", StopTypeMarkPrice, false},
-		// Invalid input
+
 		{"INVALID", StopType("INVALID"), true},
 	}
 
@@ -170,7 +170,7 @@ func TestOrderTypeParse(t *testing.T) {
 		{"MARKET", OrderTypeMarket, false},
 		{"market", OrderTypeMarket, false},
 		{"Market", OrderTypeMarket, false},
-		// Invalid input
+
 		{"INVALID", OrderType("INVALID"), true},
 	}
 
