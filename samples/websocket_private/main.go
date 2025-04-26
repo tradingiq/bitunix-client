@@ -30,6 +30,13 @@ func main() {
 		}
 	}()
 
+	orders := ws.SubscribeOrders()
+	go func() {
+		for res := range orders {
+			log.WithField("order", res).Debug("got order")
+		}
+	}()
+
 	if err := ws.Stream(); err != nil {
 		log.WithError(err).Fatal("failed to stream")
 	}

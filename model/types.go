@@ -365,15 +365,15 @@ func (s PositionSide) Normalize() PositionSide {
 	return PositionSide(strings.ToUpper(string(s)))
 }
 
-type WebsocketEvent string
+type PositionEvent string
 
 const (
-	PositionEventOpen   WebsocketEvent = "OPEN"
-	PositionEventUpdate WebsocketEvent = "UPDATE"
-	PositionEventClose  WebsocketEvent = "CLOSE"
+	PositionEventOpen   PositionEvent = "OPEN"
+	PositionEventUpdate PositionEvent = "UPDATE"
+	PositionEventClose  PositionEvent = "CLOSE"
 )
 
-func (s WebsocketEvent) IsValid() bool {
+func (s PositionEvent) IsValid() bool {
 	switch s {
 	case PositionEventOpen, PositionEventUpdate, PositionEventClose:
 		return true
@@ -381,21 +381,56 @@ func (s WebsocketEvent) IsValid() bool {
 	return false
 }
 
-func (s WebsocketEvent) String() string {
+func (s PositionEvent) String() string {
 	return string(s)
 }
 
-func ParsePositionEvent(s string) (WebsocketEvent, error) {
-	status := WebsocketEvent(s)
+func ParsePositionEvent(s string) (PositionEvent, error) {
+	status := PositionEvent(s)
 	status = status.Normalize()
 
 	if !status.IsValid() {
-		return status, fmt.Errorf("%s is not a valid WebsocketEvent", s)
+		return status, fmt.Errorf("%s is not a valid PositionEvent", s)
 	}
 
 	return status, nil
 }
 
-func (s WebsocketEvent) Normalize() WebsocketEvent {
-	return WebsocketEvent(strings.ToUpper(string(s)))
+func (s PositionEvent) Normalize() PositionEvent {
+	return PositionEvent(strings.ToUpper(string(s)))
+}
+
+type OrderEvent string
+
+const (
+	OrderEventCreate OrderEvent = "CREATE"
+	OrderEventUpdate OrderEvent = "UPDATE"
+	OrderEventClose  OrderEvent = "CLOSE"
+)
+
+func (s OrderEvent) IsValid() bool {
+	switch s {
+	case OrderEventCreate, OrderEventUpdate, OrderEventClose:
+		return true
+	}
+	return false
+}
+
+func (s OrderEvent) String() string {
+	return string(s)
+}
+
+func ParseOrderEvent(s string) (OrderEvent, error) {
+	status := OrderEvent(s)
+	status = status.Normalize()
+
+	if !status.IsValid() {
+		return status, fmt.Errorf("%s is not a valid PositionEvent", s)
+	}
+
+	return status, nil
+}
+
+func (s OrderEvent) Normalize() OrderEvent {
+	return OrderEvent(strings.ToUpper(string(s)))
 }
