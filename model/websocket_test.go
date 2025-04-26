@@ -96,7 +96,7 @@ func TestBalanceResponseUnmarshalJSON(t *testing.T) {
 		}
 	}`
 
-	var response BalanceResponse
+	var response BalanceChannelResponse
 	err := json.Unmarshal([]byte(jsonStr), &response)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal balance response: %v", err)
@@ -252,7 +252,7 @@ func TestPositionChannelSubscriptionUnmarshalJSON(t *testing.T) {
 		]
 	}`
 
-	var subscription PositionChannelSubscription
+	var subscription PositionChannelResponse
 	err := json.Unmarshal([]byte(jsonStr), &subscription)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal position channel subscription: %v", err)

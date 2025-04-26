@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type BalanceResponse struct {
+type BalanceChannelResponse struct {
 	Ch   string        `json:"ch"`
 	Ts   int64         `json:"ts"`
 	Data BalanceDetail `json:"data"`
@@ -254,7 +254,7 @@ func (p *PositionData) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type PositionChannelSubscription struct {
+type PositionChannelResponse struct {
 	Channel   string         `json:"ch"`
 	TimeStamp int64          `json:"ts"`
 	Data      []PositionData `json:"data"`

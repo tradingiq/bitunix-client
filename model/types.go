@@ -289,6 +289,7 @@ func (p PositionMode) Normalize() PositionMode {
 }
 
 const ChannelBalance = "balance"
+const ChannelPosition = "position"
 
 type OrderStatus string
 
