@@ -69,6 +69,25 @@ func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceRespo
 	}
 }
 
+func (ws *privateWebsocketClient) SubscribePositions() <-chan model.BalanceResponse {
+	ws.subMtx.Lock()
+	defer ws.subMtx.Unlock()
+	c := make(chan model.BalanceResponse)
+
+	ws.balanceSubscribers[c] = struct{}{}
+
+	return c
+}
+
+func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.BalanceResponse) {
+	ws.subMtx.Lock()
+	defer ws.subMtx.Unlock()
+
+	if _, ok := ws.balanceSubscribers[sub]; ok {
+		delete(ws.balanceSubscribers, sub)
+	}
+}
+
 func (ws *privateWebsocketClient) Stream() error {
 	err := ws.client.Listen(func(bytes []byte) error {
 		go func() {
