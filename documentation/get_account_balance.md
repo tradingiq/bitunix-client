@@ -43,7 +43,25 @@ curl -X 'GET'  --location 'https://fapi.bitunix.com/api/v1/futures/account?margi
 | bonus                  | string | Futures Bonus                                                                                   |
 
 ## Response Example
+
 #### #broken example shows data.[]{} while it actually is data.{}
+
 ```json
-{"code":0,"data":[{"marginCoin":"USDT","available":"1000","frozen":"0","margin":"10","transfer":"1000","positionMode":"HEDGE","crossUnrealizedPNL":"2","isolationUnrealizedPNL":"0","bonus":"0"}],"msg":"Success"}
+{
+  "code": 0,
+  "data": [
+    {
+      "marginCoin": "USDT",
+      "available": "1000",
+      "frozen": "0",
+      "margin": "10",
+      "transfer": "1000",
+      "positionMode": "HEDGE",
+      "crossUnrealizedPNL": "2",
+      "isolationUnrealizedPNL": "0",
+      "bonus": "0"
+    }
+  ],
+  "msg": "Success"
+}
 ```
