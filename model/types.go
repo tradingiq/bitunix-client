@@ -38,8 +38,8 @@ func ParseStopType(s string) (StopType, error) {
 func (s StopType) Normalize() StopType {
 	upper := strings.ToUpper(string(s))
 
-	switch s {
-	case "Last":
+	switch upper {
+	case "LAST":
 		upper = string(StopTypeLastPrice)
 	case "MARK":
 		upper = string(StopTypeMarkPrice)

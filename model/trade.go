@@ -67,39 +67,49 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	quantity, err := strconv.ParseFloat(aux.Quantity, 64)
-	if err == nil {
-		t.Quantity = quantity
-	} else {
-		return fmt.Errorf("invalid quantity: %w", err)
+	if aux.Quantity != "" {
+		quantity, err := strconv.ParseFloat(aux.Quantity, 64)
+		if err == nil {
+			t.Quantity = quantity
+		} else {
+			return fmt.Errorf("invalid quantity: %w", err)
+		}
 	}
 
-	price, err := strconv.ParseFloat(aux.Price, 64)
-	if err == nil {
-		t.Price = price
-	} else {
-		return fmt.Errorf("invalid price: %w", err)
+	if aux.Price != "" {
+		price, err := strconv.ParseFloat(aux.Price, 64)
+		if err == nil {
+			t.Price = price
+		} else {
+			return fmt.Errorf("invalid price: %w", err)
+		}
 	}
 
-	fee, err := strconv.ParseFloat(aux.Fee, 64)
-	if err == nil {
-		t.Fee = fee
-	} else {
-		return fmt.Errorf("invalid fee: %w", err)
+	if aux.Fee != "" {
+		fee, err := strconv.ParseFloat(aux.Fee, 64)
+		if err == nil {
+			t.Fee = fee
+		} else {
+			return fmt.Errorf("invalid fee: %w", err)
+		}
 	}
 
-	realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
-	if err == nil {
-		t.RealizedPNL = realizedPNL
-	} else {
-		return fmt.Errorf("invalid realized pnl: %w", err)
+	if aux.RealizedPNL != "" {
+		realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
+		if err == nil {
+			t.RealizedPNL = realizedPNL
+		} else {
+			return fmt.Errorf("invalid realized pnl: %w", err)
+		}
 	}
 
-	createTime, err := strconv.ParseInt(aux.CreateTime, 10, 64)
-	if err == nil {
-		t.CreateTime = time.Unix(0, createTime*1000000)
-	} else {
-		return fmt.Errorf("invalid create time: %w", err)
+	if aux.CreateTime != "" {
+		createTime, err := strconv.ParseInt(aux.CreateTime, 10, 64)
+		if err == nil {
+			t.CreateTime = time.Unix(0, createTime*1000000)
+		} else {
+			return fmt.Errorf("invalid create time: %w", err)
+		}
 	}
 
 	side, err := ParseTradeSide(aux.Side)

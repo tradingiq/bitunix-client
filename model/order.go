@@ -264,11 +264,13 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	quantity, err := strconv.ParseFloat(aux.Quantity, 64)
-	if err == nil {
-		o.Quantity = quantity
-	} else {
-		return fmt.Errorf("invalid quantity: %w", err)
+	if aux.Quantity != "" {
+		quantity, err := strconv.ParseFloat(aux.Quantity, 64)
+		if err == nil {
+			o.Quantity = quantity
+		} else {
+			return fmt.Errorf("invalid quantity: %w", err)
+		}
 	}
 
 	if aux.TradeQuantity != "" {

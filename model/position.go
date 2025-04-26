@@ -69,66 +69,83 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	ctime, err := strconv.ParseInt(aux.Ctime, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse ctime: %w", err)
+	if aux.Ctime != "" {
+		ctime, err := strconv.ParseInt(aux.Ctime, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse ctime: %w", err)
+		}
+		p.Ctime = time.Unix(0, ctime*1000000)
 	}
 
-	p.Ctime = time.Unix(0, ctime*1000000)
-
-	mtime, err := strconv.ParseInt(aux.Mtime, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse mtime: %w", err)
-	}
-	p.Mtime = time.Unix(0, mtime*1000000)
-
-	feeFloat, err := strconv.ParseFloat(aux.Fee, 64)
-	if err == nil {
-		p.Fee = feeFloat
-	} else {
-		return fmt.Errorf("failed to parse fee: %w", err)
+	if aux.Mtime != "" {
+		mtime, err := strconv.ParseInt(aux.Mtime, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse mtime: %w", err)
+		}
+		p.Mtime = time.Unix(0, mtime*1000000)
 	}
 
-	funding, err := strconv.ParseFloat(aux.Funding, 64)
-	if err == nil {
-		p.Funding = funding
-	} else {
-		return fmt.Errorf("failed to parse funding: %w", err)
+	if aux.Fee != "" {
+		feeFloat, err := strconv.ParseFloat(aux.Fee, 64)
+		if err == nil {
+			p.Fee = feeFloat
+		} else {
+			return fmt.Errorf("failed to parse fee: %w", err)
+		}
 	}
 
-	realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
-	if err == nil {
-		p.RealizedPNL = realizedPNL
-	} else {
-		return fmt.Errorf("failed to parse realizedPNL: %w", err)
+	if aux.Funding != "" {
+		funding, err := strconv.ParseFloat(aux.Funding, 64)
+		if err == nil {
+			p.Funding = funding
+		} else {
+			return fmt.Errorf("failed to parse funding: %w", err)
+		}
 	}
 
-	liqPrice, err := strconv.ParseFloat(aux.LiqPrice, 64)
-	if err == nil {
-		p.LiqPrice = liqPrice
-	} else {
-		return fmt.Errorf("failed to parse liqPrice: %w", err)
+	if aux.RealizedPNL != "" {
+		realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
+		if err == nil {
+			p.RealizedPNL = realizedPNL
+		} else {
+			return fmt.Errorf("failed to parse realizedPNL: %w", err)
+		}
 	}
 
-	maxQty, err := strconv.ParseFloat(aux.MaxQty, 64)
-	if err == nil {
-		p.MaxQty = maxQty
-	} else {
-		return fmt.Errorf("failed to parse maxQty: %w", err)
+	if aux.LiqPrice != "" {
+		liqPrice, err := strconv.ParseFloat(aux.LiqPrice, 64)
+		if err == nil {
+			p.LiqPrice = liqPrice
+		} else {
+			return fmt.Errorf("failed to parse liqPrice: %w", err)
+		}
 	}
 
-	entryPrice, err := strconv.ParseFloat(aux.EntryPrice, 64)
-	if err == nil {
-		p.EntryPrice = entryPrice
-	} else {
-		return fmt.Errorf("failed to parse entryPrice: %w", err)
+	if aux.MaxQty != "" {
+		maxQty, err := strconv.ParseFloat(aux.MaxQty, 64)
+		if err == nil {
+			p.MaxQty = maxQty
+		} else {
+			return fmt.Errorf("failed to parse maxQty: %w", err)
+		}
 	}
 
-	closePrice, err := strconv.ParseFloat(aux.ClosePrice, 64)
-	if err == nil {
-		p.ClosePrice = closePrice
-	} else {
-		return fmt.Errorf("failed to parse closePrice: %w", err)
+	if aux.EntryPrice != "" {
+		entryPrice, err := strconv.ParseFloat(aux.EntryPrice, 64)
+		if err == nil {
+			p.EntryPrice = entryPrice
+		} else {
+			return fmt.Errorf("failed to parse entryPrice: %w", err)
+		}
+	}
+
+	if aux.ClosePrice != "" {
+		closePrice, err := strconv.ParseFloat(aux.ClosePrice, 64)
+		if err == nil {
+			p.ClosePrice = closePrice
+		} else {
+			return fmt.Errorf("failed to parse closePrice: %w", err)
+		}
 	}
 
 	if aux.LiqQty != "" {
