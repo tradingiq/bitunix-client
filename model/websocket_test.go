@@ -133,7 +133,7 @@ func TestPositionDataUnmarshalJSON(t *testing.T) {
 		"side": "LONG",
 		"leverage": "20",
 		"margin": "500.25",
-		"ctime": "1645123456789",
+		"ctime": "2025-04-26T17:06:13.155255000Z",
 		"qty": "0.5",
 		"entryValue": "20000.50",
 		"realizedPNL": "100.25",
@@ -176,7 +176,7 @@ func TestPositionDataUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected leverage 20, got %d", position.Leverage)
 	}
 
-	expectedTime := time.Unix(0, 1645123456789*1000000)
+	expectedTime, _ := time.Parse(time.RFC3339Nano, "2025-04-26T17:06:13.155255000Z")
 	if !position.CreateTime.Equal(expectedTime) {
 		t.Errorf("Expected createTime %v, got %v", expectedTime, position.CreateTime)
 	}
@@ -214,7 +214,7 @@ func TestPositionChannelSubscriptionUnmarshalJSON(t *testing.T) {
 	jsonStr := `{
 		"ch": "position",
 		"ts": 1645123456000,
-		"data": [
+		"data": 
 			{
 				"positionId": "12345",
 				"symbol": "BTCUSDT",
@@ -224,32 +224,14 @@ func TestPositionChannelSubscriptionUnmarshalJSON(t *testing.T) {
 				"side": "LONG",
 				"leverage": "20",
 				"margin": "500.25",
-				"ctime": "1645123456789",
+				"ctime": "2025-04-26T17:06:13.155255000Z",
 				"qty": "0.5",
 				"entryValue": "20000.50",
 				"realizedPNL": "100.25",
 				"unrealizedPNL": "200.50",
 				"funding": "1.25",
 				"fee": "5.75"
-			},
-			{
-				"positionId": "67890",
-				"symbol": "ETHUSDT",
-				"event": "UPDATE",
-				"marginMode": "CROSS",
-				"positionMode": "HEDGE",
-				"side": "SHORT",
-				"leverage": "10",
-				"margin": "300.75",
-				"ctime": "1645123456999",
-				"qty": "2.0",
-				"entryValue": "3000.25",
-				"realizedPNL": "50.75",
-				"unrealizedPNL": "75.50",
-				"funding": "0.75",
-				"fee": "2.25"
 			}
-		]
 	}`
 
 	var subscription PositionChannelResponse
@@ -266,24 +248,12 @@ func TestPositionChannelSubscriptionUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected timestamp 1645123456000, got %d", subscription.TimeStamp)
 	}
 
-	if len(subscription.Data) != 2 {
-		t.Fatalf("Expected 2 position data entries, got %d", len(subscription.Data))
+	if subscription.Data.PositionID != "12345" {
+		t.Errorf("Expected first position ID '12345', got %s", subscription.Data.PositionID)
 	}
 
-	if subscription.Data[0].PositionID != "12345" {
-		t.Errorf("Expected first position ID '12345', got %s", subscription.Data[0].PositionID)
-	}
-
-	if subscription.Data[0].Symbol != "BTCUSDT" {
-		t.Errorf("Expected first symbol 'BTCUSDT', got %s", subscription.Data[0].Symbol)
-	}
-
-	if subscription.Data[1].PositionID != "67890" {
-		t.Errorf("Expected second position ID '67890', got %s", subscription.Data[1].PositionID)
-	}
-
-	if subscription.Data[1].Symbol != "ETHUSDT" {
-		t.Errorf("Expected second symbol 'ETHUSDT', got %s", subscription.Data[1].Symbol)
+	if subscription.Data.Symbol != "BTCUSDT" {
+		t.Errorf("Expected first symbol 'BTCUSDT', got %s", subscription.Data.Symbol)
 	}
 }
 
