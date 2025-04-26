@@ -1,4 +1,4 @@
-package bitunix
+package model
 
 type StopType string
 
@@ -23,18 +23,18 @@ const (
 	TimeInForcePostOnly TimeInForce = "POST_ONLY"
 )
 
+type Side string
+
+const (
+	SideOpen  Side = "OPEN"
+	SideClose Side = "CLOSE"
+)
+
 type TradeSide string
 
 const (
-	TradeSideOpen  TradeSide = "OPEN"
-	TradeSideClose TradeSide = "CLOSE"
-)
-
-type TradeAction string
-
-const (
-	TradeActionBuy  TradeAction = "BUY"
-	TradeActionSell TradeAction = "SELL"
+	TradeSideBuy  TradeSide = "BUY"
+	TradeSideSell TradeSide = "SELL"
 )
 
 type MarginMode string

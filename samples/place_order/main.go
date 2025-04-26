@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/samples"
 	"time"
@@ -24,12 +25,12 @@ func bitunixExample() {
 
 	limitOrder := bitunix.NewOrderBuilder(
 		"BTCUSDT",
-		bitunix.TradeActionSell,
-		bitunix.TradeSideOpen,
+		model.TradeSideSell,
+		model.SideOpen,
 		0.002,
-	).WithOrderType(bitunix.OrderTypeLimit).
+	).WithOrderType(model.OrderTypeLimit).
 		WithPrice(100000.0).
-		WithTimeInForce(bitunix.TimeInForcePostOnly).
+		WithTimeInForce(model.TimeInForcePostOnly).
 		Build()
 
 	ctx := context.Background()

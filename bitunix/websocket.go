@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/security"
 	"github.com/tradingiq/bitunix-client/websocket"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -31,7 +31,7 @@ func (ws *websocketClient) Disconnect() {
 
 type privateWebsocketClient struct {
 	websocketClient
-	balanceSubscribers map[chan BalanceResponse]struct{}
+	balanceSubscribers map[chan model.BalanceResponse]struct{}
 	subMtx             sync.Mutex
 }
 
@@ -46,118 +46,21 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *private
 	return &privateWebsocketClient{
 		websocketClient:    websocketClient{client: ws},
 		subMtx:             sync.Mutex{},
-		balanceSubscribers: map[chan BalanceResponse]struct{}{},
+		balanceSubscribers: map[chan model.BalanceResponse]struct{}{},
 	}
 }
 
-type BalanceResponse struct {
-	Ch   string        `json:"ch"`
-	Ts   int64         `json:"ts"`
-	Data BalanceDetail `json:"data"`
-}
-
-type BalanceDetail struct {
-	Coin            string  `json:"coin"`
-	Available       float64 `json:"-"`
-	Frozen          float64 `json:"-"`
-	IsolationFrozen float64 `json:"-"`
-	CrossFrozen     float64 `json:"-"`
-	Margin          float64 `json:"-"`
-	IsolationMargin float64 `json:"-"`
-	CrossMargin     float64 `json:"-"`
-	ExpMoney        float64 `json:"-"`
-}
-
-func (p *BalanceDetail) UnmarshalJSON(data []byte) error {
-	type Alias BalanceDetail
-	aux := &struct {
-		Available       string `json:"available"`
-		Frozen          string `json:"frozen"`
-		IsolationFrozen string `json:"isolationFrozen"`
-		CrossFrozen     string `json:"crossFrozen"`
-		Margin          string `json:"margin"`
-		IsolationMargin string `json:"isolationMargin"`
-		CrossMargin     string `json:"crossMargin"`
-		ExpMoney        string `json:"expMoney"`
-		*Alias
-	}{
-		Alias: (*Alias)(p),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	available, err := strconv.ParseFloat(aux.Available, 64)
-	if err == nil {
-		p.Available = available
-	} else {
-		return fmt.Errorf("failed to parse available: %w", err)
-	}
-
-	frozen, err := strconv.ParseFloat(aux.Frozen, 64)
-	if err == nil {
-		p.Frozen = frozen
-	} else {
-		return fmt.Errorf("failed to parse frozen: %w", err)
-	}
-
-	isolationFrozen, err := strconv.ParseFloat(aux.IsolationFrozen, 64)
-	if err == nil {
-		p.IsolationFrozen = isolationFrozen
-	} else {
-		return fmt.Errorf("failed to parse IisolationFrozen: %w", err)
-	}
-
-	crossFrozen, err := strconv.ParseFloat(aux.CrossFrozen, 64)
-	if err == nil {
-		p.CrossFrozen = crossFrozen
-	} else {
-		return fmt.Errorf("failed to parse crossFrozen: %w", err)
-	}
-
-	Margin, err := strconv.ParseFloat(aux.Margin, 64)
-	if err == nil {
-		p.Margin = Margin
-	} else {
-		return fmt.Errorf("failed to parse Margin: %w", err)
-	}
-
-	isolationMargin, err := strconv.ParseFloat(aux.IsolationMargin, 64)
-	if err == nil {
-		p.IsolationMargin = isolationMargin
-	} else {
-		return fmt.Errorf("failed to parse isolationMargin: %w", err)
-	}
-
-	crossMargin, err := strconv.ParseFloat(aux.CrossMargin, 64)
-	if err == nil {
-		p.CrossMargin = crossMargin
-	} else {
-		return fmt.Errorf("failed to parse crossMargin: %w", err)
-	}
-
-	expMoney, err := strconv.ParseFloat(aux.ExpMoney, 64)
-	if err == nil {
-		p.ExpMoney = expMoney
-	} else {
-		return fmt.Errorf("failed to parse expMoney: %w", err)
-	}
-
-	return nil
-}
-
-func (ws *privateWebsocketClient) SubscribeBalance() <-chan BalanceResponse {
+func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceResponse {
 	ws.subMtx.Lock()
 	defer ws.subMtx.Unlock()
-	c := make(chan BalanceResponse)
+	c := make(chan model.BalanceResponse)
 
 	ws.balanceSubscribers[c] = struct{}{}
 
 	return c
 }
 
-func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan BalanceResponse) {
+func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceResponse) {
 	ws.subMtx.Lock()
 	defer ws.subMtx.Unlock()
 
@@ -178,8 +81,8 @@ func (ws *privateWebsocketClient) Stream() error {
 
 			if ch, ok := result["ch"].(string); ok {
 				switch ch {
-				case ChannelBalance:
-					balance := BalanceResponse{}
+				case model.ChannelBalance:
+					balance := model.BalanceResponse{}
 					if err := json.Unmarshal(bytes, &balance); err != nil {
 						log.WithError(fmt.Errorf("error unmarshaling balance response JSON: %v", err)).Errorf("error unmarshaling balance response  JSON")
 					}
@@ -204,11 +107,6 @@ func (ws *privateWebsocketClient) Stream() error {
 type heartbeatMessage struct {
 	Op   string `json:"op"`
 	Ping int64  `json:"ping"`
-}
-
-type SubscriptionMessage struct {
-	Op   string               `json:"op"`
-	Args []SubscriptionParams `json:"args"`
 }
 
 type SubscriptionParams struct {

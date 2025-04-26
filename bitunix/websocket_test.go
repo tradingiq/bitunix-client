@@ -188,28 +188,6 @@ func TestWebsocketSigner(t *testing.T) {
 		"Different client credentials should produce different signatures")
 }
 
-func TestSubscriptionMessage(t *testing.T) {
-	message := SubscriptionMessage{
-		Op: "subscribe",
-		Args: []SubscriptionParams{
-			{Ch: "orders"},
-			{Ch: "positions"},
-		},
-	}
-
-	bytes, err := json.Marshal(message)
-	require.NoError(t, err)
-
-	var decoded SubscriptionMessage
-	err = json.Unmarshal(bytes, &decoded)
-	require.NoError(t, err)
-
-	assert.Equal(t, "subscribe", decoded.Op)
-	assert.Len(t, decoded.Args, 2)
-	assert.Equal(t, "orders", decoded.Args[0].Ch)
-	assert.Equal(t, "positions", decoded.Args[1].Ch)
-}
-
 func TestLoginMessage(t *testing.T) {
 	message := loginMessage{
 		Op: "login",

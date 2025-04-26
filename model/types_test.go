@@ -1,4 +1,4 @@
-package bitunix
+package model
 
 import (
 	"testing"
@@ -38,20 +38,20 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected TimeInForcePostOnly to be 'POST_ONLY', got '%s'", TimeInForcePostOnly)
 	}
 
-	if TradeSideOpen != "OPEN" {
-		t.Errorf("Expected TradeSideOpen to be 'OPEN', got '%s'", TradeSideOpen)
+	if SideOpen != "OPEN" {
+		t.Errorf("Expected SideOpen to be 'OPEN', got '%s'", SideOpen)
 	}
 
-	if TradeSideClose != "CLOSE" {
-		t.Errorf("Expected TradeSideClose to be 'CLOSE', got '%s'", TradeSideClose)
+	if SideClose != "CLOSE" {
+		t.Errorf("Expected SideClose to be 'CLOSE', got '%s'", SideClose)
 	}
 
-	if TradeActionBuy != "BUY" {
-		t.Errorf("Expected TradeActionBuy to be 'BUY', got '%s'", TradeActionBuy)
+	if TradeSideBuy != "BUY" {
+		t.Errorf("Expected TradeSideBuy to be 'BUY', got '%s'", TradeSideBuy)
 	}
 
-	if TradeActionSell != "SELL" {
-		t.Errorf("Expected TradeActionSell to be 'SELL', got '%s'", TradeActionSell)
+	if TradeSideSell != "SELL" {
+		t.Errorf("Expected TradeSideSell to be 'SELL', got '%s'", TradeSideSell)
 	}
 
 	if MarginModeIsolation != "ISOLATION" {
