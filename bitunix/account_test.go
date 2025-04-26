@@ -88,7 +88,7 @@ func TestGetAccountBalance(t *testing.T) {
 		t.Errorf("unexpected transfer amount: %f", balance.Transfer)
 	}
 
-	if balance.PositionMode != model.TradePositionModeHedge {
+	if balance.PositionMode != model.PositionModeHedge {
 		t.Errorf("unexpected position mode: %s", balance.PositionMode)
 	}
 

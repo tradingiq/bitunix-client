@@ -204,32 +204,32 @@ type OrderHistoryResponse struct {
 }
 
 type HistoricalOrder struct {
-	OrderID       string            `json:"orderId"`
-	Symbol        string            `json:"symbol"`
-	Quantity      float64           `json:"-"`
-	TradeQuantity float64           `json:"-"`
-	PositionMode  TradePositionMode `json:"positionMode"`
-	MarginMode    MarginMode        `json:"marginMode"`
-	Leverage      int               `json:"leverage"`
-	Price         string            `json:"price"`
-	Side          TradeSide         `json:"side"`
-	OrderType     OrderType         `json:"orderType"`
-	Effect        TimeInForce       `json:"effect"`
-	ClientID      string            `json:"clientId"`
-	ReduceOnly    bool              `json:"reduceOnly"`
-	Status        string            `json:"status"`
-	Fee           float64           `json:"-"`
-	RealizedPNL   float64           `json:"-"`
-	TpPrice       float64           `json:"-"`
-	TpStopType    StopType          `json:"tpStopType"`
-	TpOrderType   OrderType         `json:"tpOrderType"`
-	TpOrderPrice  float64           `json:"-"`
-	SlPrice       float64           `json:"-"`
-	SlStopType    StopType          `json:"slStopType"`
-	SlOrderType   OrderType         `json:"slOrderType"`
-	SlOrderPrice  float64           `json:"-"`
-	CreateTime    time.Time         `json:"-"`
-	ModifyTime    time.Time         `json:"-"`
+	OrderID       string       `json:"orderId"`
+	Symbol        string       `json:"symbol"`
+	Quantity      float64      `json:"-"`
+	TradeQuantity float64      `json:"-"`
+	PositionMode  PositionMode `json:"-"`
+	MarginMode    MarginMode   `json:"-"`
+	Leverage      int          `json:"leverage"`
+	Price         string       `json:"price"`
+	Side          TradeSide    `json:"-"`
+	OrderType     OrderType    `json:"-"`
+	Effect        TimeInForce  `json:"-"`
+	ClientID      string       `json:"clientId"`
+	ReduceOnly    bool         `json:"reduceOnly"`
+	Status        OrderStatus  `json:"-"`
+	Fee           float64      `json:"-"`
+	RealizedPNL   float64      `json:"-"`
+	TpPrice       float64      `json:"-"`
+	TpOrderPrice  float64      `json:"-"`
+	SlPrice       float64      `json:"-"`
+	TpStopType    StopType     `json:"-"`
+	TpOrderType   OrderType    `json:"-"`
+	SlStopType    StopType     `json:"-"`
+	SlOrderType   OrderType    `json:"-"`
+	SlOrderPrice  float64      `json:"-"`
+	CreateTime    time.Time    `json:"-"`
+	ModifyTime    time.Time    `json:"-"`
 }
 
 func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
@@ -245,6 +245,16 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 		SlOrderPrice  string `json:"slOrderPrice"`
 		CreateTime    string `json:"ctime"`
 		ModifyTime    string `json:"mtime"`
+		Status        string `json:"status"`
+		PositionMode  string `json:"positionMode"`
+		MarginMode    string `json:"marginMode"`
+		Side          string `json:"side"`
+		OrderType     string `json:"orderType"`
+		Effect        string `json:"effect"`
+		TpStopType    string `json:"tpStopType"`
+		TpOrderType   string `json:"tpOrderType"`
+		SlStopType    string `json:"slStopType"`
+		SlOrderType   string `json:"slOrderType"`
 		*Alias
 	}{
 		Alias: (*Alias)(o),
@@ -254,13 +264,11 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if aux.Quantity != "" {
-		quantity, err := strconv.ParseFloat(aux.Quantity, 64)
-		if err == nil {
-			o.Quantity = quantity
-		} else {
-			return fmt.Errorf("invalid quantity: %w", err)
-		}
+	quantity, err := strconv.ParseFloat(aux.Quantity, 64)
+	if err == nil {
+		o.Quantity = quantity
+	} else {
+		return fmt.Errorf("invalid quantity: %w", err)
 	}
 
 	if aux.TradeQuantity != "" {
@@ -343,6 +351,66 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("invalid modify time: %w", err)
 		}
 	}
+
+	status, err := ParseOrderStatus(aux.Status)
+	if err != nil {
+		return fmt.Errorf("invalid order status: %w", err)
+	}
+	o.Status = status
+
+	marginMode, err := ParseMarginMode(aux.MarginMode)
+	if err != nil {
+		return fmt.Errorf("invalid margin mode: %w", err)
+	}
+	o.MarginMode = marginMode
+
+	positionMode, err := ParsePositionMode(aux.PositionMode)
+	if err != nil {
+		return fmt.Errorf("invalid position mode: %w", err)
+	}
+	o.PositionMode = positionMode
+
+	side, err := ParseTradeSide(aux.Side)
+	if err != nil {
+		return fmt.Errorf("invalid side: %w", err)
+	}
+	o.Side = side
+
+	orderType, err := ParseOrderType(aux.OrderType)
+	if err != nil {
+		return fmt.Errorf("invalid order type: %w", err)
+	}
+	o.OrderType = orderType
+
+	effect, err := ParseTimeInForce(aux.Effect)
+	if err != nil {
+		return fmt.Errorf("invalid effect: %w", err)
+	}
+	o.Effect = effect
+
+	slStopType, err := ParseStopType(aux.SlStopType)
+	if err != nil {
+		return fmt.Errorf("invalid sl stop type: %w", err)
+	}
+	o.SlStopType = slStopType
+
+	tpStopType, err := ParseStopType(aux.TpStopType)
+	if err != nil {
+		return fmt.Errorf("invalid tp stop type: %w", err)
+	}
+	o.TpStopType = tpStopType
+
+	tpOrderType, err := ParseOrderType(aux.TpOrderType)
+	if err != nil {
+		return fmt.Errorf("invalid tp order type: %w", err)
+	}
+	o.TpOrderType = tpOrderType
+
+	slOrderType, err := ParseOrderType(aux.SlOrderType)
+	if err != nil {
+		return fmt.Errorf("invalid sl order type: %w", err)
+	}
+	o.SlOrderType = slOrderType
 
 	return nil
 }
