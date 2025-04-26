@@ -105,21 +105,21 @@ func (p *BalanceDetail) UnmarshalJSON(data []byte) error {
 }
 
 type PositionData struct {
-	Event         WebsocketEvent `json:"-"`
-	PositionID    string         `json:"positionId"`
-	MarginMode    MarginMode     `json:"-"`
-	PositionMode  PositionMode   `json:"-"`
-	Side          PositionSide   `json:"-"`
-	Leverage      int            `json:"-"`
-	Margin        float64        `json:"-"`
-	CreateTime    time.Time      `json:"-"`
-	Quantity      float64        `json:"-"`
-	EntryValue    float64        `json:"-"`
-	Symbol        string         `json:"symbol"`
-	RealizedPNL   float64        `json:"-"`
-	UnrealizedPNL float64        `json:"-"`
-	Funding       float64        `json:"-"`
-	Fee           float64        `json:"-"`
+	Event         PositionEvent `json:"-"`
+	PositionID    string        `json:"positionId"`
+	MarginMode    MarginMode    `json:"-"`
+	PositionMode  PositionMode  `json:"-"`
+	Side          PositionSide  `json:"-"`
+	Leverage      int           `json:"-"`
+	Margin        float64       `json:"-"`
+	CreateTime    time.Time     `json:"-"`
+	Quantity      float64       `json:"-"`
+	EntryValue    float64       `json:"-"`
+	Symbol        string        `json:"symbol"`
+	RealizedPNL   float64       `json:"-"`
+	UnrealizedPNL float64       `json:"-"`
+	Funding       float64       `json:"-"`
+	Fee           float64       `json:"-"`
 }
 
 func (p *PositionData) UnmarshalJSON(data []byte) error {
@@ -261,12 +261,12 @@ type PositionChannelResponse struct {
 }
 
 type OrderData struct {
-	Event        WebsocketEvent `json:"-"`
-	OrderID      string         `json:"orderId"`
-	Symbol       string         `json:"symbol"`
-	PositionType MarginMode     `json:"-"`
-	PositionMode PositionMode   `json:"-"`
-	Side         TradeSide      `json:"-"`
+	Event        OrderEvent   `json:"-"`
+	OrderID      string       `json:"orderId"`
+	Symbol       string       `json:"symbol"`
+	PositionType MarginMode   `json:"-"`
+	PositionMode PositionMode `json:"-"`
+	Side         TradeSide    `json:"-"`
 	// Currently broken, returns "SHORT"/"LONG"
 	//Effect        TimeInForce    `json:"effect"`
 	Type          OrderType   `json:"-"`
@@ -283,9 +283,12 @@ type OrderData struct {
 	TPOrderType   OrderType   `json:"-"`
 	TPOrderPrice  float64     `json:"-"`
 	SLStopType    StopType    `json:"-"`
-	SLPrice       float64     `json:"-"`
-	SLOrderType   OrderType   `json:"-"`
-	SLOrderPrice  float64     `json:"-"`
+	// SLPrice currently broken and not provided by the API
+	SLPrice float64 `json:"-"`
+	// SLOrderType currently broken and not provided by the API
+	SLOrderType OrderType `json:"-"`
+	// SLOrderPrice currently broken and not provided by the API
+	SLOrderPrice float64 `json:"-"`
 }
 
 func (o *OrderData) UnmarshalJSON(data []byte) error {
@@ -320,7 +323,7 @@ func (o *OrderData) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	event, err := ParsePositionEvent(aux.Event)
+	event, err := ParseOrderEvent(aux.Event)
 	if err != nil {
 		return fmt.Errorf("invalid order event: %w", err)
 	}
