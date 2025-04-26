@@ -129,7 +129,7 @@ func TestGetOrderHistory(t *testing.T) {
 		t.Errorf("unexpected trade quantity: %f", order.TradeQuantity)
 	}
 
-	if order.PositionMode != model.TradePositionModeHedge {
+	if order.PositionMode != model.PositionModeHedge {
 		t.Errorf("unexpected position mode: %s", order.PositionMode)
 	}
 

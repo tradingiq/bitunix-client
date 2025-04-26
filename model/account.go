@@ -17,15 +17,15 @@ type AccountBalanceResponse struct {
 }
 
 type AccountBalanceEntry struct {
-	MarginCoin             string            `json:"marginCoin"`
-	Available              float64           `json:"-"`
-	Frozen                 float64           `json:"-"`
-	Margin                 float64           `json:"-"`
-	Transfer               float64           `json:"-"`
-	PositionMode           TradePositionMode `json:"positionMode"`
-	CrossUnrealizedPNL     float64           `json:"-"`
-	IsolationUnrealizedPNL float64           `json:"-"`
-	Bonus                  float64           `json:"-"`
+	MarginCoin             string       `json:"marginCoin"`
+	Available              float64      `json:"-"`
+	Frozen                 float64      `json:"-"`
+	Margin                 float64      `json:"-"`
+	Transfer               float64      `json:"-"`
+	PositionMode           PositionMode `json:"-"`
+	CrossUnrealizedPNL     float64      `json:"-"`
+	IsolationUnrealizedPNL float64      `json:"-"`
+	Bonus                  float64      `json:"-"`
 }
 
 func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
@@ -38,6 +38,7 @@ func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 		CrossUnrealizedPNL     string `json:"crossUnrealizedPNL"`
 		IsolationUnrealizedPNL string `json:"isolationUnrealizedPNL"`
 		Bonus                  string `json:"bonus"`
+		PositionMode           string `json:"positionMode"`
 		*Alias
 	}{
 		Alias: (*Alias)(a),
@@ -109,6 +110,12 @@ func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("invalid bonus amount: %w", err)
 		}
 	}
+
+	positionMode, err := ParsePositionMode(aux.PositionMode)
+	if err != nil {
+		return fmt.Errorf("invalid position mode: %w", err)
+	}
+	a.PositionMode = positionMode
 
 	return nil
 }

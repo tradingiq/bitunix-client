@@ -45,7 +45,7 @@ func TestAccountBalanceEntry_UnmarshalJSON(t *testing.T) {
 		t.Errorf("unexpected transfer amount: %f", entry.Transfer)
 	}
 
-	if entry.PositionMode != TradePositionModeHedge {
+	if entry.PositionMode != PositionModeHedge {
 		t.Errorf("unexpected position mode: %s", entry.PositionMode)
 	}
 

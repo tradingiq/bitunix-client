@@ -32,9 +32,9 @@ type HistoricalPosition struct {
 	EntryPrice   float64      `json:"-"`
 	ClosePrice   float64      `json:"-"`
 	LiqQty       float64      `json:"-"`
-	Side         TradeSide    `json:"side"`
-	PositionMode PositionMode `json:"positionMode"`
-	MarginMode   MarginMode   `json:"marginMode"`
+	Side         TradeSide    `json:"-"`
+	PositionMode PositionMode `json:"-"`
+	MarginMode   MarginMode   `json:"-"`
 	Leverage     string       `json:"leverage"`
 	Fee          float64      `json:"-"`
 	Funding      float64      `json:"-"`
@@ -47,16 +47,19 @@ type HistoricalPosition struct {
 func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 	type Alias HistoricalPosition
 	aux := &struct {
-		Fee         string `json:"fee"`
-		RealizedPNL string `json:"realizedPNL"`
-		LiqPrice    string `json:"liqPrice"`
-		Funding     string `json:"funding"`
-		Ctime       string `json:"ctime"`
-		Mtime       string `json:"mtime"`
-		MaxQty      string `json:"maxQty"`
-		EntryPrice  string `json:"entryPrice"`
-		ClosePrice  string `json:"closePrice"`
-		LiqQty      string `json:"liqQty"`
+		Fee          string `json:"fee"`
+		RealizedPNL  string `json:"realizedPNL"`
+		LiqPrice     string `json:"liqPrice"`
+		Funding      string `json:"funding"`
+		Ctime        string `json:"ctime"`
+		Mtime        string `json:"mtime"`
+		MaxQty       string `json:"maxQty"`
+		EntryPrice   string `json:"entryPrice"`
+		ClosePrice   string `json:"closePrice"`
+		LiqQty       string `json:"liqQty"`
+		Side         string `json:"side"`
+		PositionMode string `json:"positionMode"`
+		MarginMode   string `json:"marginMode"`
 		*Alias
 	}{
 		Alias: (*Alias)(p),
@@ -136,6 +139,24 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to parse liqQty: %w", err)
 		}
 	}
+
+	side, err := ParseTradeSide(aux.Side)
+	if err != nil {
+		return fmt.Errorf("invalid side: %w", err)
+	}
+	p.Side = side
+
+	posMode, err := ParsePositionMode(aux.PositionMode)
+	if err != nil {
+		return fmt.Errorf("invalid position mode: %w", err)
+	}
+	p.PositionMode = posMode
+
+	marginMode, err := ParseMarginMode(aux.MarginMode)
+	if err != nil {
+		return fmt.Errorf("invalid margin mode: %w", err)
+	}
+	p.MarginMode = marginMode
 
 	return nil
 }

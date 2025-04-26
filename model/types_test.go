@@ -62,12 +62,12 @@ func TestTypes(t *testing.T) {
 		t.Errorf("Expected MarginModeCross to be 'CROSS', got '%s'", MarginModeCross)
 	}
 
-	if TradePositionModeOneWay != "ONE_WAY" {
-		t.Errorf("Expected TradePositionModeOneWay to be 'ONE_WAY', got '%s'", TradePositionModeOneWay)
+	if PositionModeOneWay != "ONE_WAY" {
+		t.Errorf("Expected TradePositionModeOneWay to be 'ONE_WAY', got '%s'", PositionModeOneWay)
 	}
 
-	if TradePositionModeHedge != "HEDGE" {
-		t.Errorf("Expected TradePositionModeHedge to be 'HEDGE', got '%s'", TradePositionModeHedge)
+	if PositionModeHedge != "HEDGE" {
+		t.Errorf("Expected TradePositionModeHedge to be 'HEDGE', got '%s'", PositionModeHedge)
 	}
 
 	if TradeRoleTypeTaker != "TAKER" {

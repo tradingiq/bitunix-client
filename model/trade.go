@@ -27,33 +27,37 @@ type TradeHistoryResponse struct {
 }
 
 type HistoricalTrade struct {
-	TradeID      string            `json:"tradeId"`
-	OrderID      string            `json:"orderId"`
-	Symbol       string            `json:"symbol"`
-	Quantity     float64           `json:"-"`
-	PositionMode TradePositionMode `json:"positionMode"`
-	MarginMode   MarginMode        `json:"marginMode"`
-	Leverage     int               `json:"leverage"`
-	Price        float64           `json:"-"`
-	Side         TradeSide         `json:"side"`
-	OrderType    OrderType         `json:"orderType"`
-	Effect       string            `json:"effect"`
-	ClientID     string            `json:"clientId"`
-	ReduceOnly   bool              `json:"reduceOnly"`
-	Fee          float64           `json:"-"`
-	RealizedPNL  float64           `json:"-"`
-	CreateTime   time.Time         `json:"-"`
-	RoleType     string            `json:"roleType"`
+	TradeID      string       `json:"tradeId"`
+	OrderID      string       `json:"orderId"`
+	Symbol       string       `json:"symbol"`
+	Quantity     float64      `json:"-"`
+	PositionMode PositionMode `json:"-"`
+	MarginMode   MarginMode   `json:"-"`
+	Leverage     int          `json:"leverage"`
+	Price        float64      `json:"-"`
+	Side         TradeSide    `json:"-"`
+	OrderType    OrderType    `json:"-"`
+	Effect       string       `json:"effect"`
+	ClientID     string       `json:"clientId"`
+	ReduceOnly   bool         `json:"reduceOnly"`
+	Fee          float64      `json:"-"`
+	RealizedPNL  float64      `json:"-"`
+	CreateTime   time.Time    `json:"-"`
+	RoleType     string       `json:"roleType"`
 }
 
 func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 	type Alias HistoricalTrade
 	aux := &struct {
-		Quantity    string `json:"qty"`
-		Price       string `json:"price"`
-		Fee         string `json:"fee"`
-		RealizedPNL string `json:"realizedPNL"`
-		CreateTime  string `json:"ctime"`
+		Quantity     string `json:"qty"`
+		Price        string `json:"price"`
+		Fee          string `json:"fee"`
+		RealizedPNL  string `json:"realizedPNL"`
+		CreateTime   string `json:"ctime"`
+		PositionMode string `json:"positionMode"`
+		Side         string `json:"side"`
+		OrderType    string `json:"orderType"`
+		MarginMode   string `json:"marginMode"`
 		*Alias
 	}{
 		Alias: (*Alias)(t),
@@ -97,6 +101,30 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 	} else {
 		return fmt.Errorf("invalid create time: %w", err)
 	}
+
+	side, err := ParseTradeSide(aux.Side)
+	if err != nil {
+		return fmt.Errorf("invalid side: %w", err)
+	}
+	t.Side = side
+
+	orderType, err := ParseOrderType(aux.OrderType)
+	if err != nil {
+		return fmt.Errorf("invalid order type: %w", err)
+	}
+	t.OrderType = orderType
+
+	posMode, err := ParsePositionMode(aux.PositionMode)
+	if err != nil {
+		return fmt.Errorf("invalid position mode: %w", err)
+	}
+	t.PositionMode = posMode
+
+	marginMode, err := ParseMarginMode(aux.MarginMode)
+	if err != nil {
+		return fmt.Errorf("invalid margin mode: %w", err)
+	}
+	t.MarginMode = marginMode
 
 	return nil
 }

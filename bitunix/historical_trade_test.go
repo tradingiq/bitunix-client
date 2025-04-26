@@ -131,7 +131,7 @@ func TestGetTradeHistory(t *testing.T) {
 		t.Errorf("Expected quantity 1.5, got %f", trade.Quantity)
 	}
 
-	if trade.PositionMode != model.TradePositionModeOneWay {
+	if trade.PositionMode != model.PositionModeOneWay {
 		t.Errorf("Expected positionMode 'ONE_WAY', got %s", trade.PositionMode)
 	}
 
