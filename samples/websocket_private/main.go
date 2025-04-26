@@ -23,6 +23,13 @@ func main() {
 		}
 	}()
 
+	positions := ws.SubscribePositions()
+	go func() {
+		for positionResponse := range positions {
+			log.WithField("position", positionResponse).Debug("got position")
+		}
+	}()
+
 	if err := ws.Stream(); err != nil {
 		log.WithError(err).Fatal("failed to stream")
 	}

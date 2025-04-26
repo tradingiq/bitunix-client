@@ -172,9 +172,9 @@ func (p *PositionData) UnmarshalJSON(data []byte) error {
 	p.MarginMode = marginMode
 
 	if aux.CreateTime != "" {
-		createTime, err := strconv.ParseInt(aux.CreateTime, 10, 64)
+		t, err := time.Parse(time.RFC3339Nano, aux.CreateTime)
 		if err == nil {
-			p.CreateTime = time.Unix(0, createTime*1000000)
+			p.CreateTime = t
 		} else {
 			return fmt.Errorf("invalid create time: %w", err)
 		}
@@ -255,7 +255,7 @@ func (p *PositionData) UnmarshalJSON(data []byte) error {
 }
 
 type PositionChannelResponse struct {
-	Channel   string         `json:"ch"`
-	TimeStamp int64          `json:"ts"`
-	Data      []PositionData `json:"data"`
+	Channel   string       `json:"ch"`
+	TimeStamp int64        `json:"ts"`
+	Data      PositionData `json:"data"`
 }

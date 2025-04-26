@@ -45,9 +45,10 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *private
 	)
 
 	return &privateWebsocketClient{
-		websocketClient:    websocketClient{client: ws},
-		subMtx:             sync.Mutex{},
-		balanceSubscribers: map[chan model.BalanceChannelResponse]struct{}{},
+		websocketClient:     websocketClient{client: ws},
+		subMtx:              sync.Mutex{},
+		balanceSubscribers:  map[chan model.BalanceChannelResponse]struct{}{},
+		positionSubscribers: map[chan model.PositionChannelResponse]struct{}{},
 	}
 }
 
