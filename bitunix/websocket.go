@@ -33,6 +33,7 @@ type privateWebsocketClient struct {
 	websocketClient
 	balanceSubscribers  map[chan model.BalanceChannelResponse]struct{}
 	positionSubscribers map[chan model.PositionChannelResponse]struct{}
+	orderSubscribers    map[chan model.OrderChannelSubscription]struct{}
 	subMtx              sync.Mutex
 }
 
@@ -49,6 +50,7 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *private
 		subMtx:              sync.Mutex{},
 		balanceSubscribers:  map[chan model.BalanceChannelResponse]struct{}{},
 		positionSubscribers: map[chan model.PositionChannelResponse]struct{}{},
+		orderSubscribers:    map[chan model.OrderChannelSubscription]struct{}{},
 	}
 }
 
@@ -90,6 +92,25 @@ func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionCha
 	}
 }
 
+func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelSubscription {
+	ws.subMtx.Lock()
+	defer ws.subMtx.Unlock()
+	c := make(chan model.OrderChannelSubscription)
+
+	ws.orderSubscribers[c] = struct{}{}
+
+	return c
+}
+
+func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelSubscription) {
+	ws.subMtx.Lock()
+	defer ws.subMtx.Unlock()
+
+	if _, ok := ws.orderSubscribers[sub]; ok {
+		delete(ws.orderSubscribers, sub)
+	}
+}
+
 func (ws *privateWebsocketClient) Stream() error {
 	err := ws.client.Listen(func(bytes []byte) error {
 		go func() {
@@ -107,7 +128,6 @@ func (ws *privateWebsocketClient) Stream() error {
 					if err := json.Unmarshal(bytes, &res); err != nil {
 						log.WithError(err).Errorf("error unmarshaling balance response  JSON")
 					}
-
 					for sub, _ := range ws.balanceSubscribers {
 						sub <- res
 					}
@@ -120,9 +140,16 @@ func (ws *privateWebsocketClient) Stream() error {
 					for sub, _ := range ws.positionSubscribers {
 						sub <- res
 					}
+				case model.ChannelOrder:
+					res := model.OrderChannelSubscription{}
+					if err := json.Unmarshal(bytes, &res); err != nil {
+						log.WithError(err).Errorf("error unmarshaling position response JSON")
+					}
 
+					for sub, _ := range ws.orderSubscribers {
+						sub <- res
+					}
 				}
-
 			}
 		}()
 
