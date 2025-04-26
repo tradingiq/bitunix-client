@@ -189,7 +189,7 @@ func (p *PositionData) UnmarshalJSON(data []byte) error {
 	}
 
 	if aux.Margin != "" {
-		margin, err := strconv.ParseFloat(aux.MarginMode, 64)
+		margin, err := strconv.ParseFloat(aux.Margin, 64)
 		if err == nil {
 			p.Margin = margin
 		} else {
