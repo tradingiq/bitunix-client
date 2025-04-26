@@ -328,3 +328,72 @@ func ParseOrderStatus(s string) (OrderStatus, error) {
 func (s OrderStatus) Normalize() OrderStatus {
 	return OrderStatus(strings.ToUpper(string(s)))
 }
+
+type PositionSide string
+
+const (
+	PositionSideShort PositionSide = "SHORT"
+	PositionSideLong  PositionSide = "LONG"
+)
+
+func (s PositionSide) IsValid() bool {
+	switch s {
+	case PositionSideShort, PositionSideLong:
+		return true
+	}
+	return false
+}
+
+func (s PositionSide) String() string {
+	return string(s)
+}
+
+func ParsePositionSide(s string) (PositionSide, error) {
+	status := PositionSide(s)
+	status = status.Normalize()
+
+	if !status.IsValid() {
+		return status, fmt.Errorf("%s is not a valid PositionSide", s)
+	}
+
+	return status, nil
+}
+
+func (s PositionSide) Normalize() PositionSide {
+	return PositionSide(strings.ToUpper(string(s)))
+}
+
+type PositionEvent string
+
+const (
+	PositionEventOpen   PositionEvent = "OPEN"
+	PositionEventUpdate PositionEvent = "UPDATE"
+	PositionEventClose  PositionEvent = "CLOSE"
+)
+
+func (s PositionEvent) IsValid() bool {
+	switch s {
+	case PositionEventOpen, PositionEventUpdate, PositionEventClose:
+		return true
+	}
+	return false
+}
+
+func (s PositionEvent) String() string {
+	return string(s)
+}
+
+func ParsePositionEvent(s string) (PositionEvent, error) {
+	status := PositionEvent(s)
+	status = status.Normalize()
+
+	if !status.IsValid() {
+		return status, fmt.Errorf("%s is not a valid PositionEvent", s)
+	}
+
+	return status, nil
+}
+
+func (s PositionEvent) Normalize() PositionEvent {
+	return PositionEvent(strings.ToUpper(string(s)))
+}
