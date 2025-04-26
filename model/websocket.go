@@ -105,21 +105,21 @@ func (p *BalanceDetail) UnmarshalJSON(data []byte) error {
 }
 
 type PositionData struct {
-	Event         PositionEvent `json:"-"`
-	PositionID    string        `json:"positionId"`
-	MarginMode    MarginMode    `json:"-"`
-	PositionMode  PositionMode  `json:"-"`
-	Side          PositionSide  `json:"-"`
-	Leverage      int           `json:"-"`
-	Margin        float64       `json:"-"`
-	CreateTime    time.Time     `json:"-"`
-	Quantity      float64       `json:"-"`
-	EntryValue    float64       `json:"-"`
-	Symbol        string        `json:"symbol"`
-	RealizedPNL   float64       `json:"-"`
-	UnrealizedPNL float64       `json:"-"`
-	Funding       float64       `json:"-"`
-	Fee           float64       `json:"-"`
+	Event         WebsocketEvent `json:"-"`
+	PositionID    string         `json:"positionId"`
+	MarginMode    MarginMode     `json:"-"`
+	PositionMode  PositionMode   `json:"-"`
+	Side          PositionSide   `json:"-"`
+	Leverage      int            `json:"-"`
+	Margin        float64        `json:"-"`
+	CreateTime    time.Time      `json:"-"`
+	Quantity      float64        `json:"-"`
+	EntryValue    float64        `json:"-"`
+	Symbol        string         `json:"symbol"`
+	RealizedPNL   float64        `json:"-"`
+	UnrealizedPNL float64        `json:"-"`
+	Funding       float64        `json:"-"`
+	Fee           float64        `json:"-"`
 }
 
 func (p *PositionData) UnmarshalJSON(data []byte) error {
@@ -258,4 +258,38 @@ type PositionChannelResponse struct {
 	Channel   string       `json:"ch"`
 	TimeStamp int64        `json:"ts"`
 	Data      PositionData `json:"data"`
+}
+
+type OrderData struct {
+	Event        WebsocketEvent `json:"event"`
+	OrderID      string         `json:"orderId"`
+	Symbol       string         `json:"symbol"`
+	PositionType MarginMode     `json:"positionType"`
+	PositionMode PositionMode   `json:"positionMode"`
+	Side         TradeSide      `json:"side"`
+	// Currently broken, returns "SHORT"/"LONG"
+	//Effect        TimeInForce    `json:"effect"`
+	Type          OrderType   `json:"type"`
+	Quantity      float64     `json:"qty"`
+	ReductionOnly bool        `json:"reductionOnly"`
+	Price         float64     `json:"price"`
+	CreateTime    time.Time   `json:"ctime"`
+	ModifyTime    time.Time   `json:"mtime"`
+	Leverage      int         `json:"leverage"`
+	OrderStatus   OrderStatus `json:"orderStatus"`
+	Fee           float64     `json:"fee"`
+	TPStopType    StopType    `json:"tpStopType,omitempty"`
+	TPPrice       float64     `json:"tpPrice,omitempty"`
+	TPOrderType   OrderType   `json:"tpOrderType,omitempty"`
+	TPOrderPrice  float64     `json:"tpOrderPrice,omitempty"`
+	SLStopType    StopType    `json:"slStopType,omitempty"`
+	SLPrice       float64     `json:"slPrice,omitempty"`
+	SLOrderType   OrderType   `json:"slOrderType,omitempty"`
+	SLOrderPrice  float64     `json:"slOrderPrice,omitempty"`
+}
+
+type OrderChannelSubscription struct {
+	Channel   string      `json:"ch"`
+	TimeStamp int64       `json:"ts"`
+	Data      []OrderData `json:"data"`
 }
