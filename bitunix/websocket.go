@@ -31,10 +31,13 @@ func (ws *websocketClient) Disconnect() {
 
 type privateWebsocketClient struct {
 	websocketClient
-	balanceSubscribers  map[chan model.BalanceChannelResponse]struct{}
-	positionSubscribers map[chan model.PositionChannelResponse]struct{}
-	orderSubscribers    map[chan model.OrderChannelSubscription]struct{}
-	subMtx              sync.Mutex
+	balanceSubscribers     map[chan model.BalanceChannelResponse]struct{}
+	positionSubscribers    map[chan model.PositionChannelResponse]struct{}
+	orderSubscribers       map[chan model.OrderChannelSubscription]struct{}
+	orderSubscriberMtx     sync.Mutex
+	positionSubscribersMtx sync.Mutex
+
+	balanceSubscriberMtx sync.Mutex
 }
 
 func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *privateWebsocketClient {
@@ -46,17 +49,19 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *private
 	)
 
 	return &privateWebsocketClient{
-		websocketClient:     websocketClient{client: ws},
-		subMtx:              sync.Mutex{},
-		balanceSubscribers:  map[chan model.BalanceChannelResponse]struct{}{},
-		positionSubscribers: map[chan model.PositionChannelResponse]struct{}{},
-		orderSubscribers:    map[chan model.OrderChannelSubscription]struct{}{},
+		websocketClient:        websocketClient{client: ws},
+		orderSubscriberMtx:     sync.Mutex{},
+		balanceSubscriberMtx:   sync.Mutex{},
+		positionSubscribersMtx: sync.Mutex{},
+		balanceSubscribers:     map[chan model.BalanceChannelResponse]struct{}{},
+		positionSubscribers:    map[chan model.PositionChannelResponse]struct{}{},
+		orderSubscribers:       map[chan model.OrderChannelSubscription]struct{}{},
 	}
 }
 
 func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceChannelResponse {
-	ws.subMtx.Lock()
-	defer ws.subMtx.Unlock()
+	ws.balanceSubscriberMtx.Lock()
+	defer ws.balanceSubscriberMtx.Unlock()
 	c := make(chan model.BalanceChannelResponse)
 
 	ws.balanceSubscribers[c] = struct{}{}
@@ -65,8 +70,8 @@ func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceChannel
 }
 
 func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceChannelResponse) {
-	ws.subMtx.Lock()
-	defer ws.subMtx.Unlock()
+	ws.balanceSubscriberMtx.Lock()
+	defer ws.balanceSubscriberMtx.Unlock()
 
 	if _, ok := ws.balanceSubscribers[sub]; ok {
 		delete(ws.balanceSubscribers, sub)
@@ -74,8 +79,8 @@ func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceChann
 }
 
 func (ws *privateWebsocketClient) SubscribePositions() <-chan model.PositionChannelResponse {
-	ws.subMtx.Lock()
-	defer ws.subMtx.Unlock()
+	ws.positionSubscribersMtx.Lock()
+	defer ws.positionSubscribersMtx.Unlock()
 	c := make(chan model.PositionChannelResponse)
 
 	ws.positionSubscribers[c] = struct{}{}
@@ -84,8 +89,8 @@ func (ws *privateWebsocketClient) SubscribePositions() <-chan model.PositionChan
 }
 
 func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionChannelResponse) {
-	ws.subMtx.Lock()
-	defer ws.subMtx.Unlock()
+	ws.positionSubscribersMtx.Lock()
+	defer ws.positionSubscribersMtx.Unlock()
 
 	if _, ok := ws.positionSubscribers[sub]; ok {
 		delete(ws.positionSubscribers, sub)
@@ -93,8 +98,8 @@ func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionCha
 }
 
 func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelSubscription {
-	ws.subMtx.Lock()
-	defer ws.subMtx.Unlock()
+	ws.orderSubscriberMtx.Lock()
+	defer ws.orderSubscriberMtx.Unlock()
 	c := make(chan model.OrderChannelSubscription)
 
 	ws.orderSubscribers[c] = struct{}{}
@@ -103,8 +108,8 @@ func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelSub
 }
 
 func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelSubscription) {
-	ws.subMtx.Lock()
-	defer ws.subMtx.Unlock()
+	ws.orderSubscriberMtx.Lock()
+	defer ws.orderSubscriberMtx.Unlock()
 
 	if _, ok := ws.orderSubscribers[sub]; ok {
 		delete(ws.orderSubscribers, sub)
@@ -124,31 +129,11 @@ func (ws *privateWebsocketClient) Stream() error {
 			if ch, ok := result["ch"].(string); ok {
 				switch ch {
 				case model.ChannelBalance:
-					res := model.BalanceChannelResponse{}
-					if err := json.Unmarshal(bytes, &res); err != nil {
-						log.WithError(err).Errorf("error unmarshaling balance response  JSON")
-					}
-					for sub, _ := range ws.balanceSubscribers {
-						sub <- res
-					}
+					ws.populateBalanceResponse(bytes)
 				case model.ChannelPosition:
-					res := model.PositionChannelResponse{}
-					if err := json.Unmarshal(bytes, &res); err != nil {
-						log.WithError(err).Errorf("error unmarshaling position response JSON")
-					}
-
-					for sub, _ := range ws.positionSubscribers {
-						sub <- res
-					}
+					ws.populatePositionResponse(bytes)
 				case model.ChannelOrder:
-					res := model.OrderChannelSubscription{}
-					if err := json.Unmarshal(bytes, &res); err != nil {
-						log.WithError(err).Errorf("error unmarshaling position response JSON")
-					}
-
-					for sub, _ := range ws.orderSubscribers {
-						sub <- res
-					}
+					ws.populateOrderResponse(bytes)
 				}
 			}
 		}()
@@ -160,6 +145,44 @@ func (ws *privateWebsocketClient) Stream() error {
 	}
 
 	return nil
+}
+
+func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
+	res := model.OrderChannelSubscription{}
+	if err := json.Unmarshal(bytes, &res); err != nil {
+		log.WithError(err).Errorf("error unmarshaling position response JSON")
+	}
+
+	ws.orderSubscriberMtx.Lock()
+	defer ws.orderSubscriberMtx.Unlock()
+	for sub, _ := range ws.orderSubscribers {
+		sub <- res
+	}
+}
+
+func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
+	res := model.PositionChannelResponse{}
+	if err := json.Unmarshal(bytes, &res); err != nil {
+		log.WithError(err).Errorf("error unmarshaling position response JSON")
+	}
+
+	ws.positionSubscribersMtx.Lock()
+	defer ws.positionSubscribersMtx.Unlock()
+	for sub, _ := range ws.positionSubscribers {
+		sub <- res
+	}
+}
+
+func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
+	res := model.BalanceChannelResponse{}
+	if err := json.Unmarshal(bytes, &res); err != nil {
+		log.WithError(err).Errorf("error unmarshaling balance response  JSON")
+	}
+	ws.balanceSubscriberMtx.Lock()
+	defer ws.balanceSubscriberMtx.Unlock()
+	for sub, _ := range ws.balanceSubscribers {
+		sub <- res
+	}
 }
 
 type heartbeatMessage struct {
