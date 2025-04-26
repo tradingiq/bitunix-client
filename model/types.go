@@ -364,15 +364,15 @@ func (s PositionSide) Normalize() PositionSide {
 	return PositionSide(strings.ToUpper(string(s)))
 }
 
-type PositionEvent string
+type WebsocketEvent string
 
 const (
-	PositionEventOpen   PositionEvent = "OPEN"
-	PositionEventUpdate PositionEvent = "UPDATE"
-	PositionEventClose  PositionEvent = "CLOSE"
+	PositionEventOpen   WebsocketEvent = "OPEN"
+	PositionEventUpdate WebsocketEvent = "UPDATE"
+	PositionEventClose  WebsocketEvent = "CLOSE"
 )
 
-func (s PositionEvent) IsValid() bool {
+func (s WebsocketEvent) IsValid() bool {
 	switch s {
 	case PositionEventOpen, PositionEventUpdate, PositionEventClose:
 		return true
@@ -380,21 +380,21 @@ func (s PositionEvent) IsValid() bool {
 	return false
 }
 
-func (s PositionEvent) String() string {
+func (s WebsocketEvent) String() string {
 	return string(s)
 }
 
-func ParsePositionEvent(s string) (PositionEvent, error) {
-	status := PositionEvent(s)
+func ParsePositionEvent(s string) (WebsocketEvent, error) {
+	status := WebsocketEvent(s)
 	status = status.Normalize()
 
 	if !status.IsValid() {
-		return status, fmt.Errorf("%s is not a valid PositionEvent", s)
+		return status, fmt.Errorf("%s is not a valid WebsocketEvent", s)
 	}
 
 	return status, nil
 }
 
-func (s PositionEvent) Normalize() PositionEvent {
-	return PositionEvent(strings.ToUpper(string(s)))
+func (s WebsocketEvent) Normalize() WebsocketEvent {
+	return WebsocketEvent(strings.ToUpper(string(s)))
 }
