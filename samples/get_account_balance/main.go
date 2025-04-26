@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/samples"
 	"time"
@@ -24,7 +25,7 @@ func bitunixExample() {
 
 	client := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
 
-	params := bitunix.AccountBalanceParams{
+	params := model.AccountBalanceParams{
 		MarginCoin: "USDT",
 	}
 

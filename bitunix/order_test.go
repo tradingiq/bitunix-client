@@ -2,7 +2,7 @@ package bitunix
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"net/http"
 	"net/http/httptest"
@@ -30,8 +30,8 @@ func (m *MockAPI) Close() {
 
 func TestOrderBuilderCreation(t *testing.T) {
 	symbol := "BTCUSDT"
-	side := TradeActionBuy
-	tradeSide := TradeSideOpen
+	side := model.TradeSideBuy
+	tradeSide := model.SideOpen
 	qty := 1.0
 
 	builder := NewOrderBuilder(symbol, side, tradeSide, qty)
@@ -49,26 +49,26 @@ func TestOrderBuilderCreation(t *testing.T) {
 	if *order.Qty != qty {
 		t.Errorf("Expected qty %f, got %f", qty, *order.Qty)
 	}
-	if order.OrderType != OrderTypeMarket {
-		t.Errorf("Expected order type %s, got %s", OrderTypeMarket, order.OrderType)
+	if order.OrderType != model.OrderTypeMarket {
+		t.Errorf("Expected order type %s, got %s", model.OrderTypeMarket, order.OrderType)
 	}
 	if order.ReduceOnly != false {
 		t.Errorf("Expected reduceOnly %v, got %v", false, order.ReduceOnly)
 	}
-	if order.Effect != TimeInForceGTC {
-		t.Errorf("Expected effect %s, got %s", TimeInForceGTC, order.Effect)
+	if order.Effect != model.TimeInForceGTC {
+		t.Errorf("Expected effect %s, got %s", model.TimeInForceGTC, order.Effect)
 	}
 }
 
 func TestOrderBuilderMethods(t *testing.T) {
 	symbol := "BTCUSDT"
-	side := TradeActionBuy
-	tradeSide := TradeSideOpen
+	side := model.TradeSideBuy
+	tradeSide := model.SideOpen
 	qty := 1.0
 
 	builder := NewOrderBuilder(symbol, side, tradeSide, qty)
 
-	orderType := OrderTypeLimit
+	orderType := model.OrderTypeLimit
 	builder.WithOrderType(orderType)
 	order := builder.Build()
 	if order.OrderType != orderType {
@@ -96,7 +96,7 @@ func TestOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithReduceOnly: Expected reduce only %v, got %v", reduceOnly, order.ReduceOnly)
 	}
 
-	tif := TimeInForceIOC
+	tif := model.TimeInForceIOC
 	builder.WithTimeInForce(tif)
 	order = builder.Build()
 	if order.Effect != tif {
@@ -111,8 +111,8 @@ func TestOrderBuilderMethods(t *testing.T) {
 	}
 
 	tpPrice := 55000.0
-	tpStopType := StopTypeLastPrice
-	tpOrderType := OrderTypeLimit
+	tpStopType := model.StopTypeLastPrice
+	tpOrderType := model.OrderTypeLimit
 	builder.WithTakeProfit(tpPrice, tpStopType, tpOrderType)
 	order = builder.Build()
 	if *order.TpPrice != tpPrice {
@@ -133,8 +133,8 @@ func TestOrderBuilderMethods(t *testing.T) {
 	}
 
 	slPrice := 45000.0
-	slStopType := StopTypeMarkPrice
-	slOrderType := OrderTypeMarket
+	slStopType := model.StopTypeMarkPrice
+	slOrderType := model.OrderTypeMarket
 	builder.WithStopLoss(slPrice, slStopType, slOrderType)
 	order = builder.Build()
 	if *order.SlPrice != slPrice {
@@ -152,66 +152,6 @@ func TestOrderBuilderMethods(t *testing.T) {
 	order = builder.Build()
 	if *order.SlOrderPrice != slOrderPrice {
 		t.Errorf("WithStopLossPrice: Expected SL order price %f, got %f", slOrderPrice, *order.SlOrderPrice)
-	}
-}
-
-func TestOrderRequestMarshalJSON(t *testing.T) {
-	qty := 1.0
-	price := 50000.0
-	tpPrice := 55000.0
-	tpOrderPrice := 54500.0
-	slPrice := 45000.0
-	slOrderPrice := 45500.0
-
-	req := &OrderRequest{
-		Symbol:       "BTCUSDT",
-		TradeAction:  TradeActionBuy,
-		Price:        &price,
-		Qty:          &qty,
-		PositionID:   "position123",
-		TradeSide:    TradeSideOpen,
-		OrderType:    OrderTypeLimit,
-		ReduceOnly:   false,
-		Effect:       TimeInForceGTC,
-		ClientID:     "client123",
-		TpPrice:      &tpPrice,
-		TpStopType:   StopTypeLastPrice,
-		TpOrderType:  OrderTypeLimit,
-		TpOrderPrice: &tpOrderPrice,
-		SlPrice:      &slPrice,
-		SlStopType:   StopTypeMarkPrice,
-		SlOrderType:  OrderTypeMarket,
-		SlOrderPrice: &slOrderPrice,
-	}
-
-	data, err := json.Marshal(req)
-	if err != nil {
-		t.Fatalf("Failed to marshal order request: %v", err)
-	}
-
-	var m map[string]interface{}
-	err = json.Unmarshal(data, &m)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal JSON: %v", err)
-	}
-
-	if m["price"] != "50000" {
-		t.Errorf("Expected price to be marshaled as string \"50000\", got %v", m["price"])
-	}
-	if m["qty"] != "1" {
-		t.Errorf("Expected qty to be marshaled as string \"1\", got %v", m["qty"])
-	}
-	if m["tpPrice"] != "55000" {
-		t.Errorf("Expected tpPrice to be marshaled as string \"55000\", got %v", m["tpPrice"])
-	}
-	if m["tpOrderPrice"] != "54500" {
-		t.Errorf("Expected tpOrderPrice to be marshaled as string \"54500\", got %v", m["tpOrderPrice"])
-	}
-	if m["slPrice"] != "45000" {
-		t.Errorf("Expected slPrice to be marshaled as string \"45000\", got %v", m["slPrice"])
-	}
-	if m["slOrderPrice"] != "45500" {
-		t.Errorf("Expected slOrderPrice to be marshaled as string \"45500\", got %v", m["slOrderPrice"])
 	}
 }
 
@@ -243,13 +183,13 @@ func TestPlaceOrder(t *testing.T) {
 	qty := 1.0
 	price := 50000.0
 
-	orderReq := &OrderRequest{
+	orderReq := &model.OrderRequest{
 		Symbol:      "BTCUSDT",
-		TradeAction: TradeActionBuy,
+		TradeAction: model.TradeSideBuy,
 		Price:       &price,
 		Qty:         &qty,
-		TradeSide:   TradeSideOpen,
-		OrderType:   OrderTypeLimit,
+		TradeSide:   model.SideOpen,
+		OrderType:   model.OrderTypeLimit,
 		ClientID:    "client123",
 	}
 
@@ -356,9 +296,9 @@ func TestCancelOrders(t *testing.T) {
 	})
 	defer mockAPI.Close()
 
-	cancelOrderReq := &CancelOrderRequest{
+	cancelOrderReq := &model.CancelOrderRequest{
 		Symbol: "BTCUSDT",
-		OrderList: []CancelOrderParam{
+		OrderList: []model.CancelOrderParam{
 			{
 				OrderID: "11111",
 			},

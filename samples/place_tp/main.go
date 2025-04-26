@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/samples"
 	"time"
@@ -25,7 +26,7 @@ func bitunixExample() {
 	ctx := context.Background()
 
 	request := bitunix.NewTPSLOrderBuilder("BTCUSDT", "50000").
-		WithTakeProfit(80000, 0.001, bitunix.StopTypeLastPrice, bitunix.OrderTypeLimit, 70000).
+		WithTakeProfit(80000, 0.001, model.StopTypeLastPrice, model.OrderTypeLimit, 70000).
 		Build()
 
 	response, err := bitunixClient.PlaceTpSlOrder(ctx, &request)

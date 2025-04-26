@@ -4,118 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
+	"github.com/tradingiq/bitunix-client/model"
 	"time"
 )
 
-type OrderRequest struct {
-	Symbol       string      `json:"symbol"`
-	TradeAction  TradeAction `json:"side"`
-	Price        *float64    `json:"-"`
-	Qty          *float64    `json:"-"`
-	PositionID   string      `json:"positionId,omitempty"`
-	TradeSide    TradeSide   `json:"tradeSide"`
-	OrderType    OrderType   `json:"orderType"`
-	ReduceOnly   bool        `json:"reduceOnly"`
-	Effect       TimeInForce `json:"effect,omitempty"`
-	ClientID     string      `json:"clientId,omitempty"`
-	TpPrice      *float64    `json:"-"`
-	TpStopType   StopType    `json:"tpStopType,omitempty"`
-	TpOrderType  OrderType   `json:"tpOrderType,omitempty"`
-	TpOrderPrice *float64    `json:"-"`
-	SlPrice      *float64    `json:"-"`
-	SlStopType   StopType    `json:"slStopType,omitempty"`
-	SlOrderType  OrderType   `json:"slOrderType,omitempty"`
-	SlOrderPrice *float64    `json:"-"`
-}
-
-type CancelOrderParam struct {
-	OrderID  string `json:"orderId,omitempty"`
-	ClientID string `json:"clientId,omitempty"`
-}
-
-type CancelOrderRequest struct {
-	Symbol    string             `json:"symbol"`
-	OrderList []CancelOrderParam `json:"orderList"`
-}
-
-func (r *OrderRequest) MarshalJSON() ([]byte, error) {
-	type Alias OrderRequest
-
-	aux := &struct {
-		Price        string `json:"price,omitempty"`
-		Qty          string `json:"qty"`
-		TpPrice      string `json:"tpPrice,omitempty"`
-		TpOrderPrice string `json:"tpOrderPrice,omitempty"`
-		SlPrice      string `json:"slPrice,omitempty"`
-		SlOrderPrice string `json:"slOrderPrice,omitempty"`
-		*Alias
-	}{
-		Alias: (*Alias)(r),
-	}
-
-	if r.Price != nil {
-		aux.Price = strconv.FormatFloat(*r.Price, 'f', -1, 64)
-	}
-
-	if r.Qty != nil {
-		aux.Qty = strconv.FormatFloat(*r.Qty, 'f', -1, 64)
-	}
-
-	if r.TpPrice != nil {
-		aux.TpPrice = strconv.FormatFloat(*r.TpPrice, 'f', -1, 64)
-	}
-
-	if r.TpOrderPrice != nil {
-		aux.TpOrderPrice = strconv.FormatFloat(*r.TpOrderPrice, 'f', -1, 64)
-	}
-
-	if r.SlPrice != nil {
-		aux.SlPrice = strconv.FormatFloat(*r.SlPrice, 'f', -1, 64)
-	}
-
-	if r.SlOrderPrice != nil {
-		aux.SlOrderPrice = strconv.FormatFloat(*r.SlOrderPrice, 'f', -1, 64)
-	}
-
-	return json.Marshal(aux)
-}
-
-type OrderResponse struct {
-	Code    int               `json:"code"`
-	Message string            `json:"message"`
-	Data    OrderResponseData `json:"data"`
-}
-
-type OrderResponseData struct {
-	OrderId  string `json:"orderId"`
-	ClientId string `json:"clientId"`
-}
-
-type CancelOrderResponse struct {
-	Code    int                     `json:"code"`
-	Message string                  `json:"msg"`
-	Data    CancelOrderResponseData `json:"data"`
-}
-
-type CancelOrderResponseData struct {
-	SuccessList []CancelOrderResult  `json:"successList"`
-	FailureList []CancelOrderFailure `json:"failureList"`
-}
-
-type CancelOrderResult struct {
-	OrderId  string `json:"orderId"`
-	ClientId string `json:"clientId"`
-}
-
-type CancelOrderFailure struct {
-	OrderId   string `json:"orderId"`
-	ClientId  string `json:"clientId"`
-	ErrorMsg  string `json:"errorMsg"`
-	ErrorCode string `json:"errorCode"`
-}
-
-func (c *client) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderResponse, error) {
+func (c *client) PlaceOrder(ctx context.Context, request *model.OrderRequest) (*model.OrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal order request: %w", err)
@@ -126,7 +19,7 @@ func (c *client) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderR
 		return nil, fmt.Errorf("failed to place order request: %w", err)
 	}
 
-	response := &OrderResponse{}
+	response := &model.OrderResponse{}
 	if err := json.Unmarshal(responseBody, response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -134,7 +27,7 @@ func (c *client) PlaceOrder(ctx context.Context, request *OrderRequest) (*OrderR
 	return response, nil
 }
 
-func (c *client) CancelOrders(ctx context.Context, request *CancelOrderRequest) (*CancelOrderResponse, error) {
+func (c *client) CancelOrders(ctx context.Context, request *model.CancelOrderRequest) (*model.CancelOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal cancel order request: %w", err)
@@ -145,7 +38,7 @@ func (c *client) CancelOrders(ctx context.Context, request *CancelOrderRequest) 
 		return nil, fmt.Errorf("failed to cancel orders request: %w", err)
 	}
 
-	response := &CancelOrderResponse{}
+	response := &model.CancelOrderResponse{}
 	if err := json.Unmarshal(responseBody, response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -154,28 +47,28 @@ func (c *client) CancelOrders(ctx context.Context, request *CancelOrderRequest) 
 }
 
 type OrderBuilder struct {
-	request OrderRequest
+	request model.OrderRequest
 	errors  []string
 }
 
-func NewOrderBuilder(symbol string, side TradeAction, tradeSide TradeSide, qty float64) *OrderBuilder {
+func NewOrderBuilder(symbol string, side model.TradeSide, tradeSide model.Side, qty float64) *OrderBuilder {
 	qtyVal := qty
 
 	return &OrderBuilder{
-		request: OrderRequest{
+		request: model.OrderRequest{
 			Symbol:      symbol,
-			OrderType:   OrderTypeMarket,
+			OrderType:   model.OrderTypeMarket,
 			TradeAction: side,
 			TradeSide:   tradeSide,
 			Qty:         &qtyVal,
 			ReduceOnly:  false,
 			ClientID:    fmt.Sprintf("client_%d", time.Now().UnixNano()),
-			Effect:      TimeInForceGTC,
+			Effect:      model.TimeInForceGTC,
 		},
 	}
 }
 
-func (b *OrderBuilder) WithOrderType(orderType OrderType) *OrderBuilder {
+func (b *OrderBuilder) WithOrderType(orderType model.OrderType) *OrderBuilder {
 	b.request.OrderType = orderType
 	return b
 }
@@ -195,7 +88,7 @@ func (b *OrderBuilder) WithReduceOnly(reduceOnly bool) *OrderBuilder {
 	return b
 }
 
-func (b *OrderBuilder) WithTimeInForce(tif TimeInForce) *OrderBuilder {
+func (b *OrderBuilder) WithTimeInForce(tif model.TimeInForce) *OrderBuilder {
 	b.request.Effect = tif
 	return b
 }
@@ -205,7 +98,7 @@ func (b *OrderBuilder) WithClientID(clientID string) *OrderBuilder {
 	return b
 }
 
-func (b *OrderBuilder) WithTakeProfit(price float64, stopType StopType, orderType OrderType) *OrderBuilder {
+func (b *OrderBuilder) WithTakeProfit(price float64, stopType model.StopType, orderType model.OrderType) *OrderBuilder {
 	b.request.TpPrice = &price
 	b.request.TpStopType = stopType
 	b.request.TpOrderType = orderType
@@ -217,7 +110,7 @@ func (b *OrderBuilder) WithTakeProfitPrice(orderPrice float64) *OrderBuilder {
 	return b
 }
 
-func (b *OrderBuilder) WithStopLoss(price float64, stopType StopType, orderType OrderType) *OrderBuilder {
+func (b *OrderBuilder) WithStopLoss(price float64, stopType model.StopType, orderType model.OrderType) *OrderBuilder {
 	b.request.SlPrice = &price
 	b.request.SlStopType = stopType
 	b.request.SlOrderType = orderType
@@ -229,37 +122,37 @@ func (b *OrderBuilder) WithStopLossPrice(orderPrice float64) *OrderBuilder {
 	return b
 }
 
-func (b *OrderBuilder) Build() OrderRequest {
+func (b *OrderBuilder) Build() model.OrderRequest {
 	return b.request
 }
 
 type CancelOrderBuilder struct {
-	request CancelOrderRequest
+	request model.CancelOrderRequest
 }
 
 func NewCancelOrderBuilder(symbol string) *CancelOrderBuilder {
 	return &CancelOrderBuilder{
-		request: CancelOrderRequest{
+		request: model.CancelOrderRequest{
 			Symbol:    symbol,
-			OrderList: make([]CancelOrderParam, 0),
+			OrderList: make([]model.CancelOrderParam, 0),
 		},
 	}
 }
 
 func (b *CancelOrderBuilder) WithOrderID(orderID string) *CancelOrderBuilder {
-	b.request.OrderList = append(b.request.OrderList, CancelOrderParam{
+	b.request.OrderList = append(b.request.OrderList, model.CancelOrderParam{
 		OrderID: orderID,
 	})
 	return b
 }
 
 func (b *CancelOrderBuilder) WithClientID(clientID string) *CancelOrderBuilder {
-	b.request.OrderList = append(b.request.OrderList, CancelOrderParam{
+	b.request.OrderList = append(b.request.OrderList, model.CancelOrderParam{
 		ClientID: clientID,
 	})
 	return b
 }
 
-func (b *CancelOrderBuilder) Build() CancelOrderRequest {
+func (b *CancelOrderBuilder) Build() model.CancelOrderRequest {
 	return b.request
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/samples"
 	"time"
@@ -26,7 +27,7 @@ func bitunixExample() {
 
 	startTime := time.Now().Add(-80 * time.Hour)
 
-	params := bitunix.OrderHistoryParams{
+	params := model.OrderHistoryParams{
 		Symbol:    "BTCUSDT",
 		StartTime: &startTime,
 		Limit:     10,

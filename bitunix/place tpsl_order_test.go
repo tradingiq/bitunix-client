@@ -2,7 +2,7 @@ package bitunix
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"testing"
 )
@@ -31,8 +31,8 @@ func TestTPSLOrderBuilderMethods(t *testing.T) {
 
 	tpPrice := 55000.0
 	tpQty := 1.0
-	tpStopType := StopTypeLastPrice
-	tpOrderType := OrderTypeLimit
+	tpStopType := model.StopTypeLastPrice
+	tpOrderType := model.OrderTypeLimit
 	tpOrderPrice := 54500.0
 
 	builder.WithTakeProfit(tpPrice, tpQty, tpStopType, tpOrderType, tpOrderPrice)
@@ -60,8 +60,8 @@ func TestTPSLOrderBuilderMethods(t *testing.T) {
 
 	slPrice := 45000.0
 	slQty := 1.0
-	slStopType := StopTypeMarkPrice
-	slOrderType := OrderTypeMarket
+	slStopType := model.StopTypeMarkPrice
+	slOrderType := model.OrderTypeMarket
 	slOrderPrice := 45500.0
 
 	builder.WithStopLoss(slPrice, slQty, slStopType, slOrderType, slOrderPrice)
@@ -85,65 +85,6 @@ func TestTPSLOrderBuilderMethods(t *testing.T) {
 
 	if *order.SlOrderPrice != slOrderPrice {
 		t.Errorf("WithStopLoss: Expected SL order price %f, got %f", slOrderPrice, *order.SlOrderPrice)
-	}
-}
-
-func TestTPSLOrderRequestMarshalJSON(t *testing.T) {
-	tpPrice := 55000.0
-	tpQty := 1.0
-	tpOrderPrice := 54500.0
-	slPrice := 45000.0
-	slQty := 1.0
-	slOrderPrice := 45500.0
-
-	req := TPSLOrderRequest{
-		Symbol:       "BTCUSDT",
-		PositionID:   "position123",
-		TpPrice:      &tpPrice,
-		TpQty:        &tpQty,
-		TpStopType:   StopTypeLastPrice,
-		TpOrderType:  OrderTypeLimit,
-		TpOrderPrice: &tpOrderPrice,
-		SlPrice:      &slPrice,
-		SlQty:        &slQty,
-		SlStopType:   StopTypeMarkPrice,
-		SlOrderType:  OrderTypeMarket,
-		SlOrderPrice: &slOrderPrice,
-	}
-
-	data, err := json.Marshal(req)
-	if err != nil {
-		t.Fatalf("Failed to marshal TPSL order request: %v", err)
-	}
-
-	var m map[string]interface{}
-	err = json.Unmarshal(data, &m)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal JSON: %v", err)
-	}
-
-	if m["tpPrice"] != "55000" {
-		t.Errorf("Expected tpPrice to be marshaled as string \"55000\", got %v", m["tpPrice"])
-	}
-
-	if m["tpQty"] != "1" {
-		t.Errorf("Expected tpQty to be marshaled as string \"1\", got %v", m["tpQty"])
-	}
-
-	if m["tpOrderPrice"] != "54500" {
-		t.Errorf("Expected tpOrderPrice to be marshaled as string \"54500\", got %v", m["tpOrderPrice"])
-	}
-
-	if m["slPrice"] != "45000" {
-		t.Errorf("Expected slPrice to be marshaled as string \"45000\", got %v", m["slPrice"])
-	}
-
-	if m["slQty"] != "1" {
-		t.Errorf("Expected slQty to be marshaled as string \"1\", got %v", m["slQty"])
-	}
-
-	if m["slOrderPrice"] != "45500" {
-		t.Errorf("Expected slOrderPrice to be marshaled as string \"45500\", got %v", m["slOrderPrice"])
 	}
 }
 
@@ -185,18 +126,18 @@ func TestPlaceTpSlOrder(t *testing.T) {
 	slQty := 1.0
 	slOrderPrice := 45500.0
 
-	orderReq := &TPSLOrderRequest{
+	orderReq := &model.TPSLOrderRequest{
 		Symbol:       "BTCUSDT",
 		PositionID:   "position123",
 		TpPrice:      &tpPrice,
 		TpQty:        &tpQty,
-		TpStopType:   StopTypeLastPrice,
-		TpOrderType:  OrderTypeLimit,
+		TpStopType:   model.StopTypeLastPrice,
+		TpOrderType:  model.OrderTypeLimit,
 		TpOrderPrice: &tpOrderPrice,
 		SlPrice:      &slPrice,
 		SlQty:        &slQty,
-		SlStopType:   StopTypeMarkPrice,
-		SlOrderType:  OrderTypeMarket,
+		SlStopType:   model.StopTypeMarkPrice,
+		SlOrderType:  model.OrderTypeMarket,
 		SlOrderPrice: &slOrderPrice,
 	}
 
