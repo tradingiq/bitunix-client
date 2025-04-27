@@ -493,3 +493,32 @@ type OrderChannelSubscription struct {
 	TimeStamp int64     `json:"ts"`
 	Data      OrderData `json:"data"`
 }
+
+type TPSLOrderSubscription struct {
+	Channel   string      `json:"ch"`
+	Timestamp int64       `json:"ts"`
+	Data      []TPSLOrder `json:"data"`
+}
+
+type TPSLOrder struct {
+	Event        TPSLEvent    `json:"event"`
+	PositionID   string       `json:"positionId"`
+	OrderID      string       `json:"orderId"`
+	Symbol       string       `json:"symbol"`
+	Leverage     int          `json:"leverage"`
+	Side         TradeSide    `json:"side"`
+	PositionMode PositionMode `json:"positionMode"`
+	Status       OrderStatus  `json:"status"`
+	CreateTime   time.Time    `json:"ctime"`
+	Type         TpSlType     `json:"type"`
+	TPQuantity   float64      `json:"tpQty"`
+	SLQuantity   float64      `json:"slQty"`
+	TPStopType   StopType     `json:"tpStopType"`
+	TPPrice      float64      `json:"tpPrice"`
+	TPOrderType  OrderType    `json:"tpOrderType"`
+	TPOrderPrice float64      `json:"tpOrderPrice"`
+	SLStopType   StopType     `json:"slStopType"`
+	SLPrice      float64      `json:"slPrice"`
+	SLOrderType  OrderType    `json:"slOrderType"`
+	SLOrderPrice float64      `json:"slOrderPrice"`
+}
