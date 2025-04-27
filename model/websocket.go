@@ -501,24 +501,194 @@ type TPSLOrderSubscription struct {
 }
 
 type TPSLOrder struct {
-	Event        TPSLEvent    `json:"event"`
+	Event        TPSLEvent    `json:"-"`
 	PositionID   string       `json:"positionId"`
 	OrderID      string       `json:"orderId"`
 	Symbol       string       `json:"symbol"`
-	Leverage     int          `json:"leverage"`
-	Side         TradeSide    `json:"side"`
-	PositionMode PositionMode `json:"positionMode"`
-	Status       OrderStatus  `json:"status"`
-	CreateTime   time.Time    `json:"ctime"`
-	Type         TpSlType     `json:"type"`
-	TPQuantity   float64      `json:"tpQty"`
-	SLQuantity   float64      `json:"slQty"`
-	TPStopType   StopType     `json:"tpStopType"`
-	TPPrice      float64      `json:"tpPrice"`
-	TPOrderType  OrderType    `json:"tpOrderType"`
-	TPOrderPrice float64      `json:"tpOrderPrice"`
-	SLStopType   StopType     `json:"slStopType"`
-	SLPrice      float64      `json:"slPrice"`
-	SLOrderType  OrderType    `json:"slOrderType"`
-	SLOrderPrice float64      `json:"slOrderPrice"`
+	Leverage     int          `json:"-"`
+	Side         TradeSide    `json:"-"`
+	PositionMode PositionMode `json:"-"`
+	Status       OrderStatus  `json:"-"`
+	CreateTime   time.Time    `json:"-"`
+	Type         TpSlType     `json:"-"`
+	TPQuantity   float64      `json:"-"`
+	SLQuantity   float64      `json:"-"`
+	TPStopType   StopType     `json:"-"`
+	TPPrice      float64      `json:"-"`
+	TPOrderType  OrderType    `json:"-"`
+	TPOrderPrice float64      `json:"-"`
+	SLStopType   StopType     `json:"-"`
+	SLPrice      float64      `json:"-"`
+	SLOrderType  OrderType    `json:"-"`
+	SLOrderPrice float64      `json:"-"`
+}
+
+func (t *TPSLOrder) UnmarshalJSON(data []byte) error {
+	type Alias TPSLOrder
+	aux := &struct {
+		Event        string `json:"event"`
+		Leverage     string `json:"leverage"`
+		Side         string `json:"side"`
+		PositionMode string `json:"positionMode"`
+		Status       string `json:"status"`
+		CreateTime   string `json:"ctime"`
+		Type         string `json:"type"`
+		TPQuantity   string `json:"tpQty"`
+		SLQuantity   string `json:"slQty"`
+		TPStopType   string `json:"tpStopType"`
+		TPPrice      string `json:"tpPrice"`
+		TPOrderType  string `json:"tpOrderType"`
+		TPOrderPrice string `json:"tpOrderPrice"`
+		SLStopType   string `json:"slStopType"`
+		SLPrice      string `json:"slPrice"`
+		SLOrderType  string `json:"slOrderType"`
+		SLOrderPrice string `json:"slOrderPrice"`
+		*Alias
+	}{
+		Alias: (*Alias)(t),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	event, err := ParseTPSLEvent(aux.Event)
+	if err != nil {
+		return fmt.Errorf("invalid TPSL event: %w", err)
+	}
+	t.Event = event
+
+	side, err := ParseTradeSide(aux.Side)
+	if err != nil {
+		return fmt.Errorf("invalid side: %w", err)
+	}
+	t.Side = side
+
+	posMode, err := ParsePositionMode(aux.PositionMode)
+	if err != nil {
+		return fmt.Errorf("invalid position mode: %w", err)
+	}
+	t.PositionMode = posMode
+
+	status, err := ParseOrderStatus(aux.Status)
+	if err != nil {
+		return fmt.Errorf("invalid order status: %w", err)
+	}
+	t.Status = status
+
+	tpslType, err := ParseTPSLType(aux.Type)
+	if err != nil {
+		return fmt.Errorf("invalid TPSL type: %w", err)
+	}
+	t.Type = tpslType
+
+	if aux.CreateTime != "" {
+		timestamp, err := time.Parse(time.RFC3339Nano, aux.CreateTime)
+		if err == nil {
+			t.CreateTime = timestamp
+		} else {
+			return fmt.Errorf("invalid create time: %w", err)
+		}
+	}
+
+	if aux.Leverage != "" {
+		lev, err := strconv.Atoi(aux.Leverage)
+		if err == nil {
+			t.Leverage = lev
+		} else {
+			return fmt.Errorf("failed to parse leverage: %w", err)
+		}
+	}
+
+	if aux.TPQuantity != "" {
+		qty, err := strconv.ParseFloat(aux.TPQuantity, 64)
+		if err == nil {
+			t.TPQuantity = qty
+		} else {
+			return fmt.Errorf("failed to parse TP quantity: %w", err)
+		}
+	}
+
+	if aux.SLQuantity != "" {
+		qty, err := strconv.ParseFloat(aux.SLQuantity, 64)
+		if err == nil {
+			t.SLQuantity = qty
+		} else {
+			return fmt.Errorf("failed to parse SL quantity: %w", err)
+		}
+	}
+
+	if aux.TPStopType != "" {
+		tpStopType, err := ParseStopType(aux.TPStopType)
+		if err == nil {
+			t.TPStopType = tpStopType
+		} else {
+			return fmt.Errorf("failed to parse TP stop type: %w", err)
+		}
+	}
+
+	if aux.TPPrice != "" {
+		tpPrice, err := strconv.ParseFloat(aux.TPPrice, 64)
+		if err == nil {
+			t.TPPrice = tpPrice
+		} else {
+			return fmt.Errorf("failed to parse TP price: %w", err)
+		}
+	}
+
+	if aux.TPOrderType != "" {
+		tpOrderType, err := ParseOrderType(aux.TPOrderType)
+		if err == nil {
+			t.TPOrderType = tpOrderType
+		} else {
+			return fmt.Errorf("failed to parse TP order type: %w", err)
+		}
+	}
+
+	if aux.TPOrderPrice != "" {
+		tpOrderPrice, err := strconv.ParseFloat(aux.TPOrderPrice, 64)
+		if err == nil {
+			t.TPOrderPrice = tpOrderPrice
+		} else {
+			return fmt.Errorf("failed to parse TP order price: %w", err)
+		}
+	}
+
+	if aux.SLStopType != "" {
+		slStopType, err := ParseStopType(aux.SLStopType)
+		if err == nil {
+			t.SLStopType = slStopType
+		} else {
+			return fmt.Errorf("failed to parse SL stop type: %w", err)
+		}
+	}
+
+	if aux.SLPrice != "" {
+		slPrice, err := strconv.ParseFloat(aux.SLPrice, 64)
+		if err == nil {
+			t.SLPrice = slPrice
+		} else {
+			return fmt.Errorf("failed to parse SL price: %w", err)
+		}
+	}
+
+	if aux.SLOrderType != "" {
+		slOrderType, err := ParseOrderType(aux.SLOrderType)
+		if err == nil {
+			t.SLOrderType = slOrderType
+		} else {
+			return fmt.Errorf("failed to parse SL order type: %w", err)
+		}
+	}
+
+	if aux.SLOrderPrice != "" {
+		slOrderPrice, err := strconv.ParseFloat(aux.SLOrderPrice, 64)
+		if err == nil {
+			t.SLOrderPrice = slOrderPrice
+		} else {
+			return fmt.Errorf("failed to parse SL order price: %w", err)
+		}
+	}
+
+	return nil
 }
