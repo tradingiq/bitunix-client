@@ -37,6 +37,13 @@ func main() {
 		}
 	}()
 
+	tpslorders := ws.SubscribeTpSlOrders()
+	go func() {
+		for res := range tpslorders {
+			log.WithField("tpslorder", res).Debug("got tpsl order")
+		}
+	}()
+
 	if err := ws.Stream(); err != nil {
 		log.WithError(err).Fatal("failed to stream")
 	}

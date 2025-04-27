@@ -10,7 +10,7 @@ TP/SL Order
 |----------------|-------------------------------------------------------------|--------------|-------------------------------------------------------------------------------------------------------------------|
 | ch             |                                                             | String       | Channel name: position                                                                                            |
 | ts             |                                                             | Int64        | Time stamp                                                                                                        |
-| data           |                                                             | List<Object> | Subscription data                                                                                                 |
+| data           | #broken not a List<Object> but Object                       | List<Object> | Subscription data                                                                                                 |
 | > event        |                                                             | String       | Event: CREATE/UPDATE/CLOSE                                                                                        |
 | > positionId   |                                                             | String       | position Id                                                                                                       |
 | > orderId      |                                                             | String       | order Id                                                                                                          |
