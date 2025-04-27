@@ -495,9 +495,9 @@ type OrderChannelResponse struct {
 }
 
 type TpSlOrderChannelResponse struct {
-	Channel   string      `json:"ch"`
-	Timestamp int64       `json:"ts"`
-	Data      []TPSLOrder `json:"data"`
+	Channel   string    `json:"ch"`
+	Timestamp int64     `json:"ts"`
+	Data      TPSLOrder `json:"data"`
 }
 
 type TPSLOrder struct {
