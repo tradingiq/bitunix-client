@@ -512,7 +512,7 @@ func TestTPSLOrderChannelResponseUnmarshalJSON(t *testing.T) {
 	jsonStr := `{
 		"ch": "tpsl",
 		"ts": 1645123456000,
-		"data": [
+		"data": 
 			{
 				"positionId": "12345",
 				"orderId": "67890",
@@ -535,7 +535,7 @@ func TestTPSLOrderChannelResponseUnmarshalJSON(t *testing.T) {
 				"slOrderType": "MARKET",
 				"slOrderPrice": "0.00"
 			}
-		]
+		
 	}`
 
 	var response TpSlOrderChannelResponse
@@ -552,11 +552,7 @@ func TestTPSLOrderChannelResponseUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected timestamp 1645123456000, got %d", response.Timestamp)
 	}
 
-	if len(response.Data) != 1 {
-		t.Fatalf("Expected 1 TPSL order, got %d", len(response.Data))
-	}
-
-	tpslOrder := response.Data[0]
+	tpslOrder := response.Data
 	if tpslOrder.PositionID != "12345" {
 		t.Errorf("Expected positionId '12345', got %s", tpslOrder.PositionID)
 	}
