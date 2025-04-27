@@ -488,13 +488,13 @@ func (o *OrderData) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type OrderChannelSubscription struct {
+type OrderChannelResponse struct {
 	Channel   string    `json:"ch"`
 	TimeStamp int64     `json:"ts"`
 	Data      OrderData `json:"data"`
 }
 
-type TPSLOrderSubscription struct {
+type TpSlOrderChannelResponse struct {
 	Channel   string      `json:"ch"`
 	Timestamp int64       `json:"ts"`
 	Data      []TPSLOrder `json:"data"`
