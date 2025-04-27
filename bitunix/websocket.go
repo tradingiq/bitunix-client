@@ -33,11 +33,12 @@ type privateWebsocketClient struct {
 	websocketClient
 	balanceSubscribers     map[chan model.BalanceChannelResponse]struct{}
 	positionSubscribers    map[chan model.PositionChannelResponse]struct{}
-	orderSubscribers       map[chan model.OrderChannelSubscription]struct{}
+	orderSubscribers       map[chan model.OrderChannelResponse]struct{}
+	tpSlOrderSubscribers   map[chan model.TpSlOrderChannelResponse]struct{}
 	orderSubscriberMtx     sync.Mutex
 	positionSubscribersMtx sync.Mutex
-
-	balanceSubscriberMtx sync.Mutex
+	balanceSubscriberMtx   sync.Mutex
+	tpSlOrderSubscriberMtx sync.Mutex
 }
 
 func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *privateWebsocketClient {
@@ -55,7 +56,8 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *private
 		positionSubscribersMtx: sync.Mutex{},
 		balanceSubscribers:     map[chan model.BalanceChannelResponse]struct{}{},
 		positionSubscribers:    map[chan model.PositionChannelResponse]struct{}{},
-		orderSubscribers:       map[chan model.OrderChannelSubscription]struct{}{},
+		orderSubscribers:       map[chan model.OrderChannelResponse]struct{}{},
+		tpSlOrderSubscribers:   map[chan model.TpSlOrderChannelResponse]struct{}{},
 	}
 }
 
@@ -97,17 +99,17 @@ func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionCha
 	}
 }
 
-func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelSubscription {
+func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelResponse {
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
-	c := make(chan model.OrderChannelSubscription)
+	c := make(chan model.OrderChannelResponse)
 
 	ws.orderSubscribers[c] = struct{}{}
 
 	return c
 }
 
-func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelSubscription) {
+func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelResponse) {
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
 
@@ -116,6 +118,24 @@ func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelS
 	}
 }
 
+func (ws *privateWebsocketClient) SubscribeTpSlOrders() <-chan model.TpSlOrderChannelResponse {
+	ws.tpSlOrderSubscriberMtx.Lock()
+	defer ws.tpSlOrderSubscriberMtx.Unlock()
+	c := make(chan model.TpSlOrderChannelResponse)
+
+	ws.tpSlOrderSubscribers[c] = struct{}{}
+
+	return c
+}
+
+func (ws *privateWebsocketClient) UnsubscribeTpSlOrders(sub chan model.TpSlOrderChannelResponse) {
+	ws.tpSlOrderSubscriberMtx.Lock()
+	defer ws.tpSlOrderSubscriberMtx.Unlock()
+
+	if _, ok := ws.tpSlOrderSubscribers[sub]; ok {
+		delete(ws.tpSlOrderSubscribers, sub)
+	}
+}
 func (ws *privateWebsocketClient) Stream() error {
 	err := ws.client.Listen(func(bytes []byte) error {
 		go func() {
@@ -134,6 +154,8 @@ func (ws *privateWebsocketClient) Stream() error {
 					ws.populatePositionResponse(bytes)
 				case model.ChannelOrder:
 					ws.populateOrderResponse(bytes)
+				case model.ChannelTpSl:
+					ws.populateTpSlOrderResponse(bytes)
 				}
 			}
 		}()
@@ -147,8 +169,21 @@ func (ws *privateWebsocketClient) Stream() error {
 	return nil
 }
 
+func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
+	res := model.TpSlOrderChannelResponse{}
+	if err := json.Unmarshal(bytes, &res); err != nil {
+		log.WithError(err).Errorf("error unmarshaling tpslorder response JSON")
+	}
+
+	ws.tpSlOrderSubscriberMtx.Lock()
+	defer ws.tpSlOrderSubscriberMtx.Unlock()
+	for sub, _ := range ws.tpSlOrderSubscribers {
+		sub <- res
+	}
+}
+
 func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
-	res := model.OrderChannelSubscription{}
+	res := model.OrderChannelResponse{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
 		log.WithError(err).Errorf("error unmarshaling position response JSON")
 	}

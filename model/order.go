@@ -64,7 +64,7 @@ func (r TPSLOrderRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-type TPSLOrderResponse struct {
+type TpSlOrderResponse struct {
 	Code    int                     `json:"code"`
 	Message string                  `json:"msg"`
 	Data    []TPSLOrderResponseData `json:"data"`

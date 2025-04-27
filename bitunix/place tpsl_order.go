@@ -42,7 +42,7 @@ func (b *TPSLOrderBuilder) Build() model.TPSLOrderRequest {
 	return b.request
 }
 
-func (c *client) PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrderRequest) (*model.TPSLOrderResponse, error) {
+func (c *client) PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrderRequest) (*model.TpSlOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal order request: %w", err)
@@ -53,7 +53,7 @@ func (c *client) PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrderReq
 		return nil, fmt.Errorf("failed to place order request: %w", err)
 	}
 
-	response := &model.TPSLOrderResponse{}
+	response := &model.TpSlOrderResponse{}
 	if err := json.Unmarshal(responseBody, response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
