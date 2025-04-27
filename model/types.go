@@ -434,3 +434,72 @@ func ParseOrderEvent(s string) (OrderEvent, error) {
 func (s OrderEvent) Normalize() OrderEvent {
 	return OrderEvent(strings.ToUpper(string(s)))
 }
+
+type TPSLEvent string
+
+const (
+	TPSLEventCreate TPSLEvent = "CREATE"
+	TPSLEventUpdate TPSLEvent = "UPDATE"
+	TPSLEventClose  TPSLEvent = "CLOSE"
+)
+
+func (s TPSLEvent) IsValid() bool {
+	switch s {
+	case TPSLEventCreate, TPSLEventUpdate, TPSLEventClose:
+		return true
+	}
+	return false
+}
+
+func (s TPSLEvent) String() string {
+	return string(s)
+}
+
+func ParseTPSLEvent(s string) (TPSLEvent, error) {
+	status := TPSLEvent(s)
+	status = status.Normalize()
+
+	if !status.IsValid() {
+		return status, fmt.Errorf("%s is not a valid TPSLEvent", s)
+	}
+
+	return status, nil
+}
+
+func (s TPSLEvent) Normalize() TPSLEvent {
+	return TPSLEvent(strings.ToUpper(string(s)))
+}
+
+type TpSlType string
+
+const (
+	TPSLTypeFull    TpSlType = "POSITION_TPSL"
+	TPSLTypePartial TpSlType = "TPSL"
+)
+
+func (s TpSlType) IsValid() bool {
+	switch s {
+	case TPSLTypeFull, TPSLTypePartial:
+		return true
+	}
+	return false
+}
+
+func (s TpSlType) String() string {
+	return string(s)
+}
+
+func ParseTPSLType(s string) (TpSlType, error) {
+	status := TpSlType(s)
+	status = status.Normalize()
+
+	if !status.IsValid() {
+		return status, fmt.Errorf("%s is not a valid TpSlType", s)
+	}
+
+	return status, nil
+}
+
+func (s TpSlType) Normalize() TpSlType {
+	return TpSlType(strings.ToUpper(string(s)))
+}
