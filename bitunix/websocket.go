@@ -64,7 +64,7 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *private
 func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceChannelMessage {
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
-	c := make(chan model.BalanceChannelMessage)
+	c := make(chan model.BalanceChannelMessage, 10)
 
 	ws.balanceSubscribers[c] = struct{}{}
 
@@ -83,7 +83,7 @@ func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceChann
 func (ws *privateWebsocketClient) SubscribePositions() <-chan model.PositionChannelMessage {
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
-	c := make(chan model.PositionChannelMessage)
+	c := make(chan model.PositionChannelMessage, 10)
 
 	ws.positionSubscribers[c] = struct{}{}
 
@@ -102,7 +102,7 @@ func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionCha
 func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelMessage {
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
-	c := make(chan model.OrderChannelMessage)
+	c := make(chan model.OrderChannelMessage, 10)
 
 	ws.orderSubscribers[c] = struct{}{}
 
@@ -121,7 +121,7 @@ func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelM
 func (ws *privateWebsocketClient) SubscribeTpSlOrders() <-chan model.TpSlOrderChannelMessage {
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
-	c := make(chan model.TpSlOrderChannelMessage)
+	c := make(chan model.TpSlOrderChannelMessage, 10)
 
 	ws.tpSlOrderSubscribers[c] = struct{}{}
 
@@ -178,7 +178,11 @@ func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
 	for sub, _ := range ws.tpSlOrderSubscribers {
-		sub <- res
+		select {
+		case sub <- res:
+		default:
+			log.Errorf("tp sl channel poisoned, data might be not recent")
+		}
 	}
 }
 
@@ -191,7 +195,11 @@ func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
 	for sub, _ := range ws.orderSubscribers {
-		sub <- res
+		select {
+		case sub <- res:
+		default:
+			log.Errorf("tp sl channel poisoned, data might be not recent")
+		}
 	}
 }
 
@@ -204,7 +212,11 @@ func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
 	for sub, _ := range ws.positionSubscribers {
-		sub <- res
+		select {
+		case sub <- res:
+		default:
+			log.Errorf("tp sl channel poisoned, data might be not recent")
+		}
 	}
 }
 
@@ -216,7 +228,11 @@ func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
 	for sub, _ := range ws.balanceSubscribers {
-		sub <- res
+		select {
+		case sub <- res:
+		default:
+			log.Errorf("tp sl channel poisoned, data might be not recent")
+		}
 	}
 }
 
