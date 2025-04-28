@@ -518,3 +518,17 @@ func ParseSymbol(s string) Symbol {
 func (s Symbol) Normalize() Symbol {
 	return Symbol(strings.ToUpper(strings.TrimSpace(string(s))))
 }
+
+type MarginCoin string
+
+func (s MarginCoin) String() string {
+	return string(s)
+}
+
+func ParseMarginCoin(s string) MarginCoin {
+	return MarginCoin(s).Normalize()
+}
+
+func (s MarginCoin) Normalize() MarginCoin {
+	return MarginCoin(strings.ToUpper(strings.TrimSpace(string(s))))
+}

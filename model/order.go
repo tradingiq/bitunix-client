@@ -186,8 +186,8 @@ type OrderHistoryParams struct {
 	Symbol    Symbol
 	OrderID   string
 	ClientID  string
-	Status    string
-	Type      string
+	Status    OrderStatus
+	Type      OrderType
 	StartTime *time.Time
 	EndTime   *time.Time
 	Skip      int64

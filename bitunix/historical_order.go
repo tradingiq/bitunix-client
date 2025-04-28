@@ -22,10 +22,10 @@ func (c *client) GetOrderHistory(ctx context.Context, params model.OrderHistoryP
 		queryParams.Add("clientId", params.ClientID)
 	}
 	if params.Status != "" {
-		queryParams.Add("status", params.Status)
+		queryParams.Add("status", params.Status.String())
 	}
 	if params.Type != "" {
-		queryParams.Add("type", params.Type)
+		queryParams.Add("type", params.Type.String())
 	}
 	if params.StartTime != nil {
 		queryParams.Add("startTime", strconv.FormatInt(params.StartTime.UnixMilli(), 10))
