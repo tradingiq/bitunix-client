@@ -366,15 +366,15 @@ func (s PositionSide) Normalize() PositionSide {
 	return PositionSide(strings.ToUpper(string(s)))
 }
 
-type PositionEvent string
+type PositionEventType string
 
 const (
-	PositionEventOpen   PositionEvent = "OPEN"
-	PositionEventUpdate PositionEvent = "UPDATE"
-	PositionEventClose  PositionEvent = "CLOSE"
+	PositionEventOpen   PositionEventType = "OPEN"
+	PositionEventUpdate PositionEventType = "UPDATE"
+	PositionEventClose  PositionEventType = "CLOSE"
 )
 
-func (s PositionEvent) IsValid() bool {
+func (s PositionEventType) IsValid() bool {
 	switch s {
 	case PositionEventOpen, PositionEventUpdate, PositionEventClose:
 		return true
@@ -382,34 +382,34 @@ func (s PositionEvent) IsValid() bool {
 	return false
 }
 
-func (s PositionEvent) String() string {
+func (s PositionEventType) String() string {
 	return string(s)
 }
 
-func ParsePositionEvent(s string) (PositionEvent, error) {
-	status := PositionEvent(s)
+func ParsePositionEvent(s string) (PositionEventType, error) {
+	status := PositionEventType(s)
 	status = status.Normalize()
 
 	if !status.IsValid() {
-		return status, fmt.Errorf("%s is not a valid PositionEvent", s)
+		return status, fmt.Errorf("%s is not a valid PositionEventType", s)
 	}
 
 	return status, nil
 }
 
-func (s PositionEvent) Normalize() PositionEvent {
-	return PositionEvent(strings.ToUpper(string(s)))
+func (s PositionEventType) Normalize() PositionEventType {
+	return PositionEventType(strings.ToUpper(string(s)))
 }
 
-type OrderEvent string
+type OrderEventType string
 
 const (
-	OrderEventCreate OrderEvent = "CREATE"
-	OrderEventUpdate OrderEvent = "UPDATE"
-	OrderEventClose  OrderEvent = "CLOSE"
+	OrderEventCreate OrderEventType = "CREATE"
+	OrderEventUpdate OrderEventType = "UPDATE"
+	OrderEventClose  OrderEventType = "CLOSE"
 )
 
-func (s OrderEvent) IsValid() bool {
+func (s OrderEventType) IsValid() bool {
 	switch s {
 	case OrderEventCreate, OrderEventUpdate, OrderEventClose:
 		return true
@@ -417,34 +417,34 @@ func (s OrderEvent) IsValid() bool {
 	return false
 }
 
-func (s OrderEvent) String() string {
+func (s OrderEventType) String() string {
 	return string(s)
 }
 
-func ParseOrderEvent(s string) (OrderEvent, error) {
-	status := OrderEvent(s)
+func ParseOrderEvent(s string) (OrderEventType, error) {
+	status := OrderEventType(s)
 	status = status.Normalize()
 
 	if !status.IsValid() {
-		return status, fmt.Errorf("%s is not a valid PositionEvent", s)
+		return status, fmt.Errorf("%s is not a valid PositionEventType", s)
 	}
 
 	return status, nil
 }
 
-func (s OrderEvent) Normalize() OrderEvent {
-	return OrderEvent(strings.ToUpper(string(s)))
+func (s OrderEventType) Normalize() OrderEventType {
+	return OrderEventType(strings.ToUpper(string(s)))
 }
 
-type TPSLEvent string
+type TpSlEventType string
 
 const (
-	TPSLEventCreate TPSLEvent = "CREATE"
-	TPSLEventUpdate TPSLEvent = "UPDATE"
-	TPSLEventClose  TPSLEvent = "CLOSE"
+	TPSLEventCreate TpSlEventType = "CREATE"
+	TPSLEventUpdate TpSlEventType = "UPDATE"
+	TPSLEventClose  TpSlEventType = "CLOSE"
 )
 
-func (s TPSLEvent) IsValid() bool {
+func (s TpSlEventType) IsValid() bool {
 	switch s {
 	case TPSLEventCreate, TPSLEventUpdate, TPSLEventClose:
 		return true
@@ -452,23 +452,23 @@ func (s TPSLEvent) IsValid() bool {
 	return false
 }
 
-func (s TPSLEvent) String() string {
+func (s TpSlEventType) String() string {
 	return string(s)
 }
 
-func ParseTPSLEvent(s string) (TPSLEvent, error) {
-	status := TPSLEvent(s)
+func ParseTPSLEvent(s string) (TpSlEventType, error) {
+	status := TpSlEventType(s)
 	status = status.Normalize()
 
 	if !status.IsValid() {
-		return status, fmt.Errorf("%s is not a valid TPSLEvent", s)
+		return status, fmt.Errorf("%s is not a valid TpSlEventType", s)
 	}
 
 	return status, nil
 }
 
-func (s TPSLEvent) Normalize() TPSLEvent {
-	return TPSLEvent(strings.ToUpper(string(s)))
+func (s TpSlEventType) Normalize() TpSlEventType {
+	return TpSlEventType(strings.ToUpper(string(s)))
 }
 
 type TpSlType string

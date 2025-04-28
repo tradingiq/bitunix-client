@@ -27,23 +27,23 @@ type TradeHistoryResponse struct {
 }
 
 type HistoricalTrade struct {
-	TradeID      string       `json:"tradeId"`
-	OrderID      string       `json:"orderId"`
-	Symbol       string       `json:"symbol"`
-	Quantity     float64      `json:"-"`
-	PositionMode PositionMode `json:"-"`
-	MarginMode   MarginMode   `json:"-"`
-	Leverage     int          `json:"leverage"`
-	Price        float64      `json:"-"`
-	Side         TradeSide    `json:"-"`
-	OrderType    OrderType    `json:"-"`
-	Effect       string       `json:"effect"`
-	ClientID     string       `json:"clientId"`
-	ReduceOnly   bool         `json:"reduceOnly"`
-	Fee          float64      `json:"-"`
-	RealizedPNL  float64      `json:"-"`
-	CreateTime   time.Time    `json:"-"`
-	RoleType     string       `json:"roleType"`
+	TradeID      string        `json:"tradeId"`
+	OrderID      string        `json:"orderId"`
+	Symbol       string        `json:"symbol"`
+	Quantity     float64       `json:"-"`
+	PositionMode PositionMode  `json:"-"`
+	MarginMode   MarginMode    `json:"-"`
+	Leverage     int           `json:"leverage"`
+	Price        float64       `json:"-"`
+	Side         TradeSide     `json:"-"`
+	OrderType    OrderType     `json:"-"`
+	Effect       string        `json:"effect"`
+	ClientID     string        `json:"clientId"`
+	ReduceOnly   bool          `json:"reduceOnly"`
+	Fee          float64       `json:"-"`
+	RealizedPNL  float64       `json:"-"`
+	CreateTime   time.Time     `json:"-"`
+	RoleType     TradeRoleType `json:"-"`
 }
 
 func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
@@ -58,6 +58,7 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 		Side         string `json:"side"`
 		OrderType    string `json:"orderType"`
 		MarginMode   string `json:"marginMode"`
+		RoleType     string `json:"roleType"`
 		*Alias
 	}{
 		Alias: (*Alias)(t),
@@ -135,6 +136,12 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("invalid margin mode: %w", err)
 	}
 	t.MarginMode = marginMode
+
+	roleType, err := ParseTradeRoleType(aux.RoleType)
+	if err != nil {
+		return fmt.Errorf("invalid role type: %w", err)
+	}
+	t.RoleType = roleType
 
 	return nil
 }
