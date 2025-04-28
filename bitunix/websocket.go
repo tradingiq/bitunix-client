@@ -31,10 +31,10 @@ func (ws *websocketClient) Disconnect() {
 
 type privateWebsocketClient struct {
 	websocketClient
-	balanceSubscribers     map[chan model.BalanceChannelResponse]struct{}
-	positionSubscribers    map[chan model.PositionChannelResponse]struct{}
-	orderSubscribers       map[chan model.OrderChannelResponse]struct{}
-	tpSlOrderSubscribers   map[chan model.TpSlOrderChannelResponse]struct{}
+	balanceSubscribers     map[chan model.BalanceChannelMessage]struct{}
+	positionSubscribers    map[chan model.PositionChannelMessage]struct{}
+	orderSubscribers       map[chan model.OrderChannelMessage]struct{}
+	tpSlOrderSubscribers   map[chan model.TpSlOrderChannelMessage]struct{}
 	orderSubscriberMtx     sync.Mutex
 	positionSubscribersMtx sync.Mutex
 	balanceSubscriberMtx   sync.Mutex
@@ -54,24 +54,24 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *private
 		orderSubscriberMtx:     sync.Mutex{},
 		balanceSubscriberMtx:   sync.Mutex{},
 		positionSubscribersMtx: sync.Mutex{},
-		balanceSubscribers:     map[chan model.BalanceChannelResponse]struct{}{},
-		positionSubscribers:    map[chan model.PositionChannelResponse]struct{}{},
-		orderSubscribers:       map[chan model.OrderChannelResponse]struct{}{},
-		tpSlOrderSubscribers:   map[chan model.TpSlOrderChannelResponse]struct{}{},
+		balanceSubscribers:     map[chan model.BalanceChannelMessage]struct{}{},
+		positionSubscribers:    map[chan model.PositionChannelMessage]struct{}{},
+		orderSubscribers:       map[chan model.OrderChannelMessage]struct{}{},
+		tpSlOrderSubscribers:   map[chan model.TpSlOrderChannelMessage]struct{}{},
 	}
 }
 
-func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceChannelResponse {
+func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceChannelMessage {
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
-	c := make(chan model.BalanceChannelResponse)
+	c := make(chan model.BalanceChannelMessage)
 
 	ws.balanceSubscribers[c] = struct{}{}
 
 	return c
 }
 
-func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceChannelResponse) {
+func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceChannelMessage) {
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
 
@@ -80,17 +80,17 @@ func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceChann
 	}
 }
 
-func (ws *privateWebsocketClient) SubscribePositions() <-chan model.PositionChannelResponse {
+func (ws *privateWebsocketClient) SubscribePositions() <-chan model.PositionChannelMessage {
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
-	c := make(chan model.PositionChannelResponse)
+	c := make(chan model.PositionChannelMessage)
 
 	ws.positionSubscribers[c] = struct{}{}
 
 	return c
 }
 
-func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionChannelResponse) {
+func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionChannelMessage) {
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
 
@@ -99,17 +99,17 @@ func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionCha
 	}
 }
 
-func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelResponse {
+func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelMessage {
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
-	c := make(chan model.OrderChannelResponse)
+	c := make(chan model.OrderChannelMessage)
 
 	ws.orderSubscribers[c] = struct{}{}
 
 	return c
 }
 
-func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelResponse) {
+func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelMessage) {
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
 
@@ -118,17 +118,17 @@ func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelR
 	}
 }
 
-func (ws *privateWebsocketClient) SubscribeTpSlOrders() <-chan model.TpSlOrderChannelResponse {
+func (ws *privateWebsocketClient) SubscribeTpSlOrders() <-chan model.TpSlOrderChannelMessage {
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
-	c := make(chan model.TpSlOrderChannelResponse)
+	c := make(chan model.TpSlOrderChannelMessage)
 
 	ws.tpSlOrderSubscribers[c] = struct{}{}
 
 	return c
 }
 
-func (ws *privateWebsocketClient) UnsubscribeTpSlOrders(sub chan model.TpSlOrderChannelResponse) {
+func (ws *privateWebsocketClient) UnsubscribeTpSlOrders(sub chan model.TpSlOrderChannelMessage) {
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
 
@@ -170,7 +170,7 @@ func (ws *privateWebsocketClient) Stream() error {
 }
 
 func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
-	res := model.TpSlOrderChannelResponse{}
+	res := model.TpSlOrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
 		log.WithError(err).Errorf("error unmarshaling tpslorder response JSON")
 	}
@@ -183,7 +183,7 @@ func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 }
 
 func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
-	res := model.OrderChannelResponse{}
+	res := model.OrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
 		log.WithError(err).Errorf("error unmarshaling position response JSON")
 	}
@@ -196,7 +196,7 @@ func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 }
 
 func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
-	res := model.PositionChannelResponse{}
+	res := model.PositionChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
 		log.WithError(err).Errorf("error unmarshaling position response JSON")
 	}
@@ -209,7 +209,7 @@ func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 }
 
 func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
-	res := model.BalanceChannelResponse{}
+	res := model.BalanceChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
 		log.WithError(err).Errorf("error unmarshaling balance response  JSON")
 	}

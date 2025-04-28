@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-type BalanceChannelResponse struct {
-	Ch   string        `json:"ch"`
-	Ts   int64         `json:"ts"`
-	Data BalanceDetail `json:"data"`
+type BalanceChannelMessage struct {
+	Ch   string       `json:"ch"`
+	Ts   int64        `json:"ts"`
+	Data BalanceEvent `json:"data"`
 }
 
-type BalanceDetail struct {
+type BalanceEvent struct {
 	Coin            string  `json:"coin"`
 	Available       float64 `json:"-"`
 	Frozen          float64 `json:"-"`
@@ -25,8 +25,8 @@ type BalanceDetail struct {
 	ExpMoney        float64 `json:"-"`
 }
 
-func (p *BalanceDetail) UnmarshalJSON(data []byte) error {
-	type Alias BalanceDetail
+func (p *BalanceEvent) UnmarshalJSON(data []byte) error {
+	type Alias BalanceEvent
 	aux := &struct {
 		Available       string `json:"available"`
 		Frozen          string `json:"frozen"`
@@ -104,26 +104,26 @@ func (p *BalanceDetail) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type PositionData struct {
-	Event         PositionEvent `json:"-"`
-	PositionID    string        `json:"positionId"`
-	MarginMode    MarginMode    `json:"-"`
-	PositionMode  PositionMode  `json:"-"`
-	Side          PositionSide  `json:"-"`
-	Leverage      int           `json:"-"`
-	Margin        float64       `json:"-"`
-	CreateTime    time.Time     `json:"-"`
-	Quantity      float64       `json:"-"`
-	EntryValue    float64       `json:"-"`
-	Symbol        string        `json:"symbol"`
-	RealizedPNL   float64       `json:"-"`
-	UnrealizedPNL float64       `json:"-"`
-	Funding       float64       `json:"-"`
-	Fee           float64       `json:"-"`
+type PositionEvent struct {
+	Event         PositionEventType `json:"-"`
+	PositionID    string            `json:"positionId"`
+	MarginMode    MarginMode        `json:"-"`
+	PositionMode  PositionMode      `json:"-"`
+	Side          PositionSide      `json:"-"`
+	Leverage      int               `json:"-"`
+	Margin        float64           `json:"-"`
+	CreateTime    time.Time         `json:"-"`
+	Quantity      float64           `json:"-"`
+	EntryValue    float64           `json:"-"`
+	Symbol        string            `json:"symbol"`
+	RealizedPNL   float64           `json:"-"`
+	UnrealizedPNL float64           `json:"-"`
+	Funding       float64           `json:"-"`
+	Fee           float64           `json:"-"`
 }
 
-func (p *PositionData) UnmarshalJSON(data []byte) error {
-	type Alias PositionData
+func (p *PositionEvent) UnmarshalJSON(data []byte) error {
+	type Alias PositionEvent
 	aux := &struct {
 		Event         string `json:"event"`
 		MarginMode    string `json:"marginMode"`
@@ -254,19 +254,19 @@ func (p *PositionData) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type PositionChannelResponse struct {
-	Channel   string       `json:"ch"`
-	TimeStamp int64        `json:"ts"`
-	Data      PositionData `json:"data"`
+type PositionChannelMessage struct {
+	Channel   string        `json:"ch"`
+	TimeStamp int64         `json:"ts"`
+	Data      PositionEvent `json:"data"`
 }
 
-type OrderData struct {
-	Event        OrderEvent   `json:"-"`
-	OrderID      string       `json:"orderId"`
-	Symbol       string       `json:"symbol"`
-	PositionType MarginMode   `json:"-"`
-	PositionMode PositionMode `json:"-"`
-	Side         TradeSide    `json:"-"`
+type OrderEvent struct {
+	Event        OrderEventType `json:"-"`
+	OrderID      string         `json:"orderId"`
+	Symbol       string         `json:"symbol"`
+	PositionType MarginMode     `json:"-"`
+	PositionMode PositionMode   `json:"-"`
+	Side         TradeSide      `json:"-"`
 	// Currently broken, returns "SHORT"/"LONG"
 	//Effect        TimeInForce    `json:"effect"`
 	Type          OrderType   `json:"-"`
@@ -291,8 +291,8 @@ type OrderData struct {
 	SLOrderPrice float64 `json:"-"`
 }
 
-func (o *OrderData) UnmarshalJSON(data []byte) error {
-	type Alias OrderData
+func (o *OrderEvent) UnmarshalJSON(data []byte) error {
+	type Alias OrderEvent
 	aux := &struct {
 		Event        string `json:"event"`
 		PositionType string `json:"positionType"`
@@ -488,43 +488,43 @@ func (o *OrderData) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type OrderChannelResponse struct {
-	Channel   string    `json:"ch"`
-	TimeStamp int64     `json:"ts"`
-	Data      OrderData `json:"data"`
+type OrderChannelMessage struct {
+	Channel   string     `json:"ch"`
+	TimeStamp int64      `json:"ts"`
+	Data      OrderEvent `json:"data"`
 }
 
-type TpSlOrderChannelResponse struct {
-	Channel   string    `json:"ch"`
-	Timestamp int64     `json:"ts"`
-	Data      TPSLOrder `json:"data"`
+type TpSlOrderChannelMessage struct {
+	Channel   string         `json:"ch"`
+	Timestamp int64          `json:"ts"`
+	Data      TpSlOrderEvent `json:"data"`
 }
 
-type TPSLOrder struct {
-	Event        TPSLEvent    `json:"-"`
-	PositionID   string       `json:"positionId"`
-	OrderID      string       `json:"orderId"`
-	Symbol       string       `json:"symbol"`
-	Leverage     int          `json:"-"`
-	Side         TradeSide    `json:"-"`
-	PositionMode PositionMode `json:"-"`
-	Status       OrderStatus  `json:"-"`
-	CreateTime   time.Time    `json:"-"`
-	Type         TpSlType     `json:"-"`
-	TPQuantity   float64      `json:"-"`
-	SLQuantity   float64      `json:"-"`
-	TPStopType   StopType     `json:"-"`
-	TPPrice      float64      `json:"-"`
-	TPOrderType  OrderType    `json:"-"`
-	TPOrderPrice float64      `json:"-"`
-	SLStopType   StopType     `json:"-"`
-	SLPrice      float64      `json:"-"`
-	SLOrderType  OrderType    `json:"-"`
-	SLOrderPrice float64      `json:"-"`
+type TpSlOrderEvent struct {
+	Event        TpSlEventType `json:"-"`
+	PositionID   string        `json:"positionId"`
+	OrderID      string        `json:"orderId"`
+	Symbol       string        `json:"symbol"`
+	Leverage     int           `json:"-"`
+	Side         TradeSide     `json:"-"`
+	PositionMode PositionMode  `json:"-"`
+	Status       OrderStatus   `json:"-"`
+	CreateTime   time.Time     `json:"-"`
+	Type         TpSlType      `json:"-"`
+	TPQuantity   float64       `json:"-"`
+	SLQuantity   float64       `json:"-"`
+	TPStopType   StopType      `json:"-"`
+	TPPrice      float64       `json:"-"`
+	TPOrderType  OrderType     `json:"-"`
+	TPOrderPrice float64       `json:"-"`
+	SLStopType   StopType      `json:"-"`
+	SLPrice      float64       `json:"-"`
+	SLOrderType  OrderType     `json:"-"`
+	SLOrderPrice float64       `json:"-"`
 }
 
-func (t *TPSLOrder) UnmarshalJSON(data []byte) error {
-	type Alias TPSLOrder
+func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
+	type Alias TpSlOrderEvent
 	aux := &struct {
 		Event        string `json:"event"`
 		Leverage     string `json:"leverage"`

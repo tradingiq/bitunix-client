@@ -19,7 +19,7 @@ func TestBalanceDetailUnmarshalJSON(t *testing.T) {
 		"expMoney": "1200.75"
 	}`
 
-	var balance BalanceDetail
+	var balance BalanceEvent
 	err := json.Unmarshal([]byte(jsonStr), &balance)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal balance detail: %v", err)
@@ -96,7 +96,7 @@ func TestBalanceResponseUnmarshalJSON(t *testing.T) {
 		}
 	}`
 
-	var response BalanceChannelResponse
+	var response BalanceChannelMessage
 	err := json.Unmarshal([]byte(jsonStr), &response)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal balance response: %v", err)
@@ -142,7 +142,7 @@ func TestPositionDataUnmarshalJSON(t *testing.T) {
 		"fee": "5.75"
 	}`
 
-	var position PositionData
+	var position PositionEvent
 	err := json.Unmarshal([]byte(jsonStr), &position)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal position data: %v", err)
@@ -234,7 +234,7 @@ func TestPositionChannelSubscriptionUnmarshalJSON(t *testing.T) {
 			}
 	}`
 
-	var subscription PositionChannelResponse
+	var subscription PositionChannelMessage
 	err := json.Unmarshal([]byte(jsonStr), &subscription)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal position channel subscription: %v", err)
@@ -276,7 +276,7 @@ func TestEmptyStringHandling(t *testing.T) {
 		"fee": ""
 	}`
 
-	var position PositionData
+	var position PositionEvent
 	err := json.Unmarshal([]byte(jsonStr), &position)
 	if err != nil {
 		t.Fatalf("Failed to handle empty strings: %v", err)
@@ -387,7 +387,7 @@ func TestMalformedPositionData(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var position PositionData
+			var position PositionEvent
 			err := json.Unmarshal([]byte(tc.jsonStr), &position)
 			if err == nil {
 				t.Fatalf("Expected error for invalid %s, got none", tc.field)
@@ -420,7 +420,7 @@ func TestTPSLOrderUnmarshalJSON(t *testing.T) {
 		"slOrderPrice": "0.00"
 	}`
 
-	var tpslOrder TPSLOrder
+	var tpslOrder TpSlOrderEvent
 	err := json.Unmarshal([]byte(jsonStr), &tpslOrder)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal TPSL order: %v", err)
@@ -538,7 +538,7 @@ func TestTPSLOrderChannelResponseUnmarshalJSON(t *testing.T) {
 		
 	}`
 
-	var response TpSlOrderChannelResponse
+	var response TpSlOrderChannelMessage
 	err := json.Unmarshal([]byte(jsonStr), &response)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal TPSL channel response: %v", err)
@@ -586,7 +586,7 @@ func TestTPSLOrderEmptyFieldsHandling(t *testing.T) {
 		"slOrderPrice": ""
 	}`
 
-	var tpslOrder TPSLOrder
+	var tpslOrder TpSlOrderEvent
 	err := json.Unmarshal([]byte(jsonStr), &tpslOrder)
 	if err != nil {
 		t.Fatalf("Failed to handle empty TPSL fields: %v", err)
@@ -645,7 +645,7 @@ func TestTPSLOrderWithPartialFields(t *testing.T) {
 		"tpOrderPrice": "49900.00"
 	}`
 
-	var tpslOrderTPOnly TPSLOrder
+	var tpslOrderTPOnly TpSlOrderEvent
 	err := json.Unmarshal([]byte(jsonStrTPOnly), &tpslOrderTPOnly)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal TPSL order with TP fields only: %v", err)
@@ -681,7 +681,7 @@ func TestTPSLOrderWithPartialFields(t *testing.T) {
 		"slOrderPrice": "0.00"
 	}`
 
-	var tpslOrderSLOnly TPSLOrder
+	var tpslOrderSLOnly TpSlOrderEvent
 	err = json.Unmarshal([]byte(jsonStrSLOnly), &tpslOrderSLOnly)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal TPSL order with SL fields only: %v", err)
@@ -818,7 +818,7 @@ func TestMalformedTPSLOrderData(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var tpslOrder TPSLOrder
+			var tpslOrder TpSlOrderEvent
 			err := json.Unmarshal([]byte(tc.jsonStr), &tpslOrder)
 			if err == nil {
 				t.Fatalf("Expected error for invalid %s, got none", tc.field)

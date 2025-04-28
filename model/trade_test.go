@@ -98,7 +98,7 @@ func TestHistoricalTradeUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected createTime %v, got %v", expectedTime, trade.CreateTime)
 	}
 
-	if trade.RoleType != "TAKER" {
+	if trade.RoleType != TradeRoleTypeTaker {
 		t.Errorf("Expected roleType 'TAKER', got %s", trade.RoleType)
 	}
 }
