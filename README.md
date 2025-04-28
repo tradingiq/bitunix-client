@@ -61,7 +61,7 @@ fmt.Printf("Account Balance: %.6f %s\n", response.Data.Available, response.Data.
 ```go
 // Create a limit order using the builder pattern
 limitOrder := bitunix.NewOrderBuilder(
-    "BTCUSDT",           // Symbol
+    model.ParseSymbol("BTCUSDT"),           // Symbol
     model.TradeSideSell, // Side (BUY/SELL)
     model.SideOpen,      // Trade side (OPEN/CLOSE)
     0.002,               // Quantity
