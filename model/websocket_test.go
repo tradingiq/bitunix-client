@@ -2,6 +2,8 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -822,6 +824,183 @@ func TestMalformedTPSLOrderData(t *testing.T) {
 			err := json.Unmarshal([]byte(tc.jsonStr), &tpslOrder)
 			if err == nil {
 				t.Fatalf("Expected error for invalid %s, got none", tc.field)
+			}
+		})
+	}
+}
+
+func TestMarginCoinString(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    MarginCoin
+		expected string
+	}{
+		{
+			name:     "Standard coin",
+			input:    MarginCoin("USDT"),
+			expected: "USDT",
+		},
+		{
+			name:     "Lowercase coin",
+			input:    MarginCoin("usdt"),
+			expected: "usdt",
+		},
+		{
+			name:     "Mixed case coin",
+			input:    MarginCoin("uSdT"),
+			expected: "uSdT",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.input.String()
+			if result != tc.expected {
+				t.Errorf("Expected '%s', got '%s'", tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestMarginCoinNormalize(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    MarginCoin
+		expected MarginCoin
+	}{
+		{
+			name:     "Already uppercase",
+			input:    MarginCoin("USDT"),
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "Lowercase to uppercase",
+			input:    MarginCoin("usdt"),
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "Mixed case to uppercase",
+			input:    MarginCoin("uSdT"),
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "Trim spaces",
+			input:    MarginCoin(" USDT "),
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "Trim spaces and convert case",
+			input:    MarginCoin(" uSdT "),
+			expected: MarginCoin("USDT"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.input.Normalize()
+			if result != tc.expected {
+				t.Errorf("Expected '%s', got '%s'", tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestParseMarginCoin(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected MarginCoin
+	}{
+		{
+			name:     "Standard coin format",
+			input:    "USDT",
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "Lowercase input",
+			input:    "usdt",
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "Mixed case input",
+			input:    "uSdT",
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "With spaces",
+			input:    " USDT ",
+			expected: MarginCoin("USDT"),
+		},
+		{
+			name:     "With spaces and mixed case",
+			input:    " uSdT ",
+			expected: MarginCoin("USDT"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ParseMarginCoin(tc.input)
+			if result != tc.expected {
+				t.Errorf("Expected '%s', got '%s'", tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestMarginCoinWithCommonCoins(t *testing.T) {
+	commonCoins := []string{
+		"USDT", "BTC", "ETH", "SOL", "USDC", "BNB", "XRP", "ADA", "DOGE", "DOT",
+	}
+
+	for _, coin := range commonCoins {
+		t.Run(coin, func(t *testing.T) {
+
+			lowerCoin := strings.ToLower(coin)
+			result := ParseMarginCoin(lowerCoin)
+			if string(result) != coin {
+				t.Errorf("Expected '%s', got '%s'", coin, result)
+			}
+
+			spacedCoin := " " + coin + " "
+			result = ParseMarginCoin(spacedCoin)
+			if string(result) != coin {
+				t.Errorf("Expected '%s', got '%s'", coin, result)
+			}
+		})
+	}
+}
+
+func TestMarginCoinConsistencyWithSymbol(t *testing.T) {
+	testCases := []struct {
+		symbolInput     string
+		marginCoinInput string
+	}{
+		{
+			symbolInput:     "BTCUSDT",
+			marginCoinInput: "USDT",
+		},
+		{
+			symbolInput:     "ETHUSDT",
+			marginCoinInput: "USDT",
+		},
+		{
+			symbolInput:     "btcusdt",
+			marginCoinInput: "usdt",
+		},
+		{
+			symbolInput:     " BtCuSdT ",
+			marginCoinInput: " uSdT ",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s-%s", tc.symbolInput, tc.marginCoinInput), func(t *testing.T) {
+			parsedSymbol := ParseSymbol(tc.symbolInput)
+			parsedCoin := ParseMarginCoin(tc.marginCoinInput)
+
+			if !strings.HasSuffix(string(parsedSymbol), string(parsedCoin)) {
+				t.Errorf("Symbol '%s' should end with coin '%s' after normalization", parsedSymbol, parsedCoin)
 			}
 		})
 	}
