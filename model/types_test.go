@@ -342,3 +342,59 @@ func TestOrderStatusNormalize(t *testing.T) {
 		}
 	}
 }
+
+func TestSymbolNormalize(t *testing.T) {
+	tests := []struct {
+		input    Symbol
+		expected Symbol
+	}{
+		{Symbol("BTCUSDT"), Symbol("BTCUSDT")},
+		{Symbol("btcusdt"), Symbol("BTCUSDT")},
+		{Symbol("BtCuSdT"), Symbol("BTCUSDT")},
+		{Symbol(" BTCUSDT "), Symbol("BTCUSDT")},
+		{Symbol("  btcusdt  "), Symbol("BTCUSDT")},
+	}
+
+	for _, test := range tests {
+		result := test.input.Normalize()
+		if result != test.expected {
+			t.Errorf("Symbol.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestParseSymbol(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected Symbol
+	}{
+		{"BTCUSDT", Symbol("BTCUSDT")},
+		{"btcusdt", Symbol("BTCUSDT")},
+		{"BtCuSdT", Symbol("BTCUSDT")},
+		{" BTCUSDT ", Symbol("BTCUSDT")},
+		{"  btcusdt  ", Symbol("BTCUSDT")},
+	}
+
+	for _, test := range tests {
+		result := ParseSymbol(test.input)
+		if result != test.expected {
+			t.Errorf("ParseSymbol(%s): expected %s, got %s", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestSymbolString(t *testing.T) {
+	tests := []struct {
+		input    Symbol
+		expected string
+	}{
+		{Symbol("BTCUSDT"), "BTCUSDT"},
+	}
+
+	for _, test := range tests {
+		result := test.input.String()
+		if result != test.expected {
+			t.Errorf("Symbol.String() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
