@@ -51,7 +51,7 @@ type OrderBuilder struct {
 	errors  []string
 }
 
-func NewOrderBuilder(symbol string, side model.TradeSide, tradeSide model.Side, qty float64) *OrderBuilder {
+func NewOrderBuilder(symbol model.Symbol, side model.TradeSide, tradeSide model.Side, qty float64) *OrderBuilder {
 	qtyVal := qty
 
 	return &OrderBuilder{
@@ -130,7 +130,7 @@ type CancelOrderBuilder struct {
 	request model.CancelOrderRequest
 }
 
-func NewCancelOrderBuilder(symbol string) *CancelOrderBuilder {
+func NewCancelOrderBuilder(symbol model.Symbol) *CancelOrderBuilder {
 	return &CancelOrderBuilder{
 		request: model.CancelOrderRequest{
 			Symbol:    symbol,

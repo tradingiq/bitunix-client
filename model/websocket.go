@@ -115,7 +115,7 @@ type PositionEvent struct {
 	CreateTime    time.Time         `json:"-"`
 	Quantity      float64           `json:"-"`
 	EntryValue    float64           `json:"-"`
-	Symbol        string            `json:"symbol"`
+	Symbol        Symbol            `json:"symbol"`
 	RealizedPNL   float64           `json:"-"`
 	UnrealizedPNL float64           `json:"-"`
 	Funding       float64           `json:"-"`
@@ -138,6 +138,7 @@ func (p *PositionEvent) UnmarshalJSON(data []byte) error {
 		UnrealizedPNL string `json:"unrealizedPNL"`
 		Funding       string `json:"funding"`
 		Fee           string `json:"fee"`
+		Symbol        string `json:"symbol"`
 		*Alias
 	}{
 		Alias: (*Alias)(p),
@@ -146,6 +147,9 @@ func (p *PositionEvent) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+
+	// Parse symbol
+	p.Symbol = ParseSymbol(aux.Symbol)
 
 	event, err := ParsePositionEvent(aux.Event)
 	if err != nil {
@@ -263,12 +267,14 @@ type PositionChannelMessage struct {
 type OrderEvent struct {
 	Event        OrderEventType `json:"-"`
 	OrderID      string         `json:"orderId"`
-	Symbol       string         `json:"symbol"`
+	Symbol       Symbol         `json:"symbol"`
 	PositionType MarginMode     `json:"-"`
 	PositionMode PositionMode   `json:"-"`
 	Side         TradeSide      `json:"-"`
-	// Currently broken, returns "SHORT"/"LONG"
-	//Effect        TimeInForce    `json:"effect"`
+	/*
+		Currently broken, returns "SHORT"/"LONG"
+		Effect        TimeInForce    `json:"effect"`
+	*/
 	Type          OrderType   `json:"-"`
 	Quantity      float64     `json:"-"`
 	ReductionOnly bool        `json:"reductionOnly"`
@@ -278,17 +284,17 @@ type OrderEvent struct {
 	Leverage      int         `json:"-"`
 	OrderStatus   OrderStatus `json:"-"`
 	Fee           float64     `json:"-"`
-	TPStopType    StopType    `json:"-"`
-	TPPrice       float64     `json:"-"`
-	TPOrderType   OrderType   `json:"-"`
-	TPOrderPrice  float64     `json:"-"`
-	SLStopType    StopType    `json:"-"`
-	// SLPrice currently broken and not provided by the API
-	SLPrice float64 `json:"-"`
-	// SLOrderType currently broken and not provided by the API
-	SLOrderType OrderType `json:"-"`
-	// SLOrderPrice currently broken and not provided by the API
-	SLOrderPrice float64 `json:"-"`
+	/*
+		Currently not consistently propagated, use the TPSL channel instead
+		TPStopType    StopType    `json:"-"`
+		TPPrice       float64     `json:"-"`
+		TPOrderType   OrderType   `json:"-"`
+		TPOrderPrice  float64     `json:"-"`
+		SLStopType    StopType    `json:"-"`
+		SLPrice float64 `json:"-"`
+		SLOrderType OrderType `json:"-"`
+		SLOrderPrice float64 `json:"-"`
+	*/
 }
 
 func (o *OrderEvent) UnmarshalJSON(data []byte) error {
@@ -306,14 +312,17 @@ func (o *OrderEvent) UnmarshalJSON(data []byte) error {
 		Leverage     string `json:"leverage"`
 		OrderStatus  string `json:"orderStatus"`
 		Fee          string `json:"fee"`
-		TPStopType   string `json:"tpStopType,omitempty"`
-		TPPrice      string `json:"tpPrice,omitempty"`
-		TPOrderType  string `json:"tpOrderType,omitempty"`
-		TPOrderPrice string `json:"tpOrderPrice,omitempty"`
-		SLStopType   string `json:"slStopType,omitempty"`
-		SLPrice      string `json:"slPrice,omitempty"`
-		SLOrderType  string `json:"slOrderType,omitempty"`
-		SLOrderPrice string `json:"slOrderPrice,omitempty"`
+		Symbol       string `json:"symbol"`
+		/*
+			TPStopType   string `json:"tpStopType,omitempty"`
+			TPPrice      string `json:"tpPrice,omitempty"`
+			TPOrderType  string `json:"tpOrderType,omitempty"`
+			TPOrderPrice string `json:"tpOrderPrice,omitempty"`
+			SLStopType   string `json:"slStopType,omitempty"`
+			SLPrice      string `json:"slPrice,omitempty"`
+			SLOrderType  string `json:"slOrderType,omitempty"`
+			SLOrderPrice string `json:"slOrderPrice,omitempty"`
+		*/
 		*Alias
 	}{
 		Alias: (*Alias)(o),
@@ -322,6 +331,9 @@ func (o *OrderEvent) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+
+	// Parse symbol
+	o.Symbol = ParseSymbol(aux.Symbol)
 
 	event, err := ParseOrderEvent(aux.Event)
 	if err != nil {
@@ -413,78 +425,6 @@ func (o *OrderEvent) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	if aux.TPStopType != "" {
-		tpStopType, err := ParseStopType(aux.TPStopType)
-		if err == nil {
-			o.TPStopType = tpStopType
-		} else {
-			return fmt.Errorf("failed to parse tp stop type: %w", err)
-		}
-	}
-
-	if aux.TPPrice != "" {
-		tpPrice, err := strconv.ParseFloat(aux.TPPrice, 64)
-		if err == nil {
-			o.TPPrice = tpPrice
-		} else {
-			return fmt.Errorf("failed to parse tp price: %w", err)
-		}
-	}
-
-	if aux.TPOrderType != "" {
-		tpOrderType, err := ParseOrderType(aux.TPOrderType)
-		if err == nil {
-			o.TPOrderType = tpOrderType
-		} else {
-			return fmt.Errorf("failed to parse tp order type: %w", err)
-		}
-	}
-
-	if aux.TPOrderPrice != "" {
-		tpOrderPrice, err := strconv.ParseFloat(aux.TPOrderPrice, 64)
-		if err == nil {
-			o.TPOrderPrice = tpOrderPrice
-		} else {
-			return fmt.Errorf("failed to parse tp order price: %w", err)
-		}
-	}
-
-	if aux.SLStopType != "" {
-		slStopType, err := ParseStopType(aux.SLStopType)
-		if err == nil {
-			o.SLStopType = slStopType
-		} else {
-			return fmt.Errorf("failed to parse sl stop type: %w", err)
-		}
-	}
-
-	if aux.SLPrice != "" {
-		slPrice, err := strconv.ParseFloat(aux.SLPrice, 64)
-		if err == nil {
-			o.SLPrice = slPrice
-		} else {
-			return fmt.Errorf("failed to parse sl price: %w", err)
-		}
-	}
-
-	if aux.SLOrderType != "" {
-		slOrderType, err := ParseOrderType(aux.SLOrderType)
-		if err == nil {
-			o.SLOrderType = slOrderType
-		} else {
-			return fmt.Errorf("failed to parse sl order type: %w", err)
-		}
-	}
-
-	if aux.SLOrderPrice != "" {
-		slOrderPrice, err := strconv.ParseFloat(aux.SLOrderPrice, 64)
-		if err == nil {
-			o.SLOrderPrice = slOrderPrice
-		} else {
-			return fmt.Errorf("failed to parse sl order price: %w", err)
-		}
-	}
-
 	return nil
 }
 
@@ -504,7 +444,7 @@ type TpSlOrderEvent struct {
 	Event        TpSlEventType `json:"-"`
 	PositionID   string        `json:"positionId"`
 	OrderID      string        `json:"orderId"`
-	Symbol       string        `json:"symbol"`
+	Symbol       Symbol        `json:"symbol"`
 	Leverage     int           `json:"-"`
 	Side         TradeSide     `json:"-"`
 	PositionMode PositionMode  `json:"-"`
@@ -543,6 +483,7 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 		SLPrice      string `json:"slPrice"`
 		SLOrderType  string `json:"slOrderType"`
 		SLOrderPrice string `json:"slOrderPrice"`
+		Symbol       string `json:"symbol"`
 		*Alias
 	}{
 		Alias: (*Alias)(t),
@@ -551,6 +492,9 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+
+	// Parse symbol
+	t.Symbol = ParseSymbol(aux.Symbol)
 
 	event, err := ParseTPSLEvent(aux.Event)
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 )
 
 type PositionHistoryParams struct {
-	Symbol     string
+	Symbol     Symbol
 	PositionID string
 	StartTime  *time.Time
 	EndTime    *time.Time
@@ -27,7 +27,7 @@ type PositionHistoryResponse struct {
 
 type HistoricalPosition struct {
 	PositionID   string       `json:"positionId"`
-	Symbol       string       `json:"symbol"`
+	Symbol       Symbol       `json:"symbol"`
 	MaxQty       float64      `json:"-"`
 	EntryPrice   float64      `json:"-"`
 	ClosePrice   float64      `json:"-"`
@@ -60,6 +60,7 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 		Side         string `json:"side"`
 		PositionMode string `json:"positionMode"`
 		MarginMode   string `json:"marginMode"`
+		Symbol       string `json:"symbol"`
 		*Alias
 	}{
 		Alias: (*Alias)(p),
@@ -68,6 +69,9 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+
+	// Parse symbol
+	p.Symbol = ParseSymbol(aux.Symbol)
 
 	if aux.Ctime != "" {
 		ctime, err := strconv.ParseInt(aux.Ctime, 10, 64)

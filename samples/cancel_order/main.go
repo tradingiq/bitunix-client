@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/samples"
 	"time"
@@ -22,7 +23,7 @@ func cancelOrderExample() {
 	}
 	bitunixClient := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
 
-	cancelRequest := bitunix.NewCancelOrderBuilder("BTCUSDT").
+	cancelRequest := bitunix.NewCancelOrderBuilder(model.ParseSymbol("BTCUSDT")).
 		WithOrderID("1915122868439269376"). // Cancel by client ID
 		Build()
 

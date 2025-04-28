@@ -11,7 +11,7 @@ type TPSLOrderBuilder struct {
 	request model.TPSLOrderRequest
 }
 
-func NewTPSLOrderBuilder(symbol, positionID string) *TPSLOrderBuilder {
+func NewTPSLOrderBuilder(symbol model.Symbol, positionID string) *TPSLOrderBuilder {
 	return &TPSLOrderBuilder{
 		request: model.TPSLOrderRequest{
 			Symbol:     symbol,

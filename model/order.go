@@ -8,7 +8,7 @@ import (
 )
 
 type TPSLOrderRequest struct {
-	Symbol       string    `json:"symbol"`
+	Symbol       Symbol    `json:"symbol"`
 	PositionID   string    `json:"positionId"`
 	TpPrice      *float64  `json:"-"`
 	SlPrice      *float64  `json:"-"`
@@ -76,7 +76,7 @@ type TPSLOrderResponseData struct {
 }
 
 type OrderRequest struct {
-	Symbol       string      `json:"symbol"`
+	Symbol       Symbol      `json:"symbol"`
 	TradeAction  TradeSide   `json:"side"`
 	Price        *float64    `json:"-"`
 	Qty          *float64    `json:"-"`
@@ -178,12 +178,12 @@ type CancelOrderParam struct {
 }
 
 type CancelOrderRequest struct {
-	Symbol    string             `json:"symbol"`
+	Symbol    Symbol             `json:"symbol"`
 	OrderList []CancelOrderParam `json:"orderList"`
 }
 
 type OrderHistoryParams struct {
-	Symbol    string
+	Symbol    Symbol
 	OrderID   string
 	ClientID  string
 	Status    string
@@ -205,7 +205,7 @@ type OrderHistoryResponse struct {
 
 type HistoricalOrder struct {
 	OrderID       string       `json:"orderId"`
-	Symbol        string       `json:"symbol"`
+	Symbol        Symbol       `json:"symbol"`
 	Quantity      float64      `json:"-"`
 	TradeQuantity float64      `json:"-"`
 	PositionMode  PositionMode `json:"-"`
@@ -255,6 +255,7 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 		TpOrderType   string `json:"tpOrderType"`
 		SlStopType    string `json:"slStopType"`
 		SlOrderType   string `json:"slOrderType"`
+		Symbol        string `json:"symbol"`
 		*Alias
 	}{
 		Alias: (*Alias)(o),
@@ -263,6 +264,9 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+
+	// Parse symbol
+	o.Symbol = ParseSymbol(aux.Symbol)
 
 	if aux.Quantity != "" {
 		quantity, err := strconv.ParseFloat(aux.Quantity, 64)

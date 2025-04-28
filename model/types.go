@@ -504,3 +504,17 @@ func ParseTPSLType(s string) (TpSlType, error) {
 func (s TpSlType) Normalize() TpSlType {
 	return TpSlType(strings.ToUpper(string(s)))
 }
+
+type Symbol string
+
+func (s Symbol) String() string {
+	return string(s)
+}
+
+func ParseSymbol(s string) Symbol {
+	return Symbol(s).Normalize()
+}
+
+func (s Symbol) Normalize() Symbol {
+	return Symbol(strings.ToUpper(strings.TrimSpace(string(s))))
+}

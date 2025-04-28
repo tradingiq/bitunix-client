@@ -29,7 +29,7 @@ func (m *MockAPI) Close() {
 }
 
 func TestOrderBuilderCreation(t *testing.T) {
-	symbol := "BTCUSDT"
+	symbol := model.ParseSymbol("BTCUSDT")
 	side := model.TradeSideBuy
 	tradeSide := model.SideOpen
 	qty := 1.0
@@ -61,7 +61,7 @@ func TestOrderBuilderCreation(t *testing.T) {
 }
 
 func TestOrderBuilderMethods(t *testing.T) {
-	symbol := "BTCUSDT"
+	symbol := model.ParseSymbol("BTCUSDT")
 	side := model.TradeSideBuy
 	tradeSide := model.SideOpen
 	qty := 1.0
@@ -213,7 +213,7 @@ func TestPlaceOrder(t *testing.T) {
 }
 
 func TestCancelOrderBuilderCreation(t *testing.T) {
-	symbol := "BTCUSDT"
+	symbol := model.ParseSymbol("BTCUSDT")
 
 	builder := NewCancelOrderBuilder(symbol)
 	cancelOrder := builder.Build()
@@ -227,7 +227,7 @@ func TestCancelOrderBuilderCreation(t *testing.T) {
 }
 
 func TestCancelOrderBuilderMethods(t *testing.T) {
-	symbol := "BTCUSDT"
+	symbol := model.ParseSymbol("BTCUSDT")
 	builder := NewCancelOrderBuilder(symbol)
 
 	orderID := "order123"

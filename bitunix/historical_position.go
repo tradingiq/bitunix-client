@@ -13,7 +13,7 @@ func (c *client) GetPositionHistory(ctx context.Context, params model.PositionHi
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {
-		queryParams.Add("symbol", params.Symbol)
+		queryParams.Add("symbol", params.Symbol.String())
 	}
 
 	if params.PositionID != "" {

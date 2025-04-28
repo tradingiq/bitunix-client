@@ -13,7 +13,7 @@ func (c *client) GetOrderHistory(ctx context.Context, params model.OrderHistoryP
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {
-		queryParams.Add("symbol", params.Symbol)
+		queryParams.Add("symbol", params.Symbol.String())
 	}
 	if params.OrderID != "" {
 		queryParams.Add("orderId", params.OrderID)
