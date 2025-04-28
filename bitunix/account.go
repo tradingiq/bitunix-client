@@ -14,7 +14,7 @@ func (c *client) GetAccountBalance(ctx context.Context, params model.AccountBala
 	}
 
 	queryParams := url.Values{}
-	queryParams.Add("marginCoin", params.MarginCoin)
+	queryParams.Add("marginCoin", params.MarginCoin.String())
 
 	responseBody, err := c.restClient.Get(ctx, "/api/v1/futures/account", queryParams)
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 )
 
 type AccountBalanceParams struct {
-	MarginCoin string
+	MarginCoin MarginCoin
 }
 
 type AccountBalanceResponse struct {
@@ -17,7 +17,7 @@ type AccountBalanceResponse struct {
 }
 
 type AccountBalanceEntry struct {
-	MarginCoin             string       `json:"marginCoin"`
+	MarginCoin             MarginCoin   `json:"-"`
 	Available              float64      `json:"-"`
 	Frozen                 float64      `json:"-"`
 	Margin                 float64      `json:"-"`
@@ -31,6 +31,7 @@ type AccountBalanceEntry struct {
 func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 	type Alias AccountBalanceEntry
 	aux := &struct {
+		MarginCoin             string `json:"marginCoin"`
 		Available              string `json:"available"`
 		Frozen                 string `json:"frozen"`
 		Margin                 string `json:"margin"`
@@ -116,6 +117,8 @@ func (a *AccountBalanceEntry) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("invalid position mode: %w", err)
 	}
 	a.PositionMode = positionMode
+
+	a.MarginCoin = ParseMarginCoin(aux.MarginCoin)
 
 	return nil
 }
