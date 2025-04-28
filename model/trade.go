@@ -8,7 +8,7 @@ import (
 )
 
 type TradeHistoryParams struct {
-	Symbol     string
+	Symbol     Symbol
 	OrderID    string
 	PositionID string
 	StartTime  *time.Time
@@ -29,7 +29,7 @@ type TradeHistoryResponse struct {
 type HistoricalTrade struct {
 	TradeID      string        `json:"tradeId"`
 	OrderID      string        `json:"orderId"`
-	Symbol       string        `json:"symbol"`
+	Symbol       Symbol        `json:"symbol"`
 	Quantity     float64       `json:"-"`
 	PositionMode PositionMode  `json:"-"`
 	MarginMode   MarginMode    `json:"-"`
@@ -59,6 +59,7 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 		OrderType    string `json:"orderType"`
 		MarginMode   string `json:"marginMode"`
 		RoleType     string `json:"roleType"`
+		Symbol       string `json:"symbol"`
 		*Alias
 	}{
 		Alias: (*Alias)(t),
@@ -67,6 +68,9 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+
+	// Parse symbol
+	t.Symbol = ParseSymbol(aux.Symbol)
 
 	if aux.Quantity != "" {
 		quantity, err := strconv.ParseFloat(aux.Quantity, 64)

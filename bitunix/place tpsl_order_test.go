@@ -8,7 +8,7 @@ import (
 )
 
 func TestTPSLOrderBuilderCreation(t *testing.T) {
-	symbol := "BTCUSDT"
+	symbol := model.ParseSymbol("BTCUSDT")
 	positionID := "position123"
 
 	builder := NewTPSLOrderBuilder(symbol, positionID)
@@ -24,7 +24,7 @@ func TestTPSLOrderBuilderCreation(t *testing.T) {
 }
 
 func TestTPSLOrderBuilderMethods(t *testing.T) {
-	symbol := "BTCUSDT"
+	symbol := model.ParseSymbol("BTCUSDT")
 	positionID := "position123"
 
 	builder := NewTPSLOrderBuilder(symbol, positionID)

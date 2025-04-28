@@ -24,7 +24,7 @@ func bitunixExample() {
 	bitunixClient := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
 
 	limitOrder := bitunix.NewOrderBuilder(
-		"BTCUSDT",
+		model.ParseSymbol("BTCUSDT"),
 		model.TradeSideSell,
 		model.SideOpen,
 		0.002,
