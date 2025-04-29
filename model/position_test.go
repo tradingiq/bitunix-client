@@ -64,8 +64,8 @@ func TestHistoricalPositionUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected marginMode 'CROSS', got %s", pos.MarginMode)
 	}
 
-	if pos.Leverage != "10" {
-		t.Errorf("Expected leverage '10', got %s", pos.Leverage)
+	if pos.Leverage != 10 {
+		t.Errorf("Expected leverage '10', got %d", pos.Leverage)
 	}
 
 	if pos.Fee != 5 {
