@@ -265,7 +265,6 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse symbol
 	o.Symbol = ParseSymbol(aux.Symbol)
 
 	if aux.Quantity != "" {

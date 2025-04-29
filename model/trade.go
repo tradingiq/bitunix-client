@@ -69,7 +69,6 @@ func (t *HistoricalTrade) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse symbol
 	t.Symbol = ParseSymbol(aux.Symbol)
 
 	if aux.Quantity != "" {

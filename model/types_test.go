@@ -76,6 +76,58 @@ func TestTypeConstants(t *testing.T) {
 	if TradeRoleTypeMaker != "MAKER" {
 		t.Errorf("Expected TradeRoleTypeMaker to be 'MAKER', got '%s'", TradeRoleTypeMaker)
 	}
+
+	if PositionSideShort != "SHORT" {
+		t.Errorf("Expected PositionSideShort to be 'SHORT', got '%s'", PositionSideShort)
+	}
+
+	if PositionSideLong != "LONG" {
+		t.Errorf("Expected PositionSideLong to be 'LONG', got '%s'", PositionSideLong)
+	}
+
+	if PositionEventOpen != "OPEN" {
+		t.Errorf("Expected PositionEventOpen to be 'OPEN', got '%s'", PositionEventOpen)
+	}
+
+	if PositionEventUpdate != "UPDATE" {
+		t.Errorf("Expected PositionEventUpdate to be 'UPDATE', got '%s'", PositionEventUpdate)
+	}
+
+	if PositionEventClose != "CLOSE" {
+		t.Errorf("Expected PositionEventClose to be 'CLOSE', got '%s'", PositionEventClose)
+	}
+
+	if OrderEventCreate != "CREATE" {
+		t.Errorf("Expected OrderEventCreate to be 'CREATE', got '%s'", OrderEventCreate)
+	}
+
+	if OrderEventUpdate != "UPDATE" {
+		t.Errorf("Expected OrderEventUpdate to be 'UPDATE', got '%s'", OrderEventUpdate)
+	}
+
+	if OrderEventClose != "CLOSE" {
+		t.Errorf("Expected OrderEventClose to be 'CLOSE', got '%s'", OrderEventClose)
+	}
+
+	if TPSLEventCreate != "CREATE" {
+		t.Errorf("Expected TPSLEventCreate to be 'CREATE', got '%s'", TPSLEventCreate)
+	}
+
+	if TPSLEventUpdate != "UPDATE" {
+		t.Errorf("Expected TPSLEventUpdate to be 'UPDATE', got '%s'", TPSLEventUpdate)
+	}
+
+	if TPSLEventClose != "CLOSE" {
+		t.Errorf("Expected TPSLEventClose to be 'CLOSE', got '%s'", TPSLEventClose)
+	}
+
+	if TPSLTypeFull != "POSITION_TPSL" {
+		t.Errorf("Expected TPSLTypeFull to be 'POSITION_TPSL', got '%s'", TPSLTypeFull)
+	}
+
+	if TPSLTypePartial != "TPSL" {
+		t.Errorf("Expected TPSLTypePartial to be 'TPSL', got '%s'", TPSLTypePartial)
+	}
 }
 
 func TestStopTypeNormalize(t *testing.T) {
@@ -339,6 +391,264 @@ func TestOrderStatusNormalize(t *testing.T) {
 		result := test.input.Normalize()
 		if result != test.expected {
 			t.Errorf("OrderStatus.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestPositionSideNormalize(t *testing.T) {
+	tests := []struct {
+		input    PositionSide
+		expected PositionSide
+	}{
+		{PositionSide("SHORT"), PositionSideShort},
+		{PositionSide("short"), PositionSideShort},
+		{PositionSide("Short"), PositionSideShort},
+		{PositionSide("LONG"), PositionSideLong},
+		{PositionSide("long"), PositionSideLong},
+		{PositionSide("Long"), PositionSideLong},
+	}
+
+	for _, test := range tests {
+		result := test.input.Normalize()
+		if result != test.expected {
+			t.Errorf("PositionSide.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestPositionSideParse(t *testing.T) {
+	tests := []struct {
+		input       string
+		expected    PositionSide
+		expectError bool
+	}{
+		{"SHORT", PositionSideShort, false},
+		{"short", PositionSideShort, false},
+		{"Short", PositionSideShort, false},
+		{"LONG", PositionSideLong, false},
+		{"long", PositionSideLong, false},
+		{"Long", PositionSideLong, false},
+		{"INVALID", PositionSide("INVALID"), true},
+	}
+
+	for _, test := range tests {
+		result, err := ParsePositionSide(test.input)
+		if test.expectError && err == nil {
+			t.Errorf("ParsePositionSide(%s): expected error, got nil", test.input)
+		} else if !test.expectError && err != nil {
+			t.Errorf("ParsePositionSide(%s): unexpected error: %v", test.input, err)
+		} else if !test.expectError && result != test.expected {
+			t.Errorf("ParsePositionSide(%s): expected %s, got %s", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestPositionEventTypeNormalize(t *testing.T) {
+	tests := []struct {
+		input    PositionEventType
+		expected PositionEventType
+	}{
+		{PositionEventType("OPEN"), PositionEventOpen},
+		{PositionEventType("open"), PositionEventOpen},
+		{PositionEventType("Open"), PositionEventOpen},
+		{PositionEventType("UPDATE"), PositionEventUpdate},
+		{PositionEventType("update"), PositionEventUpdate},
+		{PositionEventType("Update"), PositionEventUpdate},
+		{PositionEventType("CLOSE"), PositionEventClose},
+		{PositionEventType("close"), PositionEventClose},
+		{PositionEventType("Close"), PositionEventClose},
+	}
+
+	for _, test := range tests {
+		result := test.input.Normalize()
+		if result != test.expected {
+			t.Errorf("PositionEventType.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestPositionEventTypeParse(t *testing.T) {
+	tests := []struct {
+		input       string
+		expected    PositionEventType
+		expectError bool
+	}{
+		{"OPEN", PositionEventOpen, false},
+		{"open", PositionEventOpen, false},
+		{"Open", PositionEventOpen, false},
+		{"UPDATE", PositionEventUpdate, false},
+		{"update", PositionEventUpdate, false},
+		{"Update", PositionEventUpdate, false},
+		{"CLOSE", PositionEventClose, false},
+		{"close", PositionEventClose, false},
+		{"Close", PositionEventClose, false},
+		{"INVALID", PositionEventType("INVALID"), true},
+	}
+
+	for _, test := range tests {
+		result, err := ParsePositionEvent(test.input)
+		if test.expectError && err == nil {
+			t.Errorf("ParsePositionEvent(%s): expected error, got nil", test.input)
+		} else if !test.expectError && err != nil {
+			t.Errorf("ParsePositionEvent(%s): unexpected error: %v", test.input, err)
+		} else if !test.expectError && result != test.expected {
+			t.Errorf("ParsePositionEvent(%s): expected %s, got %s", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestOrderEventTypeNormalize(t *testing.T) {
+	tests := []struct {
+		input    OrderEventType
+		expected OrderEventType
+	}{
+		{OrderEventType("CREATE"), OrderEventCreate},
+		{OrderEventType("create"), OrderEventCreate},
+		{OrderEventType("Create"), OrderEventCreate},
+		{OrderEventType("UPDATE"), OrderEventUpdate},
+		{OrderEventType("update"), OrderEventUpdate},
+		{OrderEventType("Update"), OrderEventUpdate},
+		{OrderEventType("CLOSE"), OrderEventClose},
+		{OrderEventType("close"), OrderEventClose},
+		{OrderEventType("Close"), OrderEventClose},
+	}
+
+	for _, test := range tests {
+		result := test.input.Normalize()
+		if result != test.expected {
+			t.Errorf("OrderEventType.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestOrderEventTypeParse(t *testing.T) {
+	tests := []struct {
+		input       string
+		expected    OrderEventType
+		expectError bool
+	}{
+		{"CREATE", OrderEventCreate, false},
+		{"create", OrderEventCreate, false},
+		{"Create", OrderEventCreate, false},
+		{"UPDATE", OrderEventUpdate, false},
+		{"update", OrderEventUpdate, false},
+		{"Update", OrderEventUpdate, false},
+		{"CLOSE", OrderEventClose, false},
+		{"close", OrderEventClose, false},
+		{"Close", OrderEventClose, false},
+		{"INVALID", OrderEventType("INVALID"), true},
+	}
+
+	for _, test := range tests {
+		result, err := ParseOrderEvent(test.input)
+		if test.expectError && err == nil {
+			t.Errorf("ParseOrderEvent(%s): expected error, got nil", test.input)
+		} else if !test.expectError && err != nil {
+			t.Errorf("ParseOrderEvent(%s): unexpected error: %v", test.input, err)
+		} else if !test.expectError && result != test.expected {
+			t.Errorf("ParseOrderEvent(%s): expected %s, got %s", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestTpSlEventTypeNormalize(t *testing.T) {
+	tests := []struct {
+		input    TpSlEventType
+		expected TpSlEventType
+	}{
+		{TpSlEventType("CREATE"), TPSLEventCreate},
+		{TpSlEventType("create"), TPSLEventCreate},
+		{TpSlEventType("Create"), TPSLEventCreate},
+		{TpSlEventType("UPDATE"), TPSLEventUpdate},
+		{TpSlEventType("update"), TPSLEventUpdate},
+		{TpSlEventType("Update"), TPSLEventUpdate},
+		{TpSlEventType("CLOSE"), TPSLEventClose},
+		{TpSlEventType("close"), TPSLEventClose},
+		{TpSlEventType("Close"), TPSLEventClose},
+	}
+
+	for _, test := range tests {
+		result := test.input.Normalize()
+		if result != test.expected {
+			t.Errorf("TpSlEventType.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestTpSlEventTypeParse(t *testing.T) {
+	tests := []struct {
+		input       string
+		expected    TpSlEventType
+		expectError bool
+	}{
+		{"CREATE", TPSLEventCreate, false},
+		{"create", TPSLEventCreate, false},
+		{"Create", TPSLEventCreate, false},
+		{"UPDATE", TPSLEventUpdate, false},
+		{"update", TPSLEventUpdate, false},
+		{"Update", TPSLEventUpdate, false},
+		{"CLOSE", TPSLEventClose, false},
+		{"close", TPSLEventClose, false},
+		{"Close", TPSLEventClose, false},
+		{"INVALID", TpSlEventType("INVALID"), true},
+	}
+
+	for _, test := range tests {
+		result, err := ParseTPSLEvent(test.input)
+		if test.expectError && err == nil {
+			t.Errorf("ParseTPSLEvent(%s): expected error, got nil", test.input)
+		} else if !test.expectError && err != nil {
+			t.Errorf("ParseTPSLEvent(%s): unexpected error: %v", test.input, err)
+		} else if !test.expectError && result != test.expected {
+			t.Errorf("ParseTPSLEvent(%s): expected %s, got %s", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestTpSlTypeNormalize(t *testing.T) {
+	tests := []struct {
+		input    TpSlType
+		expected TpSlType
+	}{
+		{TpSlType("POSITION_TPSL"), TPSLTypeFull},
+		{TpSlType("position_tpsl"), TPSLTypeFull},
+		{TpSlType("Position_Tpsl"), TPSLTypeFull},
+		{TpSlType("TPSL"), TPSLTypePartial},
+		{TpSlType("tpsl"), TPSLTypePartial},
+		{TpSlType("Tpsl"), TPSLTypePartial},
+	}
+
+	for _, test := range tests {
+		result := test.input.Normalize()
+		if result != test.expected {
+			t.Errorf("TpSlType.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+		}
+	}
+}
+
+func TestTpSlTypeParse(t *testing.T) {
+	tests := []struct {
+		input       string
+		expected    TpSlType
+		expectError bool
+	}{
+		{"POSITION_TPSL", TPSLTypeFull, false},
+		{"position_tpsl", TPSLTypeFull, false},
+		{"Position_Tpsl", TPSLTypeFull, false},
+		{"TPSL", TPSLTypePartial, false},
+		{"tpsl", TPSLTypePartial, false},
+		{"Tpsl", TPSLTypePartial, false},
+		{"INVALID", TpSlType("INVALID"), true},
+	}
+
+	for _, test := range tests {
+		result, err := ParseTPSLType(test.input)
+		if test.expectError && err == nil {
+			t.Errorf("ParseTPSLType(%s): expected error, got nil", test.input)
+		} else if !test.expectError && err != nil {
+			t.Errorf("ParseTPSLType(%s): unexpected error: %v", test.input, err)
+		} else if !test.expectError && result != test.expected {
+			t.Errorf("ParseTPSLType(%s): expected %s, got %s", test.input, test.expected, result)
 		}
 	}
 }
