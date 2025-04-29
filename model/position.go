@@ -35,7 +35,7 @@ type HistoricalPosition struct {
 	Side         TradeSide    `json:"-"`
 	PositionMode PositionMode `json:"-"`
 	MarginMode   MarginMode   `json:"-"`
-	Leverage     string       `json:"leverage"`
+	Leverage     int          `json:"-"`
 	Fee          float64      `json:"-"`
 	Funding      float64      `json:"-"`
 	RealizedPNL  float64      `json:"-"`
@@ -55,6 +55,7 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 		Mtime        string `json:"mtime"`
 		MaxQty       string `json:"maxQty"`
 		EntryPrice   string `json:"entryPrice"`
+		Leverage     string `json:"leverage"`
 		ClosePrice   string `json:"closePrice"`
 		LiqQty       string `json:"liqQty"`
 		Side         string `json:"side"`
@@ -70,8 +71,16 @@ func (p *HistoricalPosition) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse symbol
 	p.Symbol = ParseSymbol(aux.Symbol)
+
+	if aux.Leverage != "" {
+		lev, err := strconv.Atoi(aux.Leverage)
+		if err == nil {
+			p.Leverage = lev
+		} else {
+			return fmt.Errorf("failed to parse leverage: %w", err)
+		}
+	}
 
 	if aux.Ctime != "" {
 		ctime, err := strconv.ParseInt(aux.Ctime, 10, 64)
