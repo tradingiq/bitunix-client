@@ -148,7 +148,6 @@ func (p *PositionEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse symbol
 	p.Symbol = ParseSymbol(aux.Symbol)
 
 	event, err := ParsePositionEvent(aux.Event)
@@ -332,7 +331,6 @@ func (o *OrderEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse symbol
 	o.Symbol = ParseSymbol(aux.Symbol)
 
 	event, err := ParseOrderEvent(aux.Event)
@@ -493,7 +491,6 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse symbol
 	t.Symbol = ParseSymbol(aux.Symbol)
 
 	event, err := ParseTPSLEvent(aux.Event)
