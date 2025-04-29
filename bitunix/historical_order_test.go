@@ -7,8 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/tradingiq/bitunix-client/rest"
 )
 
 func TestGetOrderHistory(t *testing.T) {
@@ -76,13 +74,7 @@ func TestGetOrderHistory(t *testing.T) {
 	}))
 	defer server.Close()
 
-	serverURL := server.URL
-
-	client, err := rest.New(serverURL)
-	if err != nil {
-		t.Fatalf("failed to create rest client: %v", err)
-	}
-	bitunixClient := New(client, "test-api-key", "test-api-secret")
+	bitunixClient, _ := NewApiClient("test-api-key", "test-api-secret", WithBaseURI(server.URL))
 
 	startTime := time.Date(2022, 7, 29, 0, 0, 0, 0, time.UTC)
 	endTime := time.Date(2022, 7, 30, 0, 0, 0, 0, time.UTC)
@@ -158,7 +150,7 @@ func TestGetOrderHistory(t *testing.T) {
 	}
 
 	if order.ClientID != "client_123" {
-		t.Errorf("unexpected client ID: %s", order.ClientID)
+		t.Errorf("unexpected apiClient ID: %s", order.ClientID)
 	}
 
 	if order.ReduceOnly != false {

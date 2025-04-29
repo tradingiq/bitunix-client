@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func (c *client) GetTradeHistory(ctx context.Context, params model.TradeHistoryParams) (*model.TradeHistoryResponse, error) {
+func (c *apiClient) GetTradeHistory(ctx context.Context, params model.TradeHistoryParams) (*model.TradeHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {

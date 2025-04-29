@@ -6,9 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
 	"github.com/tradingiq/bitunix-client/model"
-	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/samples"
-	"time"
 )
 
 func main() {
@@ -17,11 +15,8 @@ func main() {
 
 func cancelOrderExample() {
 	log.SetLevel(log.DebugLevel)
-	apiClient, err := rest.New("https://fapi.bitunix.com/", rest.WithDebug(), rest.WithDefaultTimeout(30*time.Second))
-	if err != nil {
-		log.Fatal(err)
-	}
-	bitunixClient := bitunix.New(apiClient, samples.Config.ApiKey, samples.Config.SecretKey)
+
+	bitunixClient, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
 
 	cancelRequest := bitunix.NewCancelOrderBuilder(model.ParseSymbol("BTCUSDT")).
 		WithOrderID("1915122868439269376"). // Cancel by client ID

@@ -163,7 +163,7 @@ func TestPlaceTpSlOrder(t *testing.T) {
 		t.Errorf("Expected TP order ID 'tp123', got %s", tpOrder.OrderID)
 	}
 	if tpOrder.ClientId != "tpclient123" {
-		t.Errorf("Expected TP client ID 'tpclient123', got %s", tpOrder.ClientId)
+		t.Errorf("Expected TP apiClient ID 'tpclient123', got %s", tpOrder.ClientId)
 	}
 
 	slOrder := response.Data[1]
@@ -171,6 +171,6 @@ func TestPlaceTpSlOrder(t *testing.T) {
 		t.Errorf("Expected SL order ID 'sl123', got %s", slOrder.OrderID)
 	}
 	if slOrder.ClientId != "slclient123" {
-		t.Errorf("Expected SL client ID 'slclient123', got %s", slOrder.ClientId)
+		t.Errorf("Expected SL apiClient ID 'slclient123', got %s", slOrder.ClientId)
 	}
 }

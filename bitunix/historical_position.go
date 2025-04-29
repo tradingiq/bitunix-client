@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func (c *client) GetPositionHistory(ctx context.Context, params model.PositionHistoryParams) (*model.PositionHistoryResponse, error) {
+func (c *apiClient) GetPositionHistory(ctx context.Context, params model.PositionHistoryParams) (*model.PositionHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {

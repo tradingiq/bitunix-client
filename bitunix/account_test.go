@@ -3,7 +3,6 @@ package bitunix
 import (
 	"context"
 	"github.com/tradingiq/bitunix-client/model"
-	"github.com/tradingiq/bitunix-client/rest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -42,13 +41,7 @@ func TestGetAccountBalance(t *testing.T) {
 	}))
 	defer server.Close()
 
-	serverURL := server.URL
-
-	client, err := rest.New(serverURL)
-	if err != nil {
-		t.Fatalf("failed to create restClient client: %v", err)
-	}
-	bitunixClient := New(client, "test-restClient-key", "test-restClient-secret")
+	bitunixClient, _ := NewApiClient("test-restClient-key", "test-restClient-secret", WithBaseURI(server.URL))
 
 	params := model.AccountBalanceParams{
 		MarginCoin: "USDT",
@@ -106,15 +99,10 @@ func TestGetAccountBalance(t *testing.T) {
 }
 
 func TestAccountBalanceParamsValidation(t *testing.T) {
-
-	client, err := rest.New("http://example.com")
-	if err != nil {
-		t.Fatalf("failed to create restClient client: %v", err)
-	}
-	bitunixClient := New(client, "test-restClient-key", "test-restClient-secret")
+	bitunixClient, _ := NewApiClient("test-restClient-key", "test-restClient-secret", WithBaseURI("http://example.com"))
 
 	params := model.AccountBalanceParams{}
-	_, err = bitunixClient.GetAccountBalance(context.Background(), params)
+	_, err := bitunixClient.GetAccountBalance(context.Background(), params)
 
 	if err == nil {
 		t.Fatal("expected error for missing marginCoin, got none")

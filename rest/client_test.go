@@ -14,11 +14,6 @@ func TestClientOptions(t *testing.T) {
 		httpClient: &http.Client{},
 	}
 
-	WithDebug()(client)
-	if !client.debug {
-		t.Error("WithDebug option did not set debug to true")
-	}
-
 	expectedTimeout := 30 * time.Second
 	WithDefaultTimeout(expectedTimeout)(client)
 	if client.httpClient.Timeout != expectedTimeout {

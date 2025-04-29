@@ -4,12 +4,14 @@ A Go client library for interacting with the Bitunix cryptocurrency futures exch
 
 ## Project Overview
 
-This Go library provides a comprehensive client for interacting with the Bitunix cryptocurrency exchange API, focusing on futures trading. It implements both REST API endpoints and WebSocket connections for real-time data streaming.
+This Go library provides a comprehensive client for interacting with the Bitunix cryptocurrency exchange API, focusing
+on futures trading. It implements both REST API endpoints and WebSocket connections for real-time data streaming.
 
 ## Key Features
 
 - **REST API Integration**: Full implementation of Bitunix's futures trading REST API endpoints
-- **WebSocket Support**: Real-time data streaming for account balances, positions, orders, and take-profit/stop-loss orders
+- **WebSocket Support**: Real-time data streaming for account balances, positions, orders, and take-profit/stop-loss
+  orders
 - **Order Management**: Place, cancel, and query orders with support for various order types
 - **Account Information**: Retrieve account balances and trading history
 - **Position Management**: Track and manage trading positions
@@ -118,6 +120,7 @@ if err := ws.Stream(); err != nil {
 The project includes detailed documentation in the `/documentation` directory:
 
 ### REST API Endpoints
+
 - Account Balance: `/documentation/get_account_balance.md`
 - Place Order: `/documentation/place_order.md`
 - Cancel Order: `/documentation/cancel_order.md`
@@ -127,6 +130,7 @@ The project includes detailed documentation in the `/documentation` directory:
 - Take-Profit/Stop-Loss Orders: `/documentation/place_tpsl_order.md`
 
 ### WebSocket Channels
+
 - Balance: `/documentation/websocket/balance.md`
 - Order: `/documentation/websocket/order.md`
 - Position: `/documentation/websocket/position.md`
@@ -147,7 +151,8 @@ The `/samples` directory contains example applications demonstrating the client'
 
 ## Authentication
 
-The client handles authentication automatically by generating the required API signatures for both REST and WebSocket connections. Configure the client with your API and Secret keys from Bitunix:
+The client handles authentication automatically by generating the required API signatures for both REST and WebSocket
+connections. Configure the client with your API and Secret keys from Bitunix:
 
 ```go
 // For REST API
