@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func (c *client) GetOrderHistory(ctx context.Context, params model.OrderHistoryParams) (*model.OrderHistoryResponse, error) {
+func (c *apiClient) GetOrderHistory(ctx context.Context, params model.OrderHistoryParams) (*model.OrderHistoryResponse, error) {
 	queryParams := url.Values{}
 
 	if params.Symbol != "" {

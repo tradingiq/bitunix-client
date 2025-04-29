@@ -57,14 +57,14 @@ func TestGenerateWebsocketSignatureDifferentInputs(t *testing.T) {
 			nonceBytes: []byte{},
 		},
 		{
-			name:       "Different client key",
+			name:       "Different apiClient key",
 			apiKey:     "different_api_key",
 			apiSecret:  "test_api_secret",
 			timestamp:  1234567890,
 			nonceBytes: []byte{0x01, 0x02, 0x03, 0x04},
 		},
 		{
-			name:       "Different client secret",
+			name:       "Different apiClient secret",
 			apiKey:     "test_api_key",
 			apiSecret:  "different_api_secret",
 			timestamp:  1234567890,
@@ -146,7 +146,7 @@ func TestWebsocketSigner(t *testing.T) {
 	assert.Len(t, message.Args, 1)
 
 	loginParams := message.Args[0]
-	assert.Equal(t, apiKey, loginParams.ApiKey, "The client key in the message should match the provided key")
+	assert.Equal(t, apiKey, loginParams.ApiKey, "The apiClient key in the message should match the provided key")
 	assert.NotEmpty(t, loginParams.Nonce)
 	assert.NotEmpty(t, loginParams.Sign)
 	assert.NotZero(t, loginParams.Timestamp)
@@ -161,7 +161,7 @@ func TestWebsocketSigner(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 64, len(loginParams.Sign))
 
-	// Test with different client keys
+	// Test with different apiClient keys
 	differentApiKey := "different_api_key"
 	differentApiSecret := "different_api_secret"
 
@@ -173,7 +173,7 @@ func TestWebsocketSigner(t *testing.T) {
 	err = json.Unmarshal(differentBytes, &differentMessage)
 	require.NoError(t, err)
 
-	// Check that the different client key is actually used
+	// Check that the different apiClient key is actually used
 	assert.Equal(t, differentApiKey, differentMessage.Args[0].ApiKey)
 
 	// Create and verify signatures with known inputs
@@ -185,7 +185,7 @@ func TestWebsocketSigner(t *testing.T) {
 
 	// Different credentials should produce different signatures with the same inputs
 	assert.NotEqual(t, sign1, sign2,
-		"Different client credentials should produce different signatures")
+		"Different apiClient credentials should produce different signatures")
 }
 
 func TestLoginMessage(t *testing.T) {

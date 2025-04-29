@@ -14,18 +14,11 @@ import (
 
 type Client struct {
 	httpClient  *http.Client
-	debug       bool
 	signRequest func(req *http.Request, body []byte) error
 	baseUri     *url.URL
 }
 
 type ClientOption func(*Client)
-
-func WithDebug() ClientOption {
-	return func(c *Client) {
-		c.debug = true
-	}
-}
 
 func WithRequestSigner(requestSigner func(req *http.Request, body []byte) error) ClientOption {
 	return func(c *Client) {

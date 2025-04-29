@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-func (c *client) GetAccountBalance(ctx context.Context, params model.AccountBalanceParams) (*model.AccountBalanceResponse, error) {
+func (c *apiClient) GetAccountBalance(ctx context.Context, params model.AccountBalanceParams) (*model.AccountBalanceResponse, error) {
 	if params.MarginCoin == "" {
 		return nil, fmt.Errorf("marginCoin is required")
 	}

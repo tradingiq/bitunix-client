@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (c *client) PlaceOrder(ctx context.Context, request *model.OrderRequest) (*model.OrderResponse, error) {
+func (c *apiClient) PlaceOrder(ctx context.Context, request *model.OrderRequest) (*model.OrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal order request: %w", err)
@@ -27,7 +27,7 @@ func (c *client) PlaceOrder(ctx context.Context, request *model.OrderRequest) (*
 	return response, nil
 }
 
-func (c *client) CancelOrders(ctx context.Context, request *model.CancelOrderRequest) (*model.CancelOrderResponse, error) {
+func (c *apiClient) CancelOrders(ctx context.Context, request *model.CancelOrderRequest) (*model.CancelOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal cancel order request: %w", err)

@@ -11,13 +11,12 @@ import (
 
 type MockAPI struct {
 	server *httptest.Server
-	client *client
+	client ApiClient
 }
 
 func NewMockAPI(handler http.HandlerFunc) *MockAPI {
 	server := httptest.NewServer(handler)
-	apiClient, _ := NewTestClient(server.URL)
-	client := &client{restClient: apiClient}
+	client, _ := NewApiClient("", "", WithBaseURI(server.URL))
 	return &MockAPI{
 		server: server,
 		client: client,
@@ -107,7 +106,7 @@ func TestOrderBuilderMethods(t *testing.T) {
 	builder.WithClientID(clientID)
 	order = builder.Build()
 	if order.ClientID != clientID {
-		t.Errorf("WithClientID: Expected client ID %s, got %s", clientID, order.ClientID)
+		t.Errorf("WithClientID: Expected apiClient ID %s, got %s", clientID, order.ClientID)
 	}
 
 	tpPrice := 55000.0
@@ -208,7 +207,7 @@ func TestPlaceOrder(t *testing.T) {
 		t.Errorf("Expected order ID '12345', got %s", response.Data.OrderId)
 	}
 	if response.Data.ClientId != "client123" {
-		t.Errorf("Expected client ID 'client123', got %s", response.Data.ClientId)
+		t.Errorf("Expected apiClient ID 'client123', got %s", response.Data.ClientId)
 	}
 }
 
@@ -241,7 +240,7 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 		t.Errorf("WithOrderID: Expected order ID %s, got %s", orderID, cancelOrder.OrderList[0].OrderID)
 	}
 	if cancelOrder.OrderList[0].ClientID != "" {
-		t.Errorf("WithOrderID: Expected empty client ID, got %s", cancelOrder.OrderList[0].ClientID)
+		t.Errorf("WithOrderID: Expected empty apiClient ID, got %s", cancelOrder.OrderList[0].ClientID)
 	}
 
 	clientID := "client123"
@@ -252,7 +251,7 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 		t.Fatalf("Expected 2 items in order list, got %d", len(cancelOrder.OrderList))
 	}
 	if cancelOrder.OrderList[1].ClientID != clientID {
-		t.Errorf("WithClientID: Expected client ID %s, got %s", clientID, cancelOrder.OrderList[1].ClientID)
+		t.Errorf("WithClientID: Expected apiClient ID %s, got %s", clientID, cancelOrder.OrderList[1].ClientID)
 	}
 	if cancelOrder.OrderList[1].OrderID != "" {
 		t.Errorf("WithClientID: Expected empty order ID, got %s", cancelOrder.OrderList[1].OrderID)
@@ -327,7 +326,7 @@ func TestCancelOrders(t *testing.T) {
 		t.Errorf("Expected success order ID '11111', got %s", response.Data.SuccessList[0].OrderId)
 	}
 	if response.Data.SuccessList[0].ClientId != "22222" {
-		t.Errorf("Expected success client ID '22222', got %s", response.Data.SuccessList[0].ClientId)
+		t.Errorf("Expected success apiClient ID '22222', got %s", response.Data.SuccessList[0].ClientId)
 	}
 
 	if len(response.Data.FailureList) != 1 {
@@ -337,7 +336,7 @@ func TestCancelOrders(t *testing.T) {
 		t.Errorf("Expected failure order ID '33333', got %s", response.Data.FailureList[0].OrderId)
 	}
 	if response.Data.FailureList[0].ClientId != "44444" {
-		t.Errorf("Expected failure client ID '44444', got %s", response.Data.FailureList[0].ClientId)
+		t.Errorf("Expected failure apiClient ID '44444', got %s", response.Data.FailureList[0].ClientId)
 	}
 	if response.Data.FailureList[0].ErrorMsg != "Order not found" {
 		t.Errorf("Expected failure error message 'Order not found', got %s", response.Data.FailureList[0].ErrorMsg)
