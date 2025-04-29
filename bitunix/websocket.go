@@ -15,6 +15,7 @@ import (
 
 type websocketClient struct {
 	client *websocket.Client
+	uri    string
 }
 
 func (ws *websocketClient) Connect() error {
@@ -41,24 +42,39 @@ type privateWebsocketClient struct {
 	tpSlOrderSubscriberMtx sync.Mutex
 }
 
-func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string) *privateWebsocketClient {
-	ws := websocket.New(
-		ctx,
-		"wss://fapi.bitunix.com/private/",
-		websocket.WithAuthentication(WebsocketSigner(apiKey, secretKey)),
-		websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()),
-	)
+type WebsocketClientOption func(*websocketClient)
+
+func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...WebsocketClientOption) *privateWebsocketClient {
+	wsc := websocketClient{
+		uri: "wss://fapi.bitunix.com/private/",
+	}
+	for _, option := range options {
+		option(&wsc)
+	}
+
+	wsc.client = newWebsocket(ctx, apiKey, secretKey, wsc.uri)
 
 	return &privateWebsocketClient{
-		websocketClient:        websocketClient{client: ws},
+		websocketClient:        wsc,
 		orderSubscriberMtx:     sync.Mutex{},
 		balanceSubscriberMtx:   sync.Mutex{},
 		positionSubscribersMtx: sync.Mutex{},
+		tpSlOrderSubscriberMtx: sync.Mutex{},
 		balanceSubscribers:     map[chan model.BalanceChannelMessage]struct{}{},
 		positionSubscribers:    map[chan model.PositionChannelMessage]struct{}{},
 		orderSubscribers:       map[chan model.OrderChannelMessage]struct{}{},
 		tpSlOrderSubscribers:   map[chan model.TpSlOrderChannelMessage]struct{}{},
 	}
+}
+
+func newWebsocket(ctx context.Context, apiKey string, secretKey string, uri string) *websocket.Client {
+	ws := websocket.New(
+		ctx,
+		uri,
+		websocket.WithAuthentication(WebsocketSigner(apiKey, secretKey)),
+		websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()),
+	)
+	return ws
 }
 
 func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceChannelMessage {
