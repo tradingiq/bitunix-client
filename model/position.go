@@ -27,7 +27,7 @@ type PositionHistoryResponse struct {
 
 type HistoricalPosition struct {
 	PositionID   string       `json:"positionId"`
-	Symbol       Symbol       `json:"symbol"`
+	Symbol       Symbol       `json:"-"`
 	MaxQty       float64      `json:"-"`
 	EntryPrice   float64      `json:"-"`
 	ClosePrice   float64      `json:"-"`
