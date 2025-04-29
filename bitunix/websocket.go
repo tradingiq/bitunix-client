@@ -44,7 +44,7 @@ type privateWebsocketClient struct {
 
 type WebsocketClientOption func(*websocketClient)
 
-func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...WebsocketClientOption) *privateWebsocketClient {
+func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...WebsocketClientOption) PrivateWebsocketClient {
 	wsc := websocketClient{
 		uri: "wss://fapi.bitunix.com/private/",
 	}
@@ -326,4 +326,18 @@ func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
 		return bytes, nil
 
 	}
+}
+
+type PrivateWebsocketClient interface {
+	SubscribeBalance() <-chan model.BalanceChannelMessage
+	UnsubscribeBalance(sub chan model.BalanceChannelMessage)
+	SubscribePositions() <-chan model.PositionChannelMessage
+	UnsubscribePosition(sub chan model.PositionChannelMessage)
+	SubscribeOrders() <-chan model.OrderChannelMessage
+	UnsubscribeOrders(sub chan model.OrderChannelMessage)
+	SubscribeTpSlOrders() <-chan model.TpSlOrderChannelMessage
+	UnsubscribeTpSlOrders(sub chan model.TpSlOrderChannelMessage)
+	Stream() error
+	Connect() error
+	Disconnect()
 }

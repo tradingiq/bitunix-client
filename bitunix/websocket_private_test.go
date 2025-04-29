@@ -236,8 +236,10 @@ func TestPrivateWebsocketClient(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	client := NewPrivateWebsocket(ctx, "test_api_key", "test_api_secret", withCustomURI)
-	require.NotNil(t, client)
+	c := NewPrivateWebsocket(ctx, "test_api_key", "test_api_secret", withCustomURI)
+	require.NotNil(t, c)
+
+	client := c.(*privateWebsocketClient)
 
 	err := client.Connect()
 	require.NoError(t, err)
@@ -428,7 +430,8 @@ func TestCustomWebsocketURI(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	client := NewPrivateWebsocket(ctx, "test_api_key", "test_api_secret", withCustomURI)
+	c := NewPrivateWebsocket(ctx, "test_api_key", "test_api_secret", withCustomURI)
+	client := c.(*privateWebsocketClient)
 
 	assert.Equal(t, customURI, client.websocketClient.uri)
 }
