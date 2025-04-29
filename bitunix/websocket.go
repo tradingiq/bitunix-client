@@ -193,7 +193,7 @@ func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
-	for sub, _ := range ws.tpSlOrderSubscribers {
+	for sub := range ws.tpSlOrderSubscribers {
 		select {
 		case sub <- res:
 		default:
@@ -210,7 +210,7 @@ func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
-	for sub, _ := range ws.orderSubscribers {
+	for sub := range ws.orderSubscribers {
 		select {
 		case sub <- res:
 		default:
@@ -227,7 +227,7 @@ func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
-	for sub, _ := range ws.positionSubscribers {
+	for sub := range ws.positionSubscribers {
 		select {
 		case sub <- res:
 		default:
@@ -243,7 +243,7 @@ func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
 	}
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
-	for sub, _ := range ws.balanceSubscribers {
+	for sub := range ws.balanceSubscribers {
 		select {
 		case sub <- res:
 		default:
