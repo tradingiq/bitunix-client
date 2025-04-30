@@ -62,7 +62,11 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) P
 	}
 }
 
-func (ws *publicWebsocketClient) SubscribeKLine(symbol string, interval string, priceType string, handler KLineHandler) error {
+func (ws *publicWebsocketClient) SubscribeKLine(symbol model.Symbol, interval model.Interval, priceType model.PriceType, handler KLineHandler) error {
+	symbol = symbol.Normalize()
+	priceType = priceType.Normalize()
+	interval = interval.Normalize()
+
 	if handler == nil {
 		return fmt.Errorf("handler cannot be nil")
 	}
@@ -76,7 +80,7 @@ func (ws *publicWebsocketClient) SubscribeKLine(symbol string, interval string, 
 		Op: "subscribe",
 		Args: []interface{}{
 			SubscribeKLineRequest{
-				Symbol: symbol,
+				Symbol: symbol.Normalize().String(),
 				Ch:     channelName,
 			},
 		},
@@ -94,7 +98,11 @@ func (ws *publicWebsocketClient) SubscribeKLine(symbol string, interval string, 
 	return nil
 }
 
-func (ws *publicWebsocketClient) UnsubscribeKLine(symbol string, interval string, priceType string) error {
+func (ws *publicWebsocketClient) UnsubscribeKLine(symbol model.Symbol, interval model.Interval, priceType model.PriceType) error {
+	symbol = symbol.Normalize()
+	priceType = priceType.Normalize()
+	interval = interval.Normalize()
+
 	channelName := fmt.Sprintf("%s_kline_%s", priceType, interval)
 	handlerKey := fmt.Sprintf("%s_%s", symbol, channelName)
 
@@ -104,7 +112,7 @@ func (ws *publicWebsocketClient) UnsubscribeKLine(symbol string, interval string
 		Op: "unsubscribe",
 		Args: []interface{}{
 			SubscribeKLineRequest{
-				Symbol: symbol,
+				Symbol: symbol.String(),
 				Ch:     channelName,
 			},
 		},
@@ -195,6 +203,6 @@ type PublicWebsocketClient interface {
 	Stream() error
 	Connect() error
 	Disconnect()
-	SubscribeKLine(symbol string, interval string, priceType string, handler KLineHandler) error
-	UnsubscribeKLine(symbol string, interval string, priceType string) error
+	SubscribeKLine(symbol model.Symbol, interval model.Interval, priceType model.PriceType, handler KLineHandler) error
+	UnsubscribeKLine(symbol model.Symbol, interval model.Interval, priceType model.PriceType) error
 }
