@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/security"
+	"github.com/tradingiq/bitunix-client/websocket"
 	"sync"
 	"time"
 )
@@ -32,7 +33,12 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 		option(&wsc)
 	}
 
-	wsc.client = newWebsocket(ctx, apiKey, secretKey, wsc.uri)
+	wsc.client = websocket.New(
+		ctx,
+		wsc.uri,
+		websocket.WithAuthentication(WebsocketSigner(apiKey, secretKey)),
+		websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()),
+	)
 
 	return &privateWebsocketClient{
 		websocketClient:        wsc,

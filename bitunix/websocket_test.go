@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tradingiq/bitunix-client/model"
+	"github.com/tradingiq/bitunix-client/websocket"
 	"testing"
 	"time"
 )
@@ -24,4 +26,151 @@ func TestHeartbeatMessage(t *testing.T) {
 
 	assert.Equal(t, "ping", decoded.Op)
 	assert.Equal(t, timestamp, decoded.Ping)
+}
+
+func TestKLineUnmarshal(t *testing.T) {
+	jsonData := `{
+		"ch": "mark_kline_1min",
+		"symbol": "BTCUSDT",
+		"ts": 1732178884994,
+		"data": {
+			"o": "0.0010",
+			"c": "0.0020",
+			"h": "0.0025",
+			"l": "0.0015",
+			"b": "1.01",
+			"q": "1.09"
+		}
+	}`
+
+	var msg model.KLineChannelMessage
+	err := json.Unmarshal([]byte(jsonData), &msg)
+	assert.NoError(t, err)
+	assert.Equal(t, "mark_kline_1min", msg.Channel)
+	assert.Equal(t, "BTCUSDT", msg.Symbol)
+	assert.Equal(t, int64(1732178884994), msg.Ts)
+	assert.Equal(t, 0.0010, msg.Data.OpenPrice)
+	assert.Equal(t, 0.0020, msg.Data.ClosePrice)
+	assert.Equal(t, 0.0025, msg.Data.HighPrice)
+	assert.Equal(t, 0.0015, msg.Data.LowPrice)
+	assert.Equal(t, 1.01, msg.Data.BaseVolume)
+	assert.Equal(t, 1.09, msg.Data.QuoteVolume)
+}
+
+type mockWsClient struct {
+	connectFn func() error
+	listenFn  func(callback websocket.HandlerFunc) error
+	closeFn   func()
+	writeFn   func([]byte) error
+}
+
+func (m *mockWsClient) Connect() error {
+	if m.connectFn != nil {
+		return m.connectFn()
+	}
+	return nil
+}
+
+func (m *mockWsClient) Listen(callback websocket.HandlerFunc) error {
+	if m.listenFn != nil {
+		return m.listenFn(callback)
+	}
+	return nil
+}
+
+func (m *mockWsClient) Close() {
+	if m.closeFn != nil {
+		m.closeFn()
+	}
+}
+
+func (m *mockWsClient) Write(bytes []byte) error {
+	if m.writeFn != nil {
+		return m.writeFn(bytes)
+	}
+	return nil
+}
+
+func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: websocketClient{
+			client: mockWs,
+			uri:    "wss://test.com",
+		},
+		klineHandlers: make(map[string]KLineHandler),
+	}
+
+	var sentBytes []byte
+	mockWs.writeFn = func(bytes []byte) error {
+		sentBytes = bytes
+		return nil
+	}
+
+	handler := func(msg *model.KLineChannelMessage) {}
+	err := client.SubscribeKLine("BTCUSDT", "1min", "market", handler)
+	assert.NoError(t, err)
+
+	var req SubscribeRequest
+	err = json.Unmarshal(sentBytes, &req)
+	assert.NoError(t, err)
+	assert.Equal(t, "subscribe", req.Op)
+
+	_, exists := client.klineHandlers["BTCUSDT_market_kline_1min"]
+	assert.True(t, exists)
+}
+
+func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: websocketClient{
+			client: mockWs,
+			uri:    "wss://test.com",
+		},
+		klineHandlers: make(map[string]KLineHandler),
+	}
+
+	var listenCallback websocket.HandlerFunc
+	mockWs.listenFn = func(callback websocket.HandlerFunc) error {
+		listenCallback = callback
+		return nil
+	}
+
+	klineCalled := false
+	klineMsg := &model.KLineChannelMessage{}
+
+	client.klineHandlers["BTCUSDT_market_kline_1min"] = func(msg *model.KLineChannelMessage) {
+		klineCalled = true
+		klineMsg = msg
+	}
+
+	err := client.Stream()
+	assert.NoError(t, err)
+
+	klineData := `{
+		"ch": "market_kline_1min",
+		"symbol": "BTCUSDT",
+		"ts": 1732178884994,
+		"data": {
+			"o": "0.0010",
+			"c": "0.0020",
+			"h": "0.0025",
+			"l": "0.0015",
+			"b": "1.01",
+			"q": "1.09"
+		}
+	}`
+
+	err = listenCallback([]byte(klineData))
+	assert.NoError(t, err)
+
+	time.Sleep(10 * time.Millisecond)
+
+	assert.True(t, klineCalled)
+	assert.Equal(t, "market_kline_1min", klineMsg.Channel)
+	assert.Equal(t, "BTCUSDT", klineMsg.Symbol)
+	assert.Equal(t, int64(1732178884994), klineMsg.Ts)
+	assert.Equal(t, 0.0010, klineMsg.Data.OpenPrice)
 }
