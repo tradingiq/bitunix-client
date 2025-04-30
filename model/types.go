@@ -532,3 +532,85 @@ func ParseMarginCoin(s string) MarginCoin {
 func (s MarginCoin) Normalize() MarginCoin {
 	return MarginCoin(strings.ToUpper(strings.TrimSpace(string(s))))
 }
+
+const (
+	Interval1Min   Interval = "1min"
+	Interval3Min   Interval = "3min"
+	Interval5Min   Interval = "5min"
+	Interval15Min  Interval = "15min"
+	Interval30Min  Interval = "30min"
+	Interval60Min  Interval = "60min"
+	Interval2H     Interval = "2h"
+	Interval4H     Interval = "4h"
+	Interval6H     Interval = "6h"
+	Interval8H     Interval = "8h"
+	Interval12H    Interval = "12h"
+	Interval1Day   Interval = "1day"
+	Interval3Day   Interval = "3day"
+	Interval1Week  Interval = "1week"
+	Interval1Month Interval = "1month"
+)
+
+type Interval string
+
+func (s Interval) String() string {
+	return string(s)
+}
+
+func ParseInterval(s string) (Interval, error) {
+	interval := Interval(s).Normalize()
+
+	if !interval.IsValid() {
+		return interval, fmt.Errorf("%s is not a valid interval", s)
+	}
+
+	return interval, nil
+}
+
+func (s Interval) IsValid() bool {
+	switch s {
+	case Interval1Min, Interval3Min, Interval5Min, Interval15Min, Interval30Min, Interval60Min,
+		Interval2H, Interval4H, Interval6H, Interval8H, Interval12H,
+		Interval1Day, Interval3Day,
+		Interval1Week,
+		Interval1Month:
+		return true
+	}
+	return false
+}
+
+func (s Interval) Normalize() Interval {
+	return Interval(strings.ToUpper(strings.TrimSpace(string(s))))
+}
+
+const PriceTypeMark PriceType = "mark"
+const PriceTypeMarket PriceType = "market"
+
+type PriceType string
+
+func (s PriceType) String() string {
+	return string(s)
+}
+
+func ParsePriceType(s string) (PriceType, error) {
+	priceType := PriceType(s).Normalize()
+
+	if !priceType.IsValid() {
+		return priceType, fmt.Errorf("%s is not a valid pricetype", s)
+	}
+
+	return priceType, nil
+}
+
+func (s PriceType) IsValid() bool {
+	switch s {
+	case PriceTypeMark, PriceTypeMarket:
+		return true
+	}
+
+	return false
+}
+
+func (s PriceType) Normalize() PriceType {
+	return PriceType(strings.ToUpper(strings.TrimSpace(string(s))))
+}
