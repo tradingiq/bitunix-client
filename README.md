@@ -11,7 +11,8 @@ on futures trading. It implements both REST API endpoints and WebSocket connecti
 
 - **REST API Integration**: Full implementation of Bitunix's futures trading REST API endpoints
 - **WebSocket Support**: Real-time data streaming for account balances, positions, orders, and take-profit/stop-loss
-  orders
+  orders with configurable base URI
+- **Flexible WebSocket Client**: Interface-based WebSocket client implementation for easy mocking and testing
 - **Order Management**: Place, cancel, and query orders with support for various order types
 - **Account Information**: Retrieve account balances and trading history
 - **Position Management**: Track and manage trading positions
@@ -44,7 +45,7 @@ MarginCoin: "USDT",
 ctx := context.Background()
 response, err := client.GetAccountBalance(ctx, params)
 if err != nil {
-log.Fatal(err)
+    log.Fatal(err)
 }
 
 fmt.Printf("Account Balance: %.6f %s\n", response.Data.Available, response.Data.MarginCoin)
@@ -55,10 +56,10 @@ fmt.Printf("Account Balance: %.6f %s\n", response.Data.Available, response.Data.
 ```go
 // Create a limit order using the builder pattern
 limitOrder := bitunix.NewOrderBuilder(
-model.ParseSymbol("BTCUSDT"), // Symbol
-model.TradeSideSell,          // Side (BUY/SELL)
-model.SideOpen,      // Trade side (OPEN/CLOSE)
-0.002,               // Quantity
+  model.ParseSymbol("BTCUSDT"), // Symbol
+  model.TradeSideSell,          // Side (BUY/SELL)
+  model.SideOpen,      // Trade side (OPEN/CLOSE)
+    0.002,               // Quantity
 ).WithOrderType(model.OrderTypeLimit).
 WithPrice(100000.0).
 WithTimeInForce(model.TimeInForcePostOnly).
@@ -67,7 +68,7 @@ Build()
 // Submit the order
 response, err := client.PlaceOrder(ctx, &limitOrder)
 if err != nil {
-log.Fatalf("Failed to place order: %v", err)
+	log.Fatalf("Failed to place order: %v", err)
 }
 
 fmt.Printf("Order placed successfully: %+v\n", response)
@@ -76,34 +77,50 @@ fmt.Printf("Order placed successfully: %+v\n", response)
 ### Working with WebSockets
 
 ```go
-// Create a WebSocket client
+// Create a WebSocket client (with default endpoint)
 ws := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY")
 defer ws.Disconnect()
 
 // Connect to the WebSocket server
 if err := ws.Connect(); err != nil {
-log.Fatalf("Failed to connect to WebSocket: %v", err)
+    log.Fatalf("Failed to connect to WebSocket: %v", err)
 }
 
 // Subscribe to balance updates
 balance := ws.SubscribeBalance()
 go func () {
-for balanceResponse := range balance {
-log.WithField("balance", balanceResponse).Debug("Balance update")
-}
+    for balanceResponse := range balance {
+        log.WithField("balance", balanceResponse).Debug("Balance update")
+    }
 }()
 
 // Subscribe to position updates
 positions := ws.SubscribePositions()
 go func () {
-for positionResponse := range positions {
-log.WithField("position", positionResponse).Debug("Position update")
-}
+    for positionResponse := range positions {
+        log.WithField("position", positionResponse).Debug("Position update")
+    }
+}()
+
+// Subscribe to order updates
+orders := ws.SubscribeOrders()
+go func () {
+    for orderResponse := range orders {
+        log.WithField("order", orderResponse).Debug("Order update")
+    }
+}()
+
+// Subscribe to TP/SL order updates
+tpslOrders := ws.SubscribeTpSlOrders()
+go func () {
+    for tpslResponse := range tpslOrders {
+        log.WithField("tpsl", tpslResponse).Debug("TP/SL order update")
+    }
 }()
 
 // Start the WebSocket stream
 if err := ws.Stream(); err != nil {
-log.WithError(err).Fatal("Failed to stream")
+    log.WithError(err).Fatal("Failed to stream")
 }
 ```
 
@@ -150,6 +167,12 @@ connections. Configure the client with your API and Secret keys from Bitunix:
 // For REST API
 client := bitunix.New("YOUR_API_KEY", "YOUR_SECRET_KEY")
 
-// For WebSocket
+// For WebSocket (with default endpoint)
 ws := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY")
+
+// For WebSocket with custom URI
+customWs := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY", 
+    func(client *websocketClient) {
+        client.uri = "wss://custom-endpoint.bitunix.com/private/"
+    })
 ```
