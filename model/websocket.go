@@ -438,6 +438,85 @@ type TpSlOrderChannelMessage struct {
 	Data      TpSlOrderEvent `json:"data"`
 }
 
+type KLineChannelMessage struct {
+	Channel string      `json:"ch"`
+	Symbol  string      `json:"symbol"`
+	Ts      int64       `json:"ts"`
+	Data    KLineEvent  `json:"data"`
+}
+
+type KLineEvent struct {
+	OpenPrice   float64 `json:"-"`
+	HighPrice   float64 `json:"-"`
+	LowPrice    float64 `json:"-"`
+	ClosePrice  float64 `json:"-"`
+	BaseVolume  float64 `json:"-"`
+	QuoteVolume float64 `json:"-"`
+}
+
+func (k *KLineEvent) UnmarshalJSON(data []byte) error {
+	type Alias KLineEvent
+	aux := &struct {
+		OpenPrice   string `json:"o"`
+		HighPrice   string `json:"h"`
+		LowPrice    string `json:"l"`
+		ClosePrice  string `json:"c"`
+		BaseVolume  string `json:"b"`
+		QuoteVolume string `json:"q"`
+		*Alias
+	}{
+		Alias: (*Alias)(k),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	openPrice, err := strconv.ParseFloat(aux.OpenPrice, 64)
+	if err == nil {
+		k.OpenPrice = openPrice
+	} else {
+		return fmt.Errorf("failed to parse open price: %w", err)
+	}
+
+	highPrice, err := strconv.ParseFloat(aux.HighPrice, 64)
+	if err == nil {
+		k.HighPrice = highPrice
+	} else {
+		return fmt.Errorf("failed to parse high price: %w", err)
+	}
+
+	lowPrice, err := strconv.ParseFloat(aux.LowPrice, 64)
+	if err == nil {
+		k.LowPrice = lowPrice
+	} else {
+		return fmt.Errorf("failed to parse low price: %w", err)
+	}
+
+	closePrice, err := strconv.ParseFloat(aux.ClosePrice, 64)
+	if err == nil {
+		k.ClosePrice = closePrice
+	} else {
+		return fmt.Errorf("failed to parse close price: %w", err)
+	}
+
+	baseVolume, err := strconv.ParseFloat(aux.BaseVolume, 64)
+	if err == nil {
+		k.BaseVolume = baseVolume
+	} else {
+		return fmt.Errorf("failed to parse base volume: %w", err)
+	}
+
+	quoteVolume, err := strconv.ParseFloat(aux.QuoteVolume, 64)
+	if err == nil {
+		k.QuoteVolume = quoteVolume
+	} else {
+		return fmt.Errorf("failed to parse quote volume: %w", err)
+	}
+
+	return nil
+}
+
 type TpSlOrderEvent struct {
 	Event        TpSlEventType `json:"-"`
 	PositionID   string        `json:"positionId"`
