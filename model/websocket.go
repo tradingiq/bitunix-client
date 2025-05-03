@@ -439,10 +439,27 @@ type TpSlOrderChannelMessage struct {
 }
 
 type KLineChannelMessage struct {
-	Channel string      `json:"ch"`
-	Symbol  string      `json:"symbol"`
-	Ts      int64       `json:"ts"`
-	Data    KLineEvent  `json:"data"`
+	Channel string     `json:"ch"`
+	Symbol  Symbol     `json:"-"`
+	Ts      int64      `json:"ts"`
+	Data    KLineEvent `json:"data"`
+}
+
+func (k *KLineChannelMessage) UnmarshalJSON(data []byte) error {
+	type Alias KLineChannelMessage
+	aux := &struct {
+		Symbol string `json:"symbol"`
+		*Alias
+	}{
+		Alias: (*Alias)(k),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	k.Symbol = ParseSymbol(aux.Symbol)
+
+	return nil
 }
 
 type KLineEvent struct {
