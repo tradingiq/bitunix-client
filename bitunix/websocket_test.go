@@ -99,7 +99,7 @@ func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
 			client: mockWs,
 			uri:    "wss://test.com",
 		},
-		klineHandlers: make(map[string]KLineHandler),
+		klineHandlers: make(map[KLineSubscriber]struct{}),
 	}
 
 	var sentBytes []byte
@@ -108,8 +108,8 @@ func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
 		return nil
 	}
 
-	handler := func(msg *model.KLineChannelMessage) {}
-	err := client.SubscribeKLine("BTCUSDT", "1min", "market", handler)
+	sub := &subTest{}
+	err := client.SubscribeKLine(sub)
 	assert.NoError(t, err)
 
 	var req SubscribeRequest
@@ -117,8 +117,30 @@ func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "subscribe", req.Op)
 
-	_, exists := client.klineHandlers["BTCUSDT_market_kline_1min"]
+	_, exists := client.klineHandlers[sub]
 	assert.True(t, exists)
+}
+
+type subTest struct {
+	called bool
+	msg    model.KLineChannelMessage
+}
+
+func (s *subTest) Handle(message *model.KLineChannelMessage) {
+	s.called = true
+	s.msg = *message
+}
+
+func (s *subTest) Interval() model.Interval {
+	return model.Interval1Min
+}
+
+func (s *subTest) Symbol() model.Symbol {
+	return model.Symbol("BTCUSDT")
+}
+
+func (s *subTest) PriceType() model.PriceType {
+	return model.PriceTypeMarket
 }
 
 func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
@@ -129,7 +151,7 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 			client: mockWs,
 			uri:    "wss://test.com",
 		},
-		klineHandlers: make(map[string]KLineHandler),
+		klineHandlers: make(map[KLineSubscriber]struct{}),
 	}
 
 	var listenCallback websocket.HandlerFunc
@@ -138,15 +160,11 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 		return nil
 	}
 
-	klineCalled := false
-	klineMsg := &model.KLineChannelMessage{}
+	sub := &subTest{}
+	err := client.SubscribeKLine(sub)
+	assert.NoError(t, err)
 
-	client.klineHandlers["BTCUSDT_market_kline_1min"] = func(msg *model.KLineChannelMessage) {
-		klineCalled = true
-		klineMsg = msg
-	}
-
-	err := client.Stream()
+	err = client.Stream()
 	assert.NoError(t, err)
 
 	klineData := `{
@@ -167,8 +185,9 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 	assert.NoError(t, err)
 
 	time.Sleep(10 * time.Millisecond)
+	klineMsg := sub.msg
 
-	assert.True(t, klineCalled)
+	assert.True(t, sub.called)
 	assert.Equal(t, "market_kline_1min", klineMsg.Channel)
 	assert.Equal(t, "BTCUSDT", klineMsg.Symbol)
 	assert.Equal(t, int64(1732178884994), klineMsg.Ts)
