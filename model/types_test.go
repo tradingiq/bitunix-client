@@ -708,3 +708,303 @@ func TestSymbolString(t *testing.T) {
 		}
 	}
 }
+
+func TestIntervalNormalize(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected Interval
+	}{
+		// Standard format
+		{"1min", Interval1Min},
+		{"3min", Interval3Min},
+		{"5min", Interval5Min},
+		{"15min", Interval15Min},
+		{"30min", Interval30Min},
+		{"60min", Interval60Min},
+		{"2h", Interval2H},
+		{"4h", Interval4H},
+		{"6h", Interval6H},
+		{"8h", Interval8H},
+		{"12h", Interval12H},
+		{"1day", Interval1Day},
+		{"3day", Interval3Day},
+		{"1week", Interval1Week},
+		{"1month", Interval1Month},
+
+		// Alternative formats
+		{"1m", Interval1Min},
+		{"3m", Interval3Min},
+		{"5m", Interval5Min},
+		{"15m", Interval15Min},
+		{"30m", Interval30Min},
+		{"60m", Interval60Min},
+		{"1h", Interval60Min},
+		{"1d", Interval1Day},
+		{"3d", Interval3Day},
+		{"1w", Interval1Week},
+		{"1mo", Interval1Month},
+
+		// With whitespace
+		{" 1min ", Interval1Min},
+		{" 1m ", Interval1Min},
+		{" 1day ", Interval1Day},
+		{"  2h  ", Interval2H},
+
+		// Mixed case
+		{"1Min", Interval1Min},
+		{"1DAY", Interval1Day},
+		{"1WeEk", Interval1Week},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			result := Interval(tc.input).Normalize()
+			if result != tc.expected {
+				t.Errorf("Interval.Normalize() with input '%s': expected '%s', got '%s'",
+					tc.input, tc.expected, result)
+			}
+
+			// Also test the Parse function
+			parsedResult, err := ParseInterval(tc.input)
+			if err != nil {
+				t.Errorf("ParseInterval(%s) unexpected error: %v", tc.input, err)
+			}
+			if parsedResult != tc.expected {
+				t.Errorf("ParseInterval(%s): expected %s, got %s", tc.input, tc.expected, parsedResult)
+			}
+		})
+	}
+}
+
+func TestPriceTypeNormalize(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected PriceType
+	}{
+		// Standard format
+		{"mark", PriceTypeMark},
+		{"market", PriceTypeMarket},
+
+		// Alternative formats
+		{"markprice", PriceTypeMark},
+		{"mark_price", PriceTypeMark},
+		{"marketprice", PriceTypeMarket},
+		{"market_price", PriceTypeMarket},
+
+		// With whitespace
+		{" mark ", PriceTypeMark},
+		{" market ", PriceTypeMarket},
+		{"  markprice  ", PriceTypeMark},
+
+		// Mixed case
+		{"Mark", PriceTypeMark},
+		{"MARKET", PriceTypeMarket},
+		{"MarkPrice", PriceTypeMark},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			result := PriceType(tc.input).Normalize()
+			if result != tc.expected {
+				t.Errorf("PriceType.Normalize() with input '%s': expected '%s', got '%s'",
+					tc.input, tc.expected, result)
+			}
+
+			// Also test the Parse function
+			parsedResult, err := ParsePriceType(tc.input)
+			if err != nil {
+				t.Errorf("ParsePriceType(%s) unexpected error: %v", tc.input, err)
+			}
+			if parsedResult != tc.expected {
+				t.Errorf("ParsePriceType(%s): expected %s, got %s", tc.input, tc.expected, parsedResult)
+			}
+		})
+	}
+}
+
+func TestChannelNormalize(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected Channel
+	}{
+		// Standard format
+		{"kline", ChannelKline},
+
+		// Alternative formats
+		{"k", ChannelKline},
+		{"candle", ChannelKline},
+		{"candlestick", ChannelKline},
+
+		// With whitespace
+		{" kline ", ChannelKline},
+		{" k ", ChannelKline},
+		{"  candle  ", ChannelKline},
+
+		// Mixed case
+		{"Kline", ChannelKline},
+		{"CANDLE", ChannelKline},
+		{"CandleStick", ChannelKline},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			result := Channel(tc.input).Normalize()
+			if result != tc.expected {
+				t.Errorf("Channel.Normalize() with input '%s': expected '%s', got '%s'",
+					tc.input, tc.expected, result)
+			}
+
+			// Also test the Parse function
+			parsedResult, err := ParseChannel(tc.input)
+			if err != nil {
+				t.Errorf("ParseChannel(%s) unexpected error: %v", tc.input, err)
+			}
+			if parsedResult != tc.expected {
+				t.Errorf("ParseChannel(%s): expected %s, got %s", tc.input, tc.expected, parsedResult)
+			}
+		})
+	}
+}
+
+// Test for whitespace handling across all types
+func TestWhitespaceNormalization(t *testing.T) {
+	t.Run("StopType", func(t *testing.T) {
+		input := " LAST_PRICE "
+		expected := StopTypeLastPrice
+		result := StopType(input).Normalize()
+		if result != expected {
+			t.Errorf("StopType.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("OrderType", func(t *testing.T) {
+		input := " LIMIT "
+		expected := OrderTypeLimit
+		result := OrderType(input).Normalize()
+		if result != expected {
+			t.Errorf("OrderType.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("TimeInForce", func(t *testing.T) {
+		input := " GTC "
+		expected := TimeInForceGTC
+		result := TimeInForce(input).Normalize()
+		if result != expected {
+			t.Errorf("TimeInForce.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("Side", func(t *testing.T) {
+		input := " OPEN "
+		expected := SideOpen
+		result := Side(input).Normalize()
+		if result != expected {
+			t.Errorf("Side.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("TradeSide", func(t *testing.T) {
+		input := " BUY "
+		expected := TradeSideBuy
+		result := TradeSide(input).Normalize()
+		if result != expected {
+			t.Errorf("TradeSide.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("MarginMode", func(t *testing.T) {
+		input := " ISOLATION "
+		expected := MarginModeIsolation
+		result := MarginMode(input).Normalize()
+		if result != expected {
+			t.Errorf("MarginMode.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("TradeRoleType", func(t *testing.T) {
+		input := " TAKER "
+		expected := TradeRoleTypeTaker
+		result := TradeRoleType(input).Normalize()
+		if result != expected {
+			t.Errorf("TradeRoleType.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("PositionMode", func(t *testing.T) {
+		input := " ONE_WAY "
+		expected := PositionModeOneWay
+		result := PositionMode(input).Normalize()
+		if result != expected {
+			t.Errorf("PositionMode.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("OrderStatus", func(t *testing.T) {
+		input := " NEW "
+		expected := OrderStatusNew
+		result := OrderStatus(input).Normalize()
+		if result != expected {
+			t.Errorf("OrderStatus.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("PositionSide", func(t *testing.T) {
+		input := " LONG "
+		expected := PositionSideLong
+		result := PositionSide(input).Normalize()
+		if result != expected {
+			t.Errorf("PositionSide.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("PositionEventType", func(t *testing.T) {
+		input := " OPEN "
+		expected := PositionEventOpen
+		result := PositionEventType(input).Normalize()
+		if result != expected {
+			t.Errorf("PositionEventType.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("OrderEventType", func(t *testing.T) {
+		input := " CREATE "
+		expected := OrderEventCreate
+		result := OrderEventType(input).Normalize()
+		if result != expected {
+			t.Errorf("OrderEventType.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("TpSlEventType", func(t *testing.T) {
+		input := " CREATE "
+		expected := TPSLEventCreate
+		result := TpSlEventType(input).Normalize()
+		if result != expected {
+			t.Errorf("TpSlEventType.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+
+	t.Run("TpSlType", func(t *testing.T) {
+		input := " POSITION_TPSL "
+		expected := TPSLTypeFull
+		result := TpSlType(input).Normalize()
+		if result != expected {
+			t.Errorf("TpSlType.Normalize() with input '%s': expected '%s', got '%s'",
+				input, expected, result)
+		}
+	})
+}

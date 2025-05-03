@@ -11,13 +11,13 @@
 
 ```json
 {
-    "op":"subscribe",
-    "args":[
-        {
-            "symbol":"BTCUSDT",
-            "ch":"market_kline_1min" 
-        }
-    ]
+  "op": "subscribe",
+  "args": [
+    {
+      "symbol": "BTCUSDT",
+      "ch": "market_kline_1min"
+    }
+  ]
 }
 ```
 
@@ -39,17 +39,17 @@
 ### Push Data Example:
 
 ```json
-{ 
+{
   "ch": "mark_kline_1min",
   "symbol": "BNBUSDT",
-  "ts": 1732178884994,                   
-  "data":{
-      "o": "0.0010",                     
-      "c": "0.0020",                     
-      "h": "0.0025",                     
-      "l": "0.0015",                    
-      "b": "1.01",                     
-      "q": "1.09"                         
+  "ts": 1732178884994,
+  "data": {
+    "o": "0.0010",
+    "c": "0.0020",
+    "h": "0.0025",
+    "l": "0.0015",
+    "b": "1.01",
+    "q": "1.09"
   }
 }
 ```

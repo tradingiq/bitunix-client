@@ -36,7 +36,7 @@ func ParseStopType(s string) (StopType, error) {
 }
 
 func (s StopType) Normalize() StopType {
-	upper := strings.ToUpper(string(s))
+	upper := strings.ToUpper(strings.TrimSpace(string(s)))
 
 	switch upper {
 	case "LAST":
@@ -79,7 +79,7 @@ func ParseOrderType(s string) (OrderType, error) {
 }
 
 func (o OrderType) Normalize() OrderType {
-	return OrderType(strings.ToUpper(string(o)))
+	return OrderType(strings.ToUpper(strings.TrimSpace(string(o))))
 }
 
 type TimeInForce string
@@ -115,7 +115,7 @@ func ParseTimeInForce(s string) (TimeInForce, error) {
 }
 
 func (t TimeInForce) Normalize() TimeInForce {
-	return TimeInForce(strings.ToUpper(string(t)))
+	return TimeInForce(strings.ToUpper(strings.TrimSpace(string(t))))
 }
 
 type Side string
@@ -149,7 +149,7 @@ func ParseSide(str string) (Side, error) {
 }
 
 func (s Side) Normalize() Side {
-	return Side(strings.ToUpper(string(s)))
+	return Side(strings.ToUpper(strings.TrimSpace(string(s))))
 }
 
 type TradeSide string
@@ -183,7 +183,7 @@ func ParseTradeSide(s string) (TradeSide, error) {
 }
 
 func (t TradeSide) Normalize() TradeSide {
-	return TradeSide(strings.ToUpper(string(t)))
+	return TradeSide(strings.ToUpper(strings.TrimSpace(string(t))))
 }
 
 type MarginMode string
@@ -217,7 +217,7 @@ func ParseMarginMode(s string) (MarginMode, error) {
 }
 
 func (m MarginMode) Normalize() MarginMode {
-	return MarginMode(strings.ToUpper(string(m)))
+	return MarginMode(strings.ToUpper(strings.TrimSpace(string(m))))
 }
 
 type TradeRoleType string
@@ -251,7 +251,7 @@ func ParseTradeRoleType(s string) (TradeRoleType, error) {
 }
 
 func (t TradeRoleType) Normalize() TradeRoleType {
-	return TradeRoleType(strings.ToUpper(string(t)))
+	return TradeRoleType(strings.ToUpper(strings.TrimSpace(string(t))))
 }
 
 type PositionMode string
@@ -285,7 +285,7 @@ func ParsePositionMode(s string) (PositionMode, error) {
 }
 
 func (p PositionMode) Normalize() PositionMode {
-	return PositionMode(strings.ToUpper(string(p)))
+	return PositionMode(strings.ToUpper(strings.TrimSpace(string(p))))
 }
 
 const ChannelBalance = "balance"
@@ -329,7 +329,7 @@ func ParseOrderStatus(s string) (OrderStatus, error) {
 }
 
 func (s OrderStatus) Normalize() OrderStatus {
-	return OrderStatus(strings.ToUpper(string(s)))
+	return OrderStatus(strings.ToUpper(strings.TrimSpace(string(s))))
 }
 
 type PositionSide string
@@ -363,7 +363,7 @@ func ParsePositionSide(s string) (PositionSide, error) {
 }
 
 func (s PositionSide) Normalize() PositionSide {
-	return PositionSide(strings.ToUpper(string(s)))
+	return PositionSide(strings.ToUpper(strings.TrimSpace(string(s))))
 }
 
 type PositionEventType string
@@ -398,7 +398,7 @@ func ParsePositionEvent(s string) (PositionEventType, error) {
 }
 
 func (s PositionEventType) Normalize() PositionEventType {
-	return PositionEventType(strings.ToUpper(string(s)))
+	return PositionEventType(strings.ToUpper(strings.TrimSpace(string(s))))
 }
 
 type OrderEventType string
@@ -426,14 +426,14 @@ func ParseOrderEvent(s string) (OrderEventType, error) {
 	status = status.Normalize()
 
 	if !status.IsValid() {
-		return status, fmt.Errorf("%s is not a valid PositionEventType", s)
+		return status, fmt.Errorf("%s is not a valid OrderEventType", s)
 	}
 
 	return status, nil
 }
 
 func (s OrderEventType) Normalize() OrderEventType {
-	return OrderEventType(strings.ToUpper(string(s)))
+	return OrderEventType(strings.ToUpper(strings.TrimSpace(string(s))))
 }
 
 type TpSlEventType string
@@ -468,7 +468,7 @@ func ParseTPSLEvent(s string) (TpSlEventType, error) {
 }
 
 func (s TpSlEventType) Normalize() TpSlEventType {
-	return TpSlEventType(strings.ToUpper(string(s)))
+	return TpSlEventType(strings.ToUpper(strings.TrimSpace(string(s))))
 }
 
 type TpSlType string
@@ -502,7 +502,7 @@ func ParseTPSLType(s string) (TpSlType, error) {
 }
 
 func (s TpSlType) Normalize() TpSlType {
-	return TpSlType(strings.ToUpper(string(s)))
+	return TpSlType(strings.ToUpper(strings.TrimSpace(string(s))))
 }
 
 type Symbol string
@@ -580,7 +580,42 @@ func (s Interval) IsValid() bool {
 }
 
 func (s Interval) Normalize() Interval {
-	return Interval(strings.ToLower(strings.TrimSpace(string(s))))
+	normalized := strings.ToLower(strings.TrimSpace(string(s)))
+
+	switch normalized {
+	case "1m", "1min":
+		return Interval1Min
+	case "3m", "3min":
+		return Interval3Min
+	case "5m", "5min":
+		return Interval5Min
+	case "15m", "15min":
+		return Interval15Min
+	case "30m", "30min":
+		return Interval30Min
+	case "60m", "1h", "60min":
+		return Interval60Min
+	case "2h":
+		return Interval2H
+	case "4h":
+		return Interval4H
+	case "6h":
+		return Interval6H
+	case "8h":
+		return Interval8H
+	case "12h":
+		return Interval12H
+	case "1d", "1day":
+		return Interval1Day
+	case "3d", "3day":
+		return Interval3Day
+	case "1w", "1week":
+		return Interval1Week
+	case "1mo", "1month":
+		return Interval1Month
+	}
+
+	return Interval(normalized)
 }
 
 const PriceTypeMark PriceType = "mark"
@@ -612,7 +647,16 @@ func (s PriceType) IsValid() bool {
 }
 
 func (s PriceType) Normalize() PriceType {
-	return PriceType(strings.ToLower(strings.TrimSpace(string(s))))
+	normalized := strings.ToLower(strings.TrimSpace(string(s)))
+
+	switch normalized {
+	case "mark", "markprice", "mark_price":
+		return PriceTypeMark
+	case "market", "marketprice", "market_price":
+		return PriceTypeMarket
+	}
+
+	return PriceType(normalized)
 }
 
 const ChannelKline Channel = "kline"
@@ -643,5 +687,12 @@ func (s Channel) IsValid() bool {
 }
 
 func (s Channel) Normalize() Channel {
-	return Channel(strings.ToLower(strings.TrimSpace(string(s))))
+	normalized := strings.ToLower(strings.TrimSpace(string(s)))
+
+	switch normalized {
+	case "kline", "k", "candle", "candlestick":
+		return ChannelKline
+	}
+
+	return Channel(normalized)
 }
