@@ -614,3 +614,34 @@ func (s PriceType) IsValid() bool {
 func (s PriceType) Normalize() PriceType {
 	return PriceType(strings.ToUpper(strings.TrimSpace(string(s))))
 }
+
+const ChannelKline Channel = "kline"
+
+type Channel string
+
+func (s Channel) String() string {
+	return string(s)
+}
+
+func ParseChannel(s string) (Channel, error) {
+	Channel := Channel(s).Normalize()
+
+	if !Channel.IsValid() {
+		return Channel, fmt.Errorf("%s is not a valid Channel", s)
+	}
+
+	return Channel, nil
+}
+
+func (s Channel) IsValid() bool {
+	switch s {
+	case ChannelKline:
+		return true
+	}
+
+	return false
+}
+
+func (s Channel) Normalize() Channel {
+	return Channel(strings.ToLower(strings.TrimSpace(string(s))))
+}
