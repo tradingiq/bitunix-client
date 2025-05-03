@@ -262,9 +262,11 @@ func TestPrivateWebsocketClient(t *testing.T) {
 
 		balanceChReadOnly := client.SubscribeBalance()
 
-		balanceCh := make(chan model.BalanceChannelMessage)
+		balanceCh := make(chan model.BalanceChannelMessage, 1)
 
+		client.balanceSubscriberMtx.Lock()
 		client.balanceSubscribers[balanceCh] = struct{}{}
+		client.balanceSubscriberMtx.Unlock()
 
 		defer client.UnsubscribeBalance(balanceCh)
 
@@ -285,9 +287,11 @@ func TestPrivateWebsocketClient(t *testing.T) {
 
 		positionChReadOnly := client.SubscribePositions()
 
-		positionCh := make(chan model.PositionChannelMessage)
+		positionCh := make(chan model.PositionChannelMessage, 1)
 
+		client.positionSubscribersMtx.Lock()
 		client.positionSubscribers[positionCh] = struct{}{}
+		client.positionSubscribersMtx.Unlock()
 
 		defer client.UnsubscribePosition(positionCh)
 
@@ -309,9 +313,11 @@ func TestPrivateWebsocketClient(t *testing.T) {
 
 		orderChReadOnly := client.SubscribeOrders()
 
-		orderCh := make(chan model.OrderChannelMessage)
+		orderCh := make(chan model.OrderChannelMessage, 1)
 
+		client.orderSubscriberMtx.Lock()
 		client.orderSubscribers[orderCh] = struct{}{}
+		client.orderSubscriberMtx.Unlock()
 
 		defer client.UnsubscribeOrders(orderCh)
 
@@ -333,9 +339,11 @@ func TestPrivateWebsocketClient(t *testing.T) {
 
 		tpslChReadOnly := client.SubscribeTpSlOrders()
 
-		tpslCh := make(chan model.TpSlOrderChannelMessage)
+		tpslCh := make(chan model.TpSlOrderChannelMessage, 1)
 
+		client.tpSlOrderSubscriberMtx.Lock()
 		client.tpSlOrderSubscribers[tpslCh] = struct{}{}
+		client.tpSlOrderSubscriberMtx.Unlock()
 
 		defer client.UnsubscribeTpSlOrders(tpslCh)
 
@@ -359,11 +367,13 @@ func TestPrivateWebsocketClient(t *testing.T) {
 		balanceChReadOnly1 := client.SubscribeBalance()
 		balanceChReadOnly2 := client.SubscribeBalance()
 
-		balanceCh1 := make(chan model.BalanceChannelMessage)
-		balanceCh2 := make(chan model.BalanceChannelMessage)
+		balanceCh1 := make(chan model.BalanceChannelMessage, 1)
+		balanceCh2 := make(chan model.BalanceChannelMessage, 1)
 
+		client.balanceSubscriberMtx.Lock()
 		client.balanceSubscribers[balanceCh1] = struct{}{}
 		client.balanceSubscribers[balanceCh2] = struct{}{}
+		client.balanceSubscriberMtx.Unlock()
 
 		defer client.UnsubscribeBalance(balanceCh1)
 		defer client.UnsubscribeBalance(balanceCh2)

@@ -197,7 +197,7 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Fatal("Timeout waiting for message to be processed")
 	}
-	
+
 	// Access the data after synchronization
 	klineMsg := sub.msg
 
