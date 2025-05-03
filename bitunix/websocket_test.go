@@ -108,7 +108,7 @@ func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
 		return nil
 	}
 
-	sub := &subTest{}
+	sub := &subTest{ch: make(chan struct{}, 1)}
 	err := client.SubscribeKLine(sub)
 	assert.NoError(t, err)
 
@@ -124,11 +124,16 @@ func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
 type subTest struct {
 	called bool
 	msg    model.KLineChannelMessage
+	ch     chan struct{}
 }
 
 func (s *subTest) Handle(message *model.KLineChannelMessage) {
 	s.called = true
 	s.msg = *message
+	// Signal that the message has been processed
+	if s.ch != nil {
+		s.ch <- struct{}{}
+	}
 }
 
 func (s *subTest) Interval() model.Interval {
@@ -160,7 +165,9 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 		return nil
 	}
 
-	sub := &subTest{}
+	// Create notification channel
+	ch := make(chan struct{}, 1)
+	sub := &subTest{ch: ch}
 	err := client.SubscribeKLine(sub)
 	assert.NoError(t, err)
 
@@ -184,7 +191,14 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 	err = listenCallback([]byte(klineData))
 	assert.NoError(t, err)
 
-	time.Sleep(10 * time.Millisecond)
+	// Wait for processing to complete with timeout
+	select {
+	case <-ch:
+	case <-time.After(1 * time.Second):
+		t.Fatal("Timeout waiting for message to be processed")
+	}
+	
+	// Access the data after synchronization
 	klineMsg := sub.msg
 
 	assert.True(t, sub.called)
