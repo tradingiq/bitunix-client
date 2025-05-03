@@ -47,7 +47,7 @@ func TestKLineUnmarshal(t *testing.T) {
 	err := json.Unmarshal([]byte(jsonData), &msg)
 	assert.NoError(t, err)
 	assert.Equal(t, "mark_kline_1min", msg.Channel)
-	assert.Equal(t, "BTCUSDT", msg.Symbol)
+	assert.Equal(t, model.ParseSymbol("BTCUSDT"), msg.Symbol)
 	assert.Equal(t, int64(1732178884994), msg.Ts)
 	assert.Equal(t, 0.0010, msg.Data.OpenPrice)
 	assert.Equal(t, 0.0020, msg.Data.ClosePrice)
@@ -189,7 +189,7 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 
 	assert.True(t, sub.called)
 	assert.Equal(t, "market_kline_1min", klineMsg.Channel)
-	assert.Equal(t, "BTCUSDT", klineMsg.Symbol)
+	assert.Equal(t, model.ParseSymbol("BTCUSDT"), klineMsg.Symbol)
 	assert.Equal(t, int64(1732178884994), klineMsg.Ts)
 	assert.Equal(t, 0.0010, klineMsg.Data.OpenPrice)
 }
