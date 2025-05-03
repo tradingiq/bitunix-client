@@ -7,6 +7,28 @@ import (
 	"github.com/tradingiq/bitunix-client/model"
 )
 
+type subTest struct {
+	interval  model.Interval
+	symbol    model.Symbol
+	priceType model.PriceType
+}
+
+func (s subTest) Handle(message *model.KLineChannelMessage) {
+	log.WithField("message", message).Debug("KLine")
+}
+
+func (s subTest) Interval() model.Interval {
+	return s.interval
+}
+
+func (s subTest) Symbol() model.Symbol {
+	return s.symbol
+}
+
+func (s subTest) PriceType() model.PriceType {
+	return s.priceType
+}
+
 func main() {
 	ctx := context.Background()
 	ws := bitunix.NewPublicWebsocket(ctx)
@@ -17,9 +39,12 @@ func main() {
 		log.Fatalf("failed to connect to WebSocket: %v", err)
 	}
 
-	err := ws.SubscribeKLine("BTCUSDT", "1min", "market", func(msg *model.KLineChannelMessage) {
-		log.WithField("candle", msg).Debug("KLine")
-	})
+	sub := subTest{
+		interval:  "1min",
+		symbol:    "BTCUSDT",
+		priceType: "market",
+	}
+	err := ws.SubscribeKLine(sub)
 	if err != nil {
 		log.Fatalf("failed to subscribe: %v", err)
 	}

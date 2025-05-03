@@ -580,7 +580,7 @@ func (s Interval) IsValid() bool {
 }
 
 func (s Interval) Normalize() Interval {
-	return Interval(strings.ToUpper(strings.TrimSpace(string(s))))
+	return Interval(strings.ToLower(strings.TrimSpace(string(s))))
 }
 
 const PriceTypeMark PriceType = "mark"
@@ -612,7 +612,7 @@ func (s PriceType) IsValid() bool {
 }
 
 func (s PriceType) Normalize() PriceType {
-	return PriceType(strings.ToUpper(strings.TrimSpace(string(s))))
+	return PriceType(strings.ToLower(strings.TrimSpace(string(s))))
 }
 
 const ChannelKline Channel = "kline"
