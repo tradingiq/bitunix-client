@@ -21,9 +21,8 @@ type wsClientInterface interface {
 }
 
 type websocketClient struct {
-	client        wsClientInterface
-	subscriberMtx sync.Mutex
-	uri           string
+	client wsClientInterface
+	uri    string
 }
 
 func (ws *websocketClient) Connect() error {
@@ -40,6 +39,7 @@ func (ws *websocketClient) Disconnect() {
 
 type publicWebsocketClient struct {
 	websocketClient
+	subscriberMtx sync.Mutex
 	klineHandlers map[KLineSubscriber]struct{}
 }
 
@@ -47,8 +47,7 @@ type WebsocketClientOption func(*websocketClient)
 
 func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) PublicWebsocketClient {
 	wsc := websocketClient{
-		uri:           "wss://fapi.bitunix.com/public/",
-		subscriberMtx: sync.Mutex{},
+		uri: "wss://fapi.bitunix.com/public/",
 	}
 	for _, option := range options {
 		option(&wsc)
@@ -62,6 +61,7 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) P
 
 	return &publicWebsocketClient{
 		websocketClient: wsc,
+		subscriberMtx:   sync.Mutex{},
 		klineHandlers:   make(map[KLineSubscriber]struct{}),
 	}
 }
