@@ -42,7 +42,7 @@ func WithKeepAliveMonitor(interval time.Duration, messageGenerator func() ([]byt
 type GenericMessage map[string]interface{}
 
 func New(ctx context.Context, uri string, options ...ClientOption) *Client {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	ws := &Client{
 		wsURL:  uri,
@@ -84,6 +84,8 @@ func (ws *Client) Connect() error {
 		if err := ws.login(); err != nil {
 			if err := conn.Close(websocket.StatusInternalError, ""); err != nil {
 				log.WithError(err).Error("error closing websocket connection")
+
+				return fmt.Errorf("login and successive connection closure failed: %w", err)
 			}
 			return fmt.Errorf("login failed: %w", err)
 		}
