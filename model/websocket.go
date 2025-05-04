@@ -148,31 +148,31 @@ func (p *PositionEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	p.Symbol = ParseSymbol(aux.Symbol)
+	p.Symbol = ParseSymbol(aux.Symbol).Normalize()
 
 	event, err := ParsePositionEvent(aux.Event)
 	if err != nil {
 		return fmt.Errorf("invalid position event: %w", err)
 	}
-	p.Event = event
+	p.Event = event.Normalize()
 
 	side, err := ParsePositionSide(aux.Side)
 	if err != nil {
 		return fmt.Errorf("invalid side: %w", err)
 	}
-	p.Side = side
+	p.Side = side.Normalize()
 
 	posMode, err := ParsePositionMode(aux.PositionMode)
 	if err != nil {
 		return fmt.Errorf("invalid position mode: %w", err)
 	}
-	p.PositionMode = posMode
+	p.PositionMode = posMode.Normalize()
 
 	marginMode, err := ParseMarginMode(aux.MarginMode)
 	if err != nil {
 		return fmt.Errorf("invalid margin mode: %w", err)
 	}
-	p.MarginMode = marginMode
+	p.MarginMode = marginMode.Normalize()
 
 	if aux.CreateTime != "" {
 		t, err := time.Parse(time.RFC3339Nano, aux.CreateTime)
@@ -331,43 +331,43 @@ func (o *OrderEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	o.Symbol = ParseSymbol(aux.Symbol)
+	o.Symbol = ParseSymbol(aux.Symbol).Normalize()
 
 	event, err := ParseOrderEvent(aux.Event)
 	if err != nil {
 		return fmt.Errorf("invalid order event: %w", err)
 	}
-	o.Event = event
+	o.Event = event.Normalize()
 
 	posType, err := ParseMarginMode(aux.PositionType)
 	if err != nil {
 		return fmt.Errorf("invalid position type: %w", err)
 	}
-	o.PositionType = posType
+	o.PositionType = posType.Normalize()
 
 	posMode, err := ParsePositionMode(aux.PositionMode)
 	if err != nil {
 		return fmt.Errorf("invalid position mode: %w", err)
 	}
-	o.PositionMode = posMode
+	o.PositionMode = posMode.Normalize()
 
 	side, err := ParseTradeSide(aux.Side)
 	if err != nil {
 		return fmt.Errorf("invalid side: %w", err)
 	}
-	o.Side = side
+	o.Side = side.Normalize()
 
 	orderType, err := ParseOrderType(aux.Type)
 	if err != nil {
 		return fmt.Errorf("invalid order type: %w", err)
 	}
-	o.Type = orderType
+	o.Type = orderType.Normalize()
 
 	status, err := ParseOrderStatus(aux.OrderStatus)
 	if err != nil {
 		return fmt.Errorf("invalid order status: %w", err)
 	}
-	o.OrderStatus = status
+	o.OrderStatus = status.Normalize()
 
 	if aux.CreateTime != "" {
 		t, err := time.Parse(time.RFC3339Nano, aux.CreateTime)
@@ -457,7 +457,8 @@ func (k *KLineChannelMessage) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	k.Symbol = ParseSymbol(aux.Symbol)
+
+	k.Symbol = ParseSymbol(aux.Symbol).Normalize()
 
 	return nil
 }
@@ -587,37 +588,37 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	t.Symbol = ParseSymbol(aux.Symbol)
+	t.Symbol = ParseSymbol(aux.Symbol).Normalize()
 
 	event, err := ParseTPSLEvent(aux.Event)
 	if err != nil {
 		return fmt.Errorf("invalid TPSL event: %w", err)
 	}
-	t.Event = event
+	t.Event = event.Normalize()
 
 	side, err := ParseTradeSide(aux.Side)
 	if err != nil {
 		return fmt.Errorf("invalid side: %w", err)
 	}
-	t.Side = side
+	t.Side = side.Normalize()
 
 	posMode, err := ParsePositionMode(aux.PositionMode)
 	if err != nil {
 		return fmt.Errorf("invalid position mode: %w", err)
 	}
-	t.PositionMode = posMode
+	t.PositionMode = posMode.Normalize()
 
 	status, err := ParseOrderStatus(aux.Status)
 	if err != nil {
 		return fmt.Errorf("invalid order status: %w", err)
 	}
-	t.Status = status
+	t.Status = status.Normalize()
 
 	tpslType, err := ParseTPSLType(aux.Type)
 	if err != nil {
 		return fmt.Errorf("invalid TPSL type: %w", err)
 	}
-	t.Type = tpslType
+	t.Type = tpslType.Normalize()
 
 	if aux.CreateTime != "" {
 		timestamp, err := time.Parse(time.RFC3339Nano, aux.CreateTime)
@@ -658,7 +659,7 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 	if aux.TPStopType != "" {
 		tpStopType, err := ParseStopType(aux.TPStopType)
 		if err == nil {
-			t.TPStopType = tpStopType
+			t.TPStopType = tpStopType.Normalize()
 		} else {
 			return fmt.Errorf("failed to parse TP stop type: %w", err)
 		}
@@ -674,9 +675,10 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 	}
 
 	if aux.TPOrderType != "" {
+
 		tpOrderType, err := ParseOrderType(aux.TPOrderType)
 		if err == nil {
-			t.TPOrderType = tpOrderType
+			t.TPOrderType = tpOrderType.Normalize()
 		} else {
 			return fmt.Errorf("failed to parse TP order type: %w", err)
 		}
@@ -692,9 +694,10 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 	}
 
 	if aux.SLStopType != "" {
+
 		slStopType, err := ParseStopType(aux.SLStopType)
 		if err == nil {
-			t.SLStopType = slStopType
+			t.SLStopType = slStopType.Normalize()
 		} else {
 			return fmt.Errorf("failed to parse SL stop type: %w", err)
 		}
@@ -710,9 +713,10 @@ func (t *TpSlOrderEvent) UnmarshalJSON(data []byte) error {
 	}
 
 	if aux.SLOrderType != "" {
+
 		slOrderType, err := ParseOrderType(aux.SLOrderType)
 		if err == nil {
-			t.SLOrderType = slOrderType
+			t.SLOrderType = slOrderType.Normalize()
 		} else {
 			return fmt.Errorf("failed to parse SL order type: %w", err)
 		}

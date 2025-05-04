@@ -133,27 +133,33 @@ func (ws *publicWebsocketClient) UnsubscribeKLine(subscriber KLineSubscriber) er
 	return nil
 }
 
-func parseChannel(channelStr string) (model.Interval, model.Channel, error) {
+func parseChannel(channelStr string) (model.Interval, model.Channel, model.PriceType, error) {
 	parts := strings.Split(channelStr, "_")
 
 	if len(parts) != 3 {
-		return "", "", errors.New("invalid channel format: expected priceType_type_interval")
+		return "", "", "", errors.New("invalid channel format: expected priceType_type_interval")
 	}
 
+	priceTypeStr := parts[0]
 	channelStr = parts[1]
 	intervalStr := parts[2]
 
+	priceType, err := model.ParsePriceType(priceTypeStr)
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to parse price type: %w", err)
+	}
+
 	interval, err := model.ParseInterval(intervalStr)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse interval: %w", err)
+		return "", "", "", fmt.Errorf("failed to parse interval: %w", err)
 	}
 
 	channel, err := model.ParseChannel(channelStr)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse channel: %w", err)
+		return "", "", "", fmt.Errorf("failed to parse channel: %w", err)
 	}
 
-	return interval, channel, nil
+	return interval, channel, priceType, nil
 }
 
 func (ws *publicWebsocketClient) Stream() error {
@@ -169,15 +175,20 @@ func (ws *publicWebsocketClient) Stream() error {
 
 			if ch, ok := result["ch"].(string); ok {
 				if sym, symbolOk := result["symbol"].(string); symbolOk {
-					if strings.Contains(ch, "kline") {
+					interval, channel, priceType, err := parseChannel(ch)
+					if err != nil {
+						log.WithError(err).Errorf("error parsing channel")
+						return
+					}
+
+					if channel == model.ChannelKline {
 						symbol := model.ParseSymbol(sym).Normalize()
-						interval, _, err := parseChannel(ch)
-						if err != nil {
-							log.WithError(err).Errorf("error parsing channel")
-							return
-						}
+
 						for subscriber := range ws.klineHandlers {
-							if subscriber.Interval() == interval && subscriber.Symbol() == symbol {
+							// Use normalized values for comparison
+							if subscriber.Interval().Normalize() == interval &&
+								subscriber.Symbol().Normalize() == symbol &&
+								subscriber.PriceType().Normalize() == priceType {
 								var klineMsg model.KLineChannelMessage
 								if err := json.Unmarshal(bytes, &klineMsg); err != nil {
 									log.WithError(fmt.Errorf("error unmarshaling kline message: %v", err)).Errorf("error unmarshaling kline message")
