@@ -39,7 +39,6 @@ func main() {
 		log.Fatalf("failed to connect to WebSocket: %v", err)
 	}
 
-	// Use proper parsing functions to ensure normalized inputs
 	interval, err := model.ParseInterval("1m")
 	if err != nil {
 		log.Fatalf("failed to parse interval: %v", err)

@@ -134,6 +134,38 @@ func mustMarshal(v interface{}) []byte {
 	return data
 }
 
+type testBalanceSubscriber struct {
+	channel chan model.BalanceChannelMessage
+}
+
+func (s *testBalanceSubscriber) Handle(msg *model.BalanceChannelMessage) {
+	s.channel <- *msg
+}
+
+type testPositionSubscriber struct {
+	channel chan model.PositionChannelMessage
+}
+
+func (s *testPositionSubscriber) Handle(msg *model.PositionChannelMessage) {
+	s.channel <- *msg
+}
+
+type testOrderSubscriber struct {
+	channel chan model.OrderChannelMessage
+}
+
+func (s *testOrderSubscriber) Handle(msg *model.OrderChannelMessage) {
+	s.channel <- *msg
+}
+
+type testTpSlOrderSubscriber struct {
+	channel chan model.TpSlOrderChannelMessage
+}
+
+func (s *testTpSlOrderSubscriber) Handle(msg *model.TpSlOrderChannelMessage) {
+	s.channel <- *msg
+}
+
 func TestPrivateWebsocketClient(t *testing.T) {
 
 	mockServer := newMockWebsocketServer()
@@ -260,97 +292,101 @@ func TestPrivateWebsocketClient(t *testing.T) {
 
 	t.Run("BalanceUpdates", func(t *testing.T) {
 
-		balanceChReadOnly := client.SubscribeBalance()
-
 		balanceCh := make(chan model.BalanceChannelMessage, 1)
 
-		client.balanceSubscriberMtx.Lock()
-		client.balanceSubscribers[balanceCh] = struct{}{}
-		client.balanceSubscriberMtx.Unlock()
+		balanceSubscriber := &testBalanceSubscriber{
+			channel: balanceCh,
+		}
 
-		defer client.UnsubscribeBalance(balanceCh)
+		err := client.SubscribeBalance(balanceSubscriber)
+		require.NoError(t, err)
+
+		defer client.UnsubscribeBalance(balanceSubscriber)
 
 		mockServer.broadcastToAll([]byte(mockBalanceJSON))
 
 		select {
-		case balance := <-balanceChReadOnly:
+		case balance := <-balanceCh:
 			assert.Equal(t, model.ChannelBalance, balance.Ch)
 			assert.Equal(t, "USDT", balance.Data.Coin)
 			assert.Equal(t, 1000.0, balance.Data.Available)
 			assert.Equal(t, 100.0, balance.Data.Frozen)
 		case <-time.After(2 * time.Second):
-			t.Fatal("Timed out waiting for balance update")
+			t.Fatal("Timed out waiting for balance update in subscriber")
 		}
 	})
 
 	t.Run("PositionUpdates", func(t *testing.T) {
 
-		positionChReadOnly := client.SubscribePositions()
-
 		positionCh := make(chan model.PositionChannelMessage, 1)
 
-		client.positionSubscribersMtx.Lock()
-		client.positionSubscribers[positionCh] = struct{}{}
-		client.positionSubscribersMtx.Unlock()
+		positionSubscriber := &testPositionSubscriber{
+			channel: positionCh,
+		}
 
-		defer client.UnsubscribePosition(positionCh)
+		err := client.SubscribePositions(positionSubscriber)
+		require.NoError(t, err)
+
+		defer client.UnsubscribePosition(positionSubscriber)
 
 		mockServer.broadcastToAll([]byte(mockPositionJSON))
 
 		select {
-		case position := <-positionChReadOnly:
+		case position := <-positionCh:
 			assert.Equal(t, model.ChannelPosition, position.Channel)
 			assert.Equal(t, "pos123456", position.Data.PositionID)
 			assert.Equal(t, model.PositionEventUpdate, position.Data.Event)
 			assert.Equal(t, model.PositionSideLong, position.Data.Side)
 			assert.Equal(t, "BTCUSDT", position.Data.Symbol.String())
 		case <-time.After(2 * time.Second):
-			t.Fatal("Timed out waiting for position update")
+			t.Fatal("Timed out waiting for position update in subscriber")
 		}
 	})
 
 	t.Run("OrderUpdates", func(t *testing.T) {
 
-		orderChReadOnly := client.SubscribeOrders()
-
 		orderCh := make(chan model.OrderChannelMessage, 1)
 
-		client.orderSubscriberMtx.Lock()
-		client.orderSubscribers[orderCh] = struct{}{}
-		client.orderSubscriberMtx.Unlock()
+		orderSubscriber := &testOrderSubscriber{
+			channel: orderCh,
+		}
 
-		defer client.UnsubscribeOrders(orderCh)
+		err := client.SubscribeOrders(orderSubscriber)
+		require.NoError(t, err)
+
+		defer client.UnsubscribeOrders(orderSubscriber)
 
 		mockServer.broadcastToAll([]byte(mockOrderJSON))
 
 		select {
-		case order := <-orderChReadOnly:
+		case order := <-orderCh:
 			assert.Equal(t, model.ChannelOrder, order.Channel)
 			assert.Equal(t, "ord123456", order.Data.OrderID)
 			assert.Equal(t, model.OrderEventCreate, order.Data.Event)
 			assert.Equal(t, model.TradeSideBuy, order.Data.Side)
 			assert.Equal(t, "BTCUSDT", order.Data.Symbol.String())
 		case <-time.After(2 * time.Second):
-			t.Fatal("Timed out waiting for order update")
+			t.Fatal("Timed out waiting for order update in subscriber")
 		}
 	})
 
 	t.Run("TpSlUpdates", func(t *testing.T) {
 
-		tpslChReadOnly := client.SubscribeTpSlOrders()
-
 		tpslCh := make(chan model.TpSlOrderChannelMessage, 1)
 
-		client.tpSlOrderSubscriberMtx.Lock()
-		client.tpSlOrderSubscribers[tpslCh] = struct{}{}
-		client.tpSlOrderSubscriberMtx.Unlock()
+		tpslSubscriber := &testTpSlOrderSubscriber{
+			channel: tpslCh,
+		}
 
-		defer client.UnsubscribeTpSlOrders(tpslCh)
+		err := client.SubscribeTpSlOrders(tpslSubscriber)
+		require.NoError(t, err)
+
+		defer client.UnsubscribeTpSlOrders(tpslSubscriber)
 
 		mockServer.broadcastToAll([]byte(mockTpSlJSON))
 
 		select {
-		case tpsl := <-tpslChReadOnly:
+		case tpsl := <-tpslCh:
 			assert.Equal(t, model.ChannelTpSl, tpsl.Channel)
 			assert.Equal(t, "tpsl123456", tpsl.Data.OrderID)
 			assert.Equal(t, "pos123456", tpsl.Data.PositionID)
@@ -358,52 +394,59 @@ func TestPrivateWebsocketClient(t *testing.T) {
 			assert.Equal(t, model.TPSLTypeFull, tpsl.Data.Type)
 			assert.Equal(t, "BTCUSDT", tpsl.Data.Symbol.String())
 		case <-time.After(2 * time.Second):
-			t.Fatal("Timed out waiting for tp/sl update")
+			t.Fatal("Timed out waiting for tp/sl update in subscriber")
 		}
 	})
 
 	t.Run("MultipleSubscriptions", func(t *testing.T) {
 
-		balanceChReadOnly1 := client.SubscribeBalance()
-		balanceChReadOnly2 := client.SubscribeBalance()
-
 		balanceCh1 := make(chan model.BalanceChannelMessage, 1)
 		balanceCh2 := make(chan model.BalanceChannelMessage, 1)
 
-		client.balanceSubscriberMtx.Lock()
-		client.balanceSubscribers[balanceCh1] = struct{}{}
-		client.balanceSubscribers[balanceCh2] = struct{}{}
-		client.balanceSubscriberMtx.Unlock()
+		subscriber1 := &testBalanceSubscriber{channel: balanceCh1}
+		subscriber2 := &testBalanceSubscriber{channel: balanceCh2}
 
-		defer client.UnsubscribeBalance(balanceCh1)
-		defer client.UnsubscribeBalance(balanceCh2)
+		err := client.SubscribeBalance(subscriber1)
+		require.NoError(t, err)
+		err = client.SubscribeBalance(subscriber2)
+		require.NoError(t, err)
+
+		defer client.UnsubscribeBalance(subscriber1)
+		defer client.UnsubscribeBalance(subscriber2)
 
 		mockServer.broadcastToAll([]byte(mockBalanceJSON))
 
-		for i, ch := range []<-chan model.BalanceChannelMessage{balanceChReadOnly1, balanceChReadOnly2} {
+		for i, ch := range []chan model.BalanceChannelMessage{balanceCh1, balanceCh2} {
 			select {
 			case balance := <-ch:
 				assert.Equal(t, model.ChannelBalance, balance.Ch)
 				assert.Equal(t, "USDT", balance.Data.Coin)
 			case <-time.After(2 * time.Second):
-				t.Fatalf("Timed out waiting for balance update on channel %d", i+1)
+				t.Fatalf("Timed out waiting for balance update on subscriber %d", i+1)
 			}
 		}
 	})
 
 	t.Run("Unsubscribe", func(t *testing.T) {
 
-		balanceCh := make(chan model.BalanceChannelMessage, 10)
+		balanceCh := make(chan model.BalanceChannelMessage, 1)
+		subscriber := &testBalanceSubscriber{channel: balanceCh}
+
+		err := client.SubscribeBalance(subscriber)
+		require.NoError(t, err)
 
 		client.balanceSubscriberMtx.Lock()
-		client.balanceSubscribers[balanceCh] = struct{}{}
+		_, exists := client.balanceSubscribers[subscriber]
 		client.balanceSubscriberMtx.Unlock()
+		assert.True(t, exists, "Subscriber should be in subscribers map")
 
-		assert.Contains(t, client.balanceSubscribers, balanceCh, "Channel should be in subscribers map")
+		err = client.UnsubscribeBalance(subscriber)
+		require.NoError(t, err)
 
-		client.UnsubscribeBalance(balanceCh)
-
-		assert.NotContains(t, client.balanceSubscribers, balanceCh, "Channel should not be in subscribers map after unsubscribe")
+		client.balanceSubscriberMtx.Lock()
+		_, stillExists := client.balanceSubscribers[subscriber]
+		client.balanceSubscriberMtx.Unlock()
+		assert.False(t, stillExists, "Subscriber should not be in subscribers map after unsubscribe")
 	})
 }
 
@@ -569,17 +612,14 @@ func TestWebsocketSigner(t *testing.T) {
 	signer := WebsocketSigner(apiKey, apiSecret)
 	require.NotNil(t, signer)
 
-	// Test the generator function
 	bytes, err := signer()
 	require.NoError(t, err)
 	require.NotNil(t, bytes)
 
-	// Parse the login message
 	var message loginMessage
 	err = json.Unmarshal(bytes, &message)
 	require.NoError(t, err)
 
-	// Verify the structure
 	assert.Equal(t, "login", message.Op)
 	assert.Len(t, message.Args, 1)
 
@@ -589,17 +629,14 @@ func TestWebsocketSigner(t *testing.T) {
 	assert.NotEmpty(t, loginParams.Sign)
 	assert.NotZero(t, loginParams.Timestamp)
 
-	// Verify the nonce is a valid hex string
 	nonceBytes, err := hex.DecodeString(loginParams.Nonce)
 	assert.NoError(t, err)
 	assert.Equal(t, 32, len(nonceBytes))
 
-	// Verify signature is valid hex of expected length
 	_, err = hex.DecodeString(loginParams.Sign)
 	assert.NoError(t, err)
 	assert.Equal(t, 64, len(loginParams.Sign))
 
-	// Test with different apiClient keys
 	differentApiKey := "different_api_key"
 	differentApiSecret := "different_api_secret"
 
@@ -611,17 +648,14 @@ func TestWebsocketSigner(t *testing.T) {
 	err = json.Unmarshal(differentBytes, &differentMessage)
 	require.NoError(t, err)
 
-	// Check that the different apiClient key is actually used
 	assert.Equal(t, differentApiKey, differentMessage.Args[0].ApiKey)
 
-	// Create and verify signatures with known inputs
 	knownTimestamp := int64(1234567890)
 	knownNonce := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 
 	sign1, _ := generateWebsocketSignature(apiKey, apiSecret, knownTimestamp, knownNonce)
 	sign2, _ := generateWebsocketSignature(differentApiKey, differentApiSecret, knownTimestamp, knownNonce)
 
-	// Different credentials should produce different signatures with the same inputs
 	assert.NotEqual(t, sign1, sign2,
 		"Different apiClient credentials should produce different signatures")
 }

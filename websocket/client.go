@@ -102,7 +102,7 @@ func (ws *Client) Close() {
 
 		select {
 		case <-ws.done:
-			// Channel already closed
+
 		default:
 			close(ws.done)
 		}

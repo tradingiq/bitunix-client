@@ -15,10 +15,10 @@ import (
 
 type privateWebsocketClient struct {
 	websocketClient
-	balanceSubscribers     map[chan model.BalanceChannelMessage]struct{}
-	positionSubscribers    map[chan model.PositionChannelMessage]struct{}
-	orderSubscribers       map[chan model.OrderChannelMessage]struct{}
-	tpSlOrderSubscribers   map[chan model.TpSlOrderChannelMessage]struct{}
+	balanceSubscribers     map[BalanceSubscriber]struct{}
+	positionSubscribers    map[PositionSubscriber]struct{}
+	orderSubscribers       map[OrderSubscriber]struct{}
+	tpSlOrderSubscribers   map[TpSlOrderSubscriber]struct{}
 	orderSubscriberMtx     sync.Mutex
 	positionSubscribersMtx sync.Mutex
 	balanceSubscriberMtx   sync.Mutex
@@ -46,88 +46,133 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 		balanceSubscriberMtx:   sync.Mutex{},
 		positionSubscribersMtx: sync.Mutex{},
 		tpSlOrderSubscriberMtx: sync.Mutex{},
-		balanceSubscribers:     map[chan model.BalanceChannelMessage]struct{}{},
-		positionSubscribers:    map[chan model.PositionChannelMessage]struct{}{},
-		orderSubscribers:       map[chan model.OrderChannelMessage]struct{}{},
-		tpSlOrderSubscribers:   map[chan model.TpSlOrderChannelMessage]struct{}{},
+		balanceSubscribers:     map[BalanceSubscriber]struct{}{},
+		positionSubscribers:    map[PositionSubscriber]struct{}{},
+		orderSubscribers:       map[OrderSubscriber]struct{}{},
+		tpSlOrderSubscribers:   map[TpSlOrderSubscriber]struct{}{},
 	}
 }
 
-func (ws *privateWebsocketClient) SubscribeBalance() <-chan model.BalanceChannelMessage {
-	ws.balanceSubscriberMtx.Lock()
-	defer ws.balanceSubscriberMtx.Unlock()
-	c := make(chan model.BalanceChannelMessage, 10)
+func (ws *privateWebsocketClient) SubscribeBalance(subscriber BalanceSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("balance subscriber cannot be nil")
+	}
 
-	ws.balanceSubscribers[c] = struct{}{}
-
-	return c
-}
-
-func (ws *privateWebsocketClient) UnsubscribeBalance(sub chan model.BalanceChannelMessage) {
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
 
-	if _, ok := ws.balanceSubscribers[sub]; ok {
-		delete(ws.balanceSubscribers, sub)
-	}
+	ws.balanceSubscribers[subscriber] = struct{}{}
+	return nil
 }
 
-func (ws *privateWebsocketClient) SubscribePositions() <-chan model.PositionChannelMessage {
+func (ws *privateWebsocketClient) UnsubscribeBalance(subscriber BalanceSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("balance subscriber cannot be nil")
+	}
+
+	ws.balanceSubscriberMtx.Lock()
+	defer ws.balanceSubscriberMtx.Unlock()
+
+	if _, ok := ws.balanceSubscribers[subscriber]; ok {
+		delete(ws.balanceSubscribers, subscriber)
+	}
+	return nil
+}
+
+func (ws *privateWebsocketClient) SubscribePositions(subscriber PositionSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("position subscriber cannot be nil")
+	}
+
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
-	c := make(chan model.PositionChannelMessage, 10)
 
-	ws.positionSubscribers[c] = struct{}{}
-
-	return c
+	ws.positionSubscribers[subscriber] = struct{}{}
+	return nil
 }
 
-func (ws *privateWebsocketClient) UnsubscribePosition(sub chan model.PositionChannelMessage) {
+func (ws *privateWebsocketClient) UnsubscribePosition(subscriber PositionSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("position subscriber cannot be nil")
+	}
+
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
 
-	if _, ok := ws.positionSubscribers[sub]; ok {
-		delete(ws.positionSubscribers, sub)
+	if _, ok := ws.positionSubscribers[subscriber]; ok {
+		delete(ws.positionSubscribers, subscriber)
 	}
+	return nil
 }
 
-func (ws *privateWebsocketClient) SubscribeOrders() <-chan model.OrderChannelMessage {
+type BalanceSubscriber interface {
+	Handle(*model.BalanceChannelMessage)
+}
+
+type PositionSubscriber interface {
+	Handle(*model.PositionChannelMessage)
+}
+
+type OrderSubscriber interface {
+	Handle(*model.OrderChannelMessage)
+}
+
+type TpSlOrderSubscriber interface {
+	Handle(*model.TpSlOrderChannelMessage)
+}
+
+func (ws *privateWebsocketClient) SubscribeOrders(subscriber OrderSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("order subscriber cannot be nil")
+	}
+
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
-	c := make(chan model.OrderChannelMessage, 10)
 
-	ws.orderSubscribers[c] = struct{}{}
-
-	return c
+	ws.orderSubscribers[subscriber] = struct{}{}
+	return nil
 }
 
-func (ws *privateWebsocketClient) UnsubscribeOrders(sub chan model.OrderChannelMessage) {
+func (ws *privateWebsocketClient) UnsubscribeOrders(subscriber OrderSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("order subscriber cannot be nil")
+	}
+
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
 
-	if _, ok := ws.orderSubscribers[sub]; ok {
-		delete(ws.orderSubscribers, sub)
+	if _, ok := ws.orderSubscribers[subscriber]; ok {
+		delete(ws.orderSubscribers, subscriber)
 	}
+	return nil
 }
 
-func (ws *privateWebsocketClient) SubscribeTpSlOrders() <-chan model.TpSlOrderChannelMessage {
-	ws.tpSlOrderSubscriberMtx.Lock()
-	defer ws.tpSlOrderSubscriberMtx.Unlock()
-	c := make(chan model.TpSlOrderChannelMessage, 10)
+func (ws *privateWebsocketClient) SubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("tp/sl order subscriber cannot be nil")
+	}
 
-	ws.tpSlOrderSubscribers[c] = struct{}{}
-
-	return c
-}
-
-func (ws *privateWebsocketClient) UnsubscribeTpSlOrders(sub chan model.TpSlOrderChannelMessage) {
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
 
-	if _, ok := ws.tpSlOrderSubscribers[sub]; ok {
-		delete(ws.tpSlOrderSubscribers, sub)
-	}
+	ws.tpSlOrderSubscribers[subscriber] = struct{}{}
+	return nil
 }
+
+func (ws *privateWebsocketClient) UnsubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error {
+	if subscriber == nil {
+		return fmt.Errorf("tp/sl order subscriber cannot be nil")
+	}
+
+	ws.tpSlOrderSubscriberMtx.Lock()
+	defer ws.tpSlOrderSubscriberMtx.Unlock()
+
+	if _, ok := ws.tpSlOrderSubscribers[subscriber]; ok {
+		delete(ws.tpSlOrderSubscribers, subscriber)
+	}
+	return nil
+}
+
 func (ws *privateWebsocketClient) Stream() error {
 	err := ws.client.Listen(func(bytes []byte) error {
 		go func() {
@@ -165,33 +210,27 @@ func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 	res := model.TpSlOrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
 		log.WithError(err).Errorf("error unmarshaling tpslorder response JSON")
+		return
 	}
 
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
 	for sub := range ws.tpSlOrderSubscribers {
-		select {
-		case sub <- res:
-		default:
-			log.Errorf("tp sl channel poisoned, data might be not recent")
-		}
+		sub.Handle(&res)
 	}
 }
 
 func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 	res := model.OrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(err).Errorf("error unmarshaling position response JSON")
+		log.WithError(err).Errorf("error unmarshaling order response JSON")
+		return
 	}
 
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
 	for sub := range ws.orderSubscribers {
-		select {
-		case sub <- res:
-		default:
-			log.Errorf("order channel poisoned, data might be not recent")
-		}
+		sub.Handle(&res)
 	}
 }
 
@@ -199,32 +238,27 @@ func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 	res := model.PositionChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
 		log.WithError(err).Errorf("error unmarshaling position response JSON")
+		return
 	}
 
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
 	for sub := range ws.positionSubscribers {
-		select {
-		case sub <- res:
-		default:
-			log.Errorf("position channel poisoned, data might be not recent")
-		}
+		sub.Handle(&res)
 	}
 }
 
 func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
 	res := model.BalanceChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(err).Errorf("error unmarshaling balance response  JSON")
+		log.WithError(err).Errorf("error unmarshaling balance response JSON")
+		return
 	}
+
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
 	for sub := range ws.balanceSubscribers {
-		select {
-		case sub <- res:
-		default:
-			log.Errorf("balance channel poisoned, data might be not recent")
-		}
+		sub.Handle(&res)
 	}
 }
 
@@ -267,7 +301,7 @@ func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
 			Op: "login",
 			Args: []loginParams{
 				{
-					ApiKey:    apiKey, // Use the provided apiKey parameter
+					ApiKey:    apiKey,
 					Timestamp: timestamp,
 					Nonce:     hex.EncodeToString(nonce),
 					Sign:      sign,
@@ -285,14 +319,14 @@ func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
 }
 
 type PrivateWebsocketClient interface {
-	SubscribeBalance() <-chan model.BalanceChannelMessage
-	UnsubscribeBalance(sub chan model.BalanceChannelMessage)
-	SubscribePositions() <-chan model.PositionChannelMessage
-	UnsubscribePosition(sub chan model.PositionChannelMessage)
-	SubscribeOrders() <-chan model.OrderChannelMessage
-	UnsubscribeOrders(sub chan model.OrderChannelMessage)
-	SubscribeTpSlOrders() <-chan model.TpSlOrderChannelMessage
-	UnsubscribeTpSlOrders(sub chan model.TpSlOrderChannelMessage)
+	SubscribeBalance(subscriber BalanceSubscriber) error
+	UnsubscribeBalance(subscriber BalanceSubscriber) error
+	SubscribePositions(subscriber PositionSubscriber) error
+	UnsubscribePosition(subscriber PositionSubscriber) error
+	SubscribeOrders(subscriber OrderSubscriber) error
+	UnsubscribeOrders(subscriber OrderSubscriber) error
+	SubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error
+	UnsubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error
 	Stream() error
 	Connect() error
 	Disconnect()

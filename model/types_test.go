@@ -714,7 +714,7 @@ func TestIntervalNormalize(t *testing.T) {
 		input    string
 		expected Interval
 	}{
-		// Standard format
+
 		{"1min", Interval1Min},
 		{"3min", Interval3Min},
 		{"5min", Interval5Min},
@@ -731,7 +731,6 @@ func TestIntervalNormalize(t *testing.T) {
 		{"1week", Interval1Week},
 		{"1month", Interval1Month},
 
-		// Alternative formats
 		{"1m", Interval1Min},
 		{"3m", Interval3Min},
 		{"5m", Interval5Min},
@@ -744,13 +743,11 @@ func TestIntervalNormalize(t *testing.T) {
 		{"1w", Interval1Week},
 		{"1mo", Interval1Month},
 
-		// With whitespace
 		{" 1min ", Interval1Min},
 		{" 1m ", Interval1Min},
 		{" 1day ", Interval1Day},
 		{"  2h  ", Interval2H},
 
-		// Mixed case
 		{"1Min", Interval1Min},
 		{"1DAY", Interval1Day},
 		{"1WeEk", Interval1Week},
@@ -764,7 +761,6 @@ func TestIntervalNormalize(t *testing.T) {
 					tc.input, tc.expected, result)
 			}
 
-			// Also test the Parse function
 			parsedResult, err := ParseInterval(tc.input)
 			if err != nil {
 				t.Errorf("ParseInterval(%s) unexpected error: %v", tc.input, err)
@@ -781,22 +777,19 @@ func TestPriceTypeNormalize(t *testing.T) {
 		input    string
 		expected PriceType
 	}{
-		// Standard format
+
 		{"mark", PriceTypeMark},
 		{"market", PriceTypeMarket},
 
-		// Alternative formats
 		{"markprice", PriceTypeMark},
 		{"mark_price", PriceTypeMark},
 		{"marketprice", PriceTypeMarket},
 		{"market_price", PriceTypeMarket},
 
-		// With whitespace
 		{" mark ", PriceTypeMark},
 		{" market ", PriceTypeMarket},
 		{"  markprice  ", PriceTypeMark},
 
-		// Mixed case
 		{"Mark", PriceTypeMark},
 		{"MARKET", PriceTypeMarket},
 		{"MarkPrice", PriceTypeMark},
@@ -810,7 +803,6 @@ func TestPriceTypeNormalize(t *testing.T) {
 					tc.input, tc.expected, result)
 			}
 
-			// Also test the Parse function
 			parsedResult, err := ParsePriceType(tc.input)
 			if err != nil {
 				t.Errorf("ParsePriceType(%s) unexpected error: %v", tc.input, err)
@@ -827,20 +819,17 @@ func TestChannelNormalize(t *testing.T) {
 		input    string
 		expected Channel
 	}{
-		// Standard format
+
 		{"kline", ChannelKline},
 
-		// Alternative formats
 		{"k", ChannelKline},
 		{"candle", ChannelKline},
 		{"candlestick", ChannelKline},
 
-		// With whitespace
 		{" kline ", ChannelKline},
 		{" k ", ChannelKline},
 		{"  candle  ", ChannelKline},
 
-		// Mixed case
 		{"Kline", ChannelKline},
 		{"CANDLE", ChannelKline},
 		{"CandleStick", ChannelKline},
@@ -854,7 +843,6 @@ func TestChannelNormalize(t *testing.T) {
 					tc.input, tc.expected, result)
 			}
 
-			// Also test the Parse function
 			parsedResult, err := ParseChannel(tc.input)
 			if err != nil {
 				t.Errorf("ParseChannel(%s) unexpected error: %v", tc.input, err)
@@ -866,7 +854,6 @@ func TestChannelNormalize(t *testing.T) {
 	}
 }
 
-// Test for whitespace handling across all types
 func TestWhitespaceNormalization(t *testing.T) {
 	t.Run("StopType", func(t *testing.T) {
 		input := " LAST_PRICE "

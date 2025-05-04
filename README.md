@@ -7,7 +7,7 @@ A Go client library for interacting with the Bitunix cryptocurrency futures exch
 This Go library provides a comprehensive client for interacting with the Bitunix cryptocurrency exchange API, focusing
 on futures trading. It implements both REST API endpoints and WebSocket connections for real-time data streaming.
 
-The client is designed to be reliable, efficient, and easy to use, with built-in support for request signing, 
+The client is designed to be reliable, efficient, and easy to use, with built-in support for request signing,
 WebSocket connection management, and detailed error handling.
 
 ## Key Features
@@ -51,7 +51,7 @@ MarginCoin: "USDT",
 ctx := context.Background()
 response, err := client.GetAccountBalance(ctx, params)
 if err != nil {
-    log.Fatal(err)
+log.Fatal(err)
 }
 
 fmt.Printf("Account Balance: %.6f %s\n", response.Data.Available, response.Data.MarginCoin)
@@ -62,10 +62,10 @@ fmt.Printf("Account Balance: %.6f %s\n", response.Data.Available, response.Data.
 ```go
 // Create a limit order using the builder pattern
 limitOrder := bitunix.NewOrderBuilder(
-  model.ParseSymbol("BTCUSDT"), // Symbol
-  model.TradeSideSell,          // Side (BUY/SELL)
-  model.SideOpen,      // Trade side (OPEN/CLOSE)
-    0.002,               // Quantity
+model.ParseSymbol("BTCUSDT"), // Symbol
+model.TradeSideSell,          // Side (BUY/SELL)
+model.SideOpen,      // Trade side (OPEN/CLOSE)
+0.002,               // Quantity
 ).WithOrderType(model.OrderTypeLimit).
 WithPrice(100000.0).
 WithTimeInForce(model.TimeInForcePostOnly).
@@ -74,7 +74,7 @@ Build()
 // Submit the order
 response, err := client.PlaceOrder(ctx, &limitOrder)
 if err != nil {
-	log.Fatalf("Failed to place order: %v", err)
+log.Fatalf("Failed to place order: %v", err)
 }
 
 fmt.Printf("Order placed successfully: %+v\n", response)
@@ -89,44 +89,44 @@ defer ws.Disconnect()
 
 // Connect to the WebSocket server
 if err := ws.Connect(); err != nil {
-    log.Fatalf("Failed to connect to WebSocket: %v", err)
+log.Fatalf("Failed to connect to WebSocket: %v", err)
 }
 
 // Subscribe to balance updates
 balance := ws.SubscribeBalance()
 go func () {
-    for balanceResponse := range balance {
-        log.WithField("balance", balanceResponse).Debug("Balance update")
-    }
+for balanceResponse := range balance {
+log.WithField("balance", balanceResponse).Debug("Balance update")
+}
 }()
 
 // Subscribe to position updates
 positions := ws.SubscribePositions()
 go func () {
-    for positionResponse := range positions {
-        log.WithField("position", positionResponse).Debug("Position update")
-    }
+for positionResponse := range positions {
+log.WithField("position", positionResponse).Debug("Position update")
+}
 }()
 
 // Subscribe to order updates
 orders := ws.SubscribeOrders()
 go func () {
-    for orderResponse := range orders {
-        log.WithField("order", orderResponse).Debug("Order update")
-    }
+for orderResponse := range orders {
+log.WithField("order", orderResponse).Debug("Order update")
+}
 }()
 
 // Subscribe to TP/SL order updates
 tpslOrders := ws.SubscribeTpSlOrders()
 go func () {
-    for tpslResponse := range tpslOrders {
-        log.WithField("tpsl", tpslResponse).Debug("TP/SL order update")
-    }
+for tpslResponse := range tpslOrders {
+log.WithField("tpsl", tpslResponse).Debug("TP/SL order update")
+}
 }()
 
 // Start the WebSocket stream
 if err := ws.Stream(); err != nil {
-    log.WithError(err).Fatal("Failed to stream")
+log.WithError(err).Fatal("Failed to stream")
 }
 ```
 
@@ -177,15 +177,16 @@ client := bitunix.New("YOUR_API_KEY", "YOUR_SECRET_KEY")
 ws := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY")
 
 // For WebSocket with custom URI
-customWs := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY", 
-    func(client *websocketClient) {
-        client.uri = "wss://custom-endpoint.bitunix.com/private/"
-    })
+customWs := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY",
+func (client *websocketClient) {
+client.uri = "wss://custom-endpoint.bitunix.com/private/"
+})
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to
+discuss what you would like to change.
 
 ## License
 
