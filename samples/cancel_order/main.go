@@ -19,7 +19,7 @@ func cancelOrderExample() {
 	bitunixClient, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
 
 	cancelRequest := bitunix.NewCancelOrderBuilder(model.ParseSymbol("BTCUSDT")).
-		WithOrderID("1915122868439269376"). // Cancel by client ID
+		WithOrderID("1915122868439269376").
 		Build()
 
 	ctx := context.Background()

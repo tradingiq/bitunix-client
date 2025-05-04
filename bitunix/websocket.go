@@ -9,6 +9,7 @@ import (
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/websocket"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,8 +21,9 @@ type wsClientInterface interface {
 }
 
 type websocketClient struct {
-	client wsClientInterface
-	uri    string
+	client        wsClientInterface
+	subscriberMtx sync.Mutex
+	uri           string
 }
 
 func (ws *websocketClient) Connect() error {
@@ -45,7 +47,8 @@ type WebsocketClientOption func(*websocketClient)
 
 func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) PublicWebsocketClient {
 	wsc := websocketClient{
-		uri: "wss://fapi.bitunix.com/public/",
+		uri:           "wss://fapi.bitunix.com/public/",
+		subscriberMtx: sync.Mutex{},
 	}
 	for _, option := range options {
 		option(&wsc)
@@ -73,6 +76,9 @@ func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) erro
 	interval := subscriber.Interval().Normalize()
 
 	channelName := fmt.Sprintf("%s_kline_%s", priceType, interval)
+
+	ws.subscriberMtx.Lock()
+	defer ws.subscriberMtx.Unlock()
 
 	ws.klineHandlers[subscriber] = struct{}{}
 
@@ -108,6 +114,9 @@ func (ws *publicWebsocketClient) UnsubscribeKLine(subscriber KLineSubscriber) er
 	interval := subscriber.Interval().Normalize()
 
 	channelName := fmt.Sprintf("%s_kline_%s", priceType, interval)
+
+	ws.subscriberMtx.Lock()
+	defer ws.subscriberMtx.Unlock()
 
 	delete(ws.klineHandlers, subscriber)
 
@@ -185,7 +194,7 @@ func (ws *publicWebsocketClient) Stream() error {
 						symbol := model.ParseSymbol(sym).Normalize()
 
 						for subscriber := range ws.klineHandlers {
-							// Use normalized values for comparison
+
 							if subscriber.Interval().Normalize() == interval &&
 								subscriber.Symbol().Normalize() == symbol &&
 								subscriber.PriceType().Normalize() == priceType {
