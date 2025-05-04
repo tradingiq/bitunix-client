@@ -7,6 +7,9 @@ A Go client library for interacting with the Bitunix cryptocurrency futures exch
 This Go library provides a comprehensive client for interacting with the Bitunix cryptocurrency exchange API, focusing
 on futures trading. It implements both REST API endpoints and WebSocket connections for real-time data streaming.
 
+The client is designed to be reliable, efficient, and easy to use, with built-in support for request signing, 
+WebSocket connection management, and detailed error handling.
+
 ## Key Features
 
 - **REST API Integration**: Full implementation of Bitunix's futures trading REST API endpoints
@@ -19,6 +22,9 @@ on futures trading. It implements both REST API endpoints and WebSocket connecti
 - **Comprehensive Type System**: Strong typing for all API objects and parameters
 - **Builder Pattern**: Order builders to simplify creating complex order requests
 - **Authentication**: Automatic request signing and authentication
+- **Connection Resilience**: Improved WebSocket reconnection and error handling
+- **Thread Safety**: Race-condition free implementation for concurrent usage
+- **Normalization**: Consistent data normalization for unified processing
 
 ## Installation
 
@@ -176,3 +182,11 @@ customWs := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY",
         client.uri = "wss://custom-endpoint.bitunix.com/private/"
     })
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+
+This project is licensed under the terms found in the LICENSE file in the root of this repository.
