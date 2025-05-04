@@ -39,12 +39,26 @@ func main() {
 		log.Fatalf("failed to connect to WebSocket: %v", err)
 	}
 
-	sub := subTest{
-		interval:  "1min",
-		symbol:    "BTCUSDT",
-		priceType: "market",
+	// Use proper parsing functions to ensure normalized inputs
+	interval, err := model.ParseInterval("1m")
+	if err != nil {
+		log.Fatalf("failed to parse interval: %v", err)
 	}
-	err := ws.SubscribeKLine(sub)
+
+	symbol := model.ParseSymbol("BTcUSDT")
+
+	priceType, err := model.ParsePriceType("mark")
+	if err != nil {
+		log.Fatalf("failed to parse price type: %v", err)
+	}
+
+	sub := subTest{
+		interval:  interval,
+		symbol:    symbol,
+		priceType: priceType,
+	}
+
+	err = ws.SubscribeKLine(sub)
 	if err != nil {
 		log.Fatalf("failed to subscribe: %v", err)
 	}
