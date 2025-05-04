@@ -95,7 +95,7 @@ func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
 	mockWs := &mockWsClient{}
 
 	client := &publicWebsocketClient{
-		websocketClient: websocketClient{
+		websocketClient: &websocketClient{
 			client: mockWs,
 			uri:    "wss://test.com",
 		},
@@ -152,12 +152,16 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 	mockWs := &mockWsClient{}
 
 	client := &publicWebsocketClient{
-		websocketClient: websocketClient{
-			client: mockWs,
-			uri:    "wss://test.com",
+		websocketClient: &websocketClient{
+			client:       mockWs,
+			uri:          "wss://test.com",
+			messageQueue: make(chan []byte, 100),
+			quit:         make(chan struct{}),
+			processFunc:  nil,
 		},
 		klineHandlers: make(map[KLineSubscriber]struct{}),
 	}
+	client.websocketClient.processFunc = client.processMessage
 
 	var listenCallback websocket.HandlerFunc
 	mockWs.listenFn = func(callback websocket.HandlerFunc) error {

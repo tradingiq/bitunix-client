@@ -14,7 +14,7 @@ import (
 )
 
 type privateWebsocketClient struct {
-	websocketClient
+	*websocketClient
 	balanceSubscribers     map[BalanceSubscriber]struct{}
 	positionSubscribers    map[PositionSubscriber]struct{}
 	orderSubscribers       map[OrderSubscriber]struct{}
@@ -26,11 +26,12 @@ type privateWebsocketClient struct {
 }
 
 func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...WebsocketClientOption) PrivateWebsocketClient {
-	wsc := websocketClient{
-		uri: "wss://fapi.bitunix.com/private/",
+	wsc := &websocketClient{
+		uri:  "wss://fapi.bitunix.com/private/",
+		quit: make(chan struct{}),
 	}
 	for _, option := range options {
-		option(&wsc)
+		option(wsc)
 	}
 
 	wsc.client = websocket.New(
@@ -40,7 +41,17 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 		websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()),
 	)
 
-	return &privateWebsocketClient{
+	if wsc.workerPoolSize <= 0 {
+		wsc.workerPoolSize = 10
+	}
+
+	if wsc.workerBufferSize > 0 {
+		wsc.messageQueue = make(chan []byte, wsc.workerBufferSize)
+	} else {
+		wsc.messageQueue = make(chan []byte, 100)
+	}
+
+	client := &privateWebsocketClient{
 		websocketClient:        wsc,
 		orderSubscriberMtx:     sync.Mutex{},
 		balanceSubscriberMtx:   sync.Mutex{},
@@ -51,6 +62,14 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 		orderSubscribers:       map[OrderSubscriber]struct{}{},
 		tpSlOrderSubscribers:   map[TpSlOrderSubscriber]struct{}{},
 	}
+
+	wsc.processFunc = client.processMessage
+
+	if err := client.startWorkerPool(ctx); err != nil {
+		panic(err)
+	}
+
+	return client
 }
 
 func (ws *privateWebsocketClient) SubscribeBalance(subscriber BalanceSubscriber) error {
@@ -173,37 +192,27 @@ func (ws *privateWebsocketClient) UnsubscribeTpSlOrders(subscriber TpSlOrderSubs
 	return nil
 }
 
-func (ws *privateWebsocketClient) Stream() error {
-	err := ws.client.Listen(func(bytes []byte) error {
-		go func() {
-			var result map[string]interface{}
+func (ws *privateWebsocketClient) processMessage(bytes []byte) {
+	var result map[string]interface{}
 
-			err := json.Unmarshal(bytes, &result)
-			if err != nil {
-				log.WithError(fmt.Errorf("error unmarshaling JSON: %v", err)).Errorf("error unmarshaling JSON")
-			}
-
-			if ch, ok := result["ch"].(string); ok {
-				switch ch {
-				case model.ChannelBalance:
-					ws.populateBalanceResponse(bytes)
-				case model.ChannelPosition:
-					ws.populatePositionResponse(bytes)
-				case model.ChannelOrder:
-					ws.populateOrderResponse(bytes)
-				case model.ChannelTpSl:
-					ws.populateTpSlOrderResponse(bytes)
-				}
-			}
-		}()
-
-		return nil
-	})
+	err := json.Unmarshal(bytes, &result)
 	if err != nil {
-		return fmt.Errorf("stream error: %v", err)
+		log.WithError(fmt.Errorf("error unmarshaling JSON: %v", err)).Errorf("error unmarshaling JSON")
+		return
 	}
 
-	return nil
+	if ch, ok := result["ch"].(string); ok {
+		switch ch {
+		case model.ChannelBalance:
+			ws.populateBalanceResponse(bytes)
+		case model.ChannelPosition:
+			ws.populatePositionResponse(bytes)
+		case model.ChannelOrder:
+			ws.populateOrderResponse(bytes)
+		case model.ChannelTpSl:
+			ws.populateTpSlOrderResponse(bytes)
+		}
+	}
 }
 
 func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
@@ -285,6 +294,18 @@ func generateWebsocketSignature(apiKey, apiSecret string, timestamp int64, nonce
 	sign := security.Sha256Hex(preSign + apiSecret)
 
 	return sign, timestamp
+}
+
+func WithWorkerPoolSize(size int) WebsocketClientOption {
+	return func(ws *websocketClient) {
+		ws.workerPoolSize = size
+	}
+}
+
+func WithWorkerBufferSize(size int) WebsocketClientOption {
+	return func(ws *websocketClient) {
+		ws.workerBufferSize = size
+	}
 }
 
 func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
