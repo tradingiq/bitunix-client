@@ -1,6 +1,7 @@
 package bitunix
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -153,11 +154,13 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 
 	client := &publicWebsocketClient{
 		websocketClient: &websocketClient{
-			client:       mockWs,
-			uri:          "wss://test.com",
-			messageQueue: make(chan []byte, 100),
-			quit:         make(chan struct{}),
-			processFunc:  nil,
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   10,
+			workerBufferSize: 100,
+			messageQueue:     make(chan []byte, 100),
+			quit:             make(chan struct{}),
+			processFunc:      nil,
 		},
 		klineHandlers: make(map[KLineSubscriber]struct{}),
 	}
@@ -168,6 +171,8 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 		listenCallback = callback
 		return nil
 	}
+
+	client.websocketClient.startWorkerPool(context.Background())
 
 	ch := make(chan struct{}, 1)
 	sub := &subTest{ch: ch}
