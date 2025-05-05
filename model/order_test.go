@@ -196,3 +196,220 @@ func TestOrderHistoryParamsMarshaling(t *testing.T) {
 		t.Errorf("unexpected modify time: %v, expected: %v", order.ModifyTime, expectedModifyTime)
 	}
 }
+
+func TestOrderResponseDataParsing(t *testing.T) {
+	jsonStr := `{
+		"orderId": "12345",
+		"clientId": "client_123"
+	}`
+
+	var data OrderResponseData
+	err := json.Unmarshal([]byte(jsonStr), &data)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal OrderResponseData: %v", err)
+	}
+
+	if data.OrderId != "12345" {
+		t.Errorf("Expected OrderId '12345', got %s", data.OrderId)
+	}
+
+	if data.ClientId != "client_123" {
+		t.Errorf("Expected ClientId 'client_123', got %s", data.ClientId)
+	}
+}
+
+func TestOrderResponseParsing(t *testing.T) {
+	jsonStr := `{
+		"code": 0,
+		"message": "success",
+		"data": {
+			"orderId": "12345",
+			"clientId": "client_123"
+		}
+	}`
+
+	var response OrderResponse
+	err := json.Unmarshal([]byte(jsonStr), &response)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal OrderResponse: %v", err)
+	}
+
+	if response.Code != 0 {
+		t.Errorf("Expected Code 0, got %d", response.Code)
+	}
+
+	if response.Message != "success" {
+		t.Errorf("Expected Message 'success', got %s", response.Message)
+	}
+
+	if response.Data.OrderId != "12345" {
+		t.Errorf("Expected Data.OrderId '12345', got %s", response.Data.OrderId)
+	}
+
+	if response.Data.ClientId != "client_123" {
+		t.Errorf("Expected Data.ClientId 'client_123', got %s", response.Data.ClientId)
+	}
+}
+
+func TestCancelOrderResponseParsing(t *testing.T) {
+	jsonStr := `{
+		"code": 0,
+		"msg": "success",
+		"data": {
+			"successList": [
+				{
+					"orderId": "order123",
+					"clientId": "client123"
+				},
+				{
+					"orderId": "order456",
+					"clientId": "client456"
+				}
+			],
+			"failureList": [
+				{
+					"orderId": "order789",
+					"clientId": "client789",
+					"errorMsg": "Order not found",
+					"errorCode": "40004"
+				}
+			]
+		}
+	}`
+
+	var response CancelOrderResponse
+	err := json.Unmarshal([]byte(jsonStr), &response)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal CancelOrderResponse: %v", err)
+	}
+
+	if response.Code != 0 {
+		t.Errorf("Expected Code 0, got %d", response.Code)
+	}
+
+	if response.Message != "success" {
+		t.Errorf("Expected Message 'success', got %s", response.Message)
+	}
+
+	if len(response.Data.SuccessList) != 2 {
+		t.Errorf("Expected 2 items in successList, got %d", len(response.Data.SuccessList))
+	} else {
+		if response.Data.SuccessList[0].OrderId != "order123" {
+			t.Errorf("Expected first success OrderId 'order123', got %s", response.Data.SuccessList[0].OrderId)
+		}
+		if response.Data.SuccessList[0].ClientId != "client123" {
+			t.Errorf("Expected first success ClientId 'client123', got %s", response.Data.SuccessList[0].ClientId)
+		}
+
+		if response.Data.SuccessList[1].OrderId != "order456" {
+			t.Errorf("Expected second success OrderId 'order456', got %s", response.Data.SuccessList[1].OrderId)
+		}
+		if response.Data.SuccessList[1].ClientId != "client456" {
+			t.Errorf("Expected second success ClientId 'client456', got %s", response.Data.SuccessList[1].ClientId)
+		}
+	}
+
+	if len(response.Data.FailureList) != 1 {
+		t.Errorf("Expected 1 item in failureList, got %d", len(response.Data.FailureList))
+	} else {
+		if response.Data.FailureList[0].OrderId != "order789" {
+			t.Errorf("Expected failure OrderId 'order789', got %s", response.Data.FailureList[0].OrderId)
+		}
+		if response.Data.FailureList[0].ClientId != "client789" {
+			t.Errorf("Expected failure ClientId 'client789', got %s", response.Data.FailureList[0].ClientId)
+		}
+		if response.Data.FailureList[0].ErrorMsg != "Order not found" {
+			t.Errorf("Expected failure ErrorMsg 'Order not found', got %s", response.Data.FailureList[0].ErrorMsg)
+		}
+		if response.Data.FailureList[0].ErrorCode != "40004" {
+			t.Errorf("Expected failure ErrorCode '40004', got %s", response.Data.FailureList[0].ErrorCode)
+		}
+	}
+}
+
+func TestCancelOrderRequestMarshaling(t *testing.T) {
+	req := CancelOrderRequest{
+		Symbol: "BTCUSDT",
+		OrderList: []CancelOrderParam{
+			{
+				OrderID:  "order123",
+				ClientID: "client123",
+			},
+			{
+				OrderID:  "order456",
+				ClientID: "",
+			},
+			{
+				OrderID:  "",
+				ClientID: "client789",
+			},
+		},
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("Failed to marshal CancelOrderRequest: %v", err)
+	}
+
+	var m map[string]interface{}
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+
+	if m["symbol"] != "BTCUSDT" {
+		t.Errorf("Expected symbol to be 'BTCUSDT', got %v", m["symbol"])
+	}
+
+	orderList, ok := m["orderList"].([]interface{})
+	if !ok {
+		t.Fatalf("Expected orderList to be an array, got %T", m["orderList"])
+	}
+
+	if len(orderList) != 3 {
+		t.Errorf("Expected 3 items in orderList, got %d", len(orderList))
+	} else {
+		item1, ok := orderList[0].(map[string]interface{})
+		if !ok {
+			t.Fatalf("Expected orderList[0] to be an object, got %T", orderList[0])
+		}
+		if item1["orderId"] != "order123" {
+			t.Errorf("Expected orderId to be 'order123', got %v", item1["orderId"])
+		}
+		if item1["clientId"] != "client123" {
+			t.Errorf("Expected clientId to be 'client123', got %v", item1["clientId"])
+		}
+
+		item2, ok := orderList[1].(map[string]interface{})
+		if !ok {
+			t.Fatalf("Expected orderList[1] to be an object, got %T", orderList[1])
+		}
+		if item2["orderId"] != "order456" {
+			t.Errorf("Expected orderId to be 'order456', got %v", item2["orderId"])
+		}
+
+		clientID2, exists := item2["clientId"]
+		if exists {
+
+			if clientID2 != "" {
+				t.Errorf("Expected clientId to be empty string, got %v", clientID2)
+			}
+		}
+
+		item3, ok := orderList[2].(map[string]interface{})
+		if !ok {
+			t.Fatalf("Expected orderList[2] to be an object, got %T", orderList[2])
+		}
+
+		orderID3, exists := item3["orderId"]
+		if exists {
+
+			if orderID3 != "" {
+				t.Errorf("Expected orderId to be empty string, got %v", orderID3)
+			}
+		}
+		if item3["clientId"] != "client789" {
+			t.Errorf("Expected clientId to be 'client789', got %v", item3["clientId"])
+		}
+	}
+}
