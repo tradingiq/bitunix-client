@@ -20,7 +20,7 @@ func cancelOrderExample() {
 
 	cancelRequestBuilder := bitunix.NewCancelOrderBuilder(model.ParseSymbol("BTCUSDT")).
 		WithOrderID("1915122868439269376")
-		
+
 	cancelRequest, err := cancelRequestBuilder.Build()
 	if err != nil {
 		log.Fatalf("Failed to build cancel order request: %v", err)

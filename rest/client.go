@@ -3,8 +3,10 @@ package rest
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -41,7 +43,10 @@ func (c *Client) SetOptions(options ...ClientOption) {
 func New(baseUri string, options ...ClientOption) (*Client, error) {
 	uri, err := url.Parse(baseUri)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing base uri %q: %s", baseUri, err)
+		return nil, errors.NewInternalError(
+			fmt.Sprintf("error parsing base uri %q", baseUri),
+			err,
+		)
 	}
 
 	client := &Client{
@@ -54,6 +59,13 @@ func New(baseUri string, options ...ClientOption) (*Client, error) {
 	return client, nil
 }
 
+type APIResponse struct {
+	Code    int             `json:"code"`
+	Message string          `json:"message,omitempty"`
+	Msg     string          `json:"msg,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty"`
+}
+
 func (c *Client) Request(ctx context.Context, method, path string, query url.Values, bodyBytes []byte) ([]byte, error) {
 	reqURL := *c.baseUri
 	reqURL.Path = path
@@ -64,32 +76,58 @@ func (c *Client) Request(ctx context.Context, method, path string, query url.Val
 
 	req, err := http.NewRequestWithContext(ctx, method, reqURL.String(), bytes.NewReader(bodyBytes))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, errors.NewInternalError("failed to create request", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	if err := c.signRequest(req, bodyBytes); err != nil {
-		return nil, fmt.Errorf("failed to sign request: %w", err)
+		return nil, errors.NewAuthenticationError("failed to sign request", err)
 	}
 
 	c.logRequest(req, bodyBytes)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+
+		if ctx.Err() != nil {
+			return nil, errors.NewTimeoutError("HTTP request", "", ctx.Err())
+		}
+		return nil, errors.NewNetworkError("HTTP request", "failed to send request", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, errors.NewNetworkError("reading response", "failed to read response body", err)
 	}
 
 	c.logResponse(resp, respBody)
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("API error: %s (%d): %s", resp.Status, resp.StatusCode, string(respBody))
+
+		var apiResp APIResponse
+		if err := json.Unmarshal(respBody, &apiResp); err == nil {
+
+			message := apiResp.Message
+			if message == "" {
+				message = apiResp.Msg
+			}
+
+			return nil, errors.NewAPIError(
+				apiResp.Code,
+				message,
+				path,
+				fmt.Errorf("HTTP status: %s (%d)", resp.Status, resp.StatusCode),
+			)
+		}
+
+		return nil, errors.NewAPIError(
+			resp.StatusCode,
+			string(respBody),
+			path,
+			fmt.Errorf("HTTP status: %s", resp.Status),
+		)
 	}
 
 	return respBody, nil
@@ -98,7 +136,7 @@ func (c *Client) Request(ctx context.Context, method, path string, query url.Val
 func (c *Client) Get(ctx context.Context, path string, query url.Values) ([]byte, error) {
 	respBody, err := c.Request(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to GET %s: %w", path, err)
+		return nil, err
 	}
 
 	return respBody, nil
@@ -107,7 +145,7 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values) ([]byte
 func (c *Client) Post(ctx context.Context, path string, query url.Values, body []byte) ([]byte, error) {
 	respBody, err := c.Request(ctx, http.MethodPost, path, query, body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to POST %s: %w", path, err)
+		return nil, err
 	}
 
 	return respBody, nil

@@ -109,8 +109,10 @@ func TestClientWithMockServer(t *testing.T) {
 
 		if op, ok := msg["op"].(string); ok && op == "login" {
 			loginResponse := map[string]interface{}{
-				"event": "login",
-				"msg":   "Login successful",
+				"op": "login",
+				"data": map[string]interface{}{
+					"result": true,
+				},
 			}
 			responseData, _ := json.Marshal(loginResponse)
 			conn.Write(context.Background(), websocket.MessageText, responseData)

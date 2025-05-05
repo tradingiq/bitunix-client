@@ -63,8 +63,10 @@ func newMockWebsocketServer() *mockWebsocketServer {
 					if op == "login" {
 
 						loginResponse := map[string]interface{}{
-							"event": "login",
-							"msg":   "Login successful",
+							"op": "login",
+							"data": map[string]interface{}{
+								"result": true,
+							},
 						}
 						conn.Write(context.Background(), websocket.MessageText, mustMarshal(loginResponse))
 						continue

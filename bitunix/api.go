@@ -3,7 +3,9 @@ package bitunix
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/security"
@@ -48,7 +50,7 @@ func NewApiClient(apiKey, apiSecret string, option ...ClientOption) (ApiClient, 
 
 	restClient, err := rest.New(client.baseURI, rest.WithRequestSigner(RequestSigner(apiKey, apiSecret, generateTimestamp, security.GenerateNonce)))
 	if err != nil {
-		return nil, fmt.Errorf("creating rest client: %w", err)
+		return nil, errors.NewInternalError("creating rest client", err)
 	}
 
 	client.restClient = restClient
@@ -73,13 +75,39 @@ func generateRequestSignature(apiKey, apiSecret, queryParams, bodyStr string, ti
 	return signature, timestampStr, nonce, nil
 }
 
+func handleAPIResponse(responseBody []byte, endpoint string, result interface{}) error {
+
+	if err := json.Unmarshal(responseBody, result); err != nil {
+		return errors.NewInternalError(fmt.Sprintf("failed to unmarshal response from %s", endpoint), err)
+	}
+
+	response := struct {
+		Code    int    `json:"code"`
+		Message string `json:"message,omitempty"`
+		Msg     string `json:"msg,omitempty"`
+	}{}
+
+	if err := json.Unmarshal(responseBody, &response); err == nil {
+
+		if response.Code != 0 {
+			message := response.Message
+			if message == "" {
+				message = response.Msg
+			}
+			return errors.NewAPIError(response.Code, message, endpoint, nil)
+		}
+	}
+
+	return nil
+}
+
 func RequestSigner(apiKey string, apiSecret string, timestampGenerationFunc func() int64, nonceGenerationFunc func(int) ([]byte, error)) func(req *http.Request, body []byte) error {
 	return func(req *http.Request, body []byte) error {
 		ts := timestampGenerationFunc()
 
 		randomBytes, err := nonceGenerationFunc(32)
 		if err != nil {
-			return fmt.Errorf("failed to generate nonce: %w", err)
+			return errors.NewAuthenticationError("failed to generate nonce", err)
 		}
 
 		signature, timestamp, nonce, err := generateRequestSignature(
@@ -91,7 +119,7 @@ func RequestSigner(apiKey string, apiSecret string, timestampGenerationFunc func
 			randomBytes,
 		)
 		if err != nil {
-			return fmt.Errorf("failed to generate signature: %w", err)
+			return errors.NewAuthenticationError("failed to generate signature", err)
 		}
 
 		req.Header.Add("Api-Key", apiKey)

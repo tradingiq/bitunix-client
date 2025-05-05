@@ -3,7 +3,7 @@ package bitunix
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 )
 
@@ -40,55 +40,55 @@ func (b *TPSLOrderBuilder) WithStopLoss(price float64, qty float64, stopType mod
 
 func (b *TPSLOrderBuilder) Build() (model.TPSLOrderRequest, error) {
 	if b.request.Symbol == "" {
-		return model.TPSLOrderRequest{}, fmt.Errorf("symbol is required")
+		return model.TPSLOrderRequest{}, errors.NewValidationError("symbol", "is required", nil)
 	}
 
 	if b.request.PositionID == "" {
-		return model.TPSLOrderRequest{}, fmt.Errorf("positionId is required")
+		return model.TPSLOrderRequest{}, errors.NewValidationError("positionId", "is required", nil)
 	}
 
 	tpSet := b.request.TpPrice != nil
 	slSet := b.request.SlPrice != nil
 
 	if !tpSet && !slSet {
-		return model.TPSLOrderRequest{}, fmt.Errorf("at least one of tpPrice or slPrice must be set")
+		return model.TPSLOrderRequest{}, errors.NewValidationError("tpPrice/slPrice", "at least one of tpPrice or slPrice must be set", nil)
 	}
 
 	tpQtySet := b.request.TpQty != nil && *b.request.TpQty > 0
 	slQtySet := b.request.SlQty != nil && *b.request.SlQty > 0
 
 	if !tpQtySet && !slQtySet {
-		return model.TPSLOrderRequest{}, fmt.Errorf("at least one of tpQty or slQty must be set")
+		return model.TPSLOrderRequest{}, errors.NewValidationError("tpQty/slQty", "at least one of tpQty or slQty must be set", nil)
 	}
 
 	if tpSet {
 		if *b.request.TpPrice <= 0 {
-			return model.TPSLOrderRequest{}, fmt.Errorf("tpPrice must be greater than zero")
+			return model.TPSLOrderRequest{}, errors.NewValidationError("tpPrice", "must be greater than zero", nil)
 		}
 
 		if !tpQtySet {
-			return model.TPSLOrderRequest{}, fmt.Errorf("tpQty is required when setting tpPrice")
+			return model.TPSLOrderRequest{}, errors.NewValidationError("tpQty", "is required when setting tpPrice", nil)
 		}
 
 		if b.request.TpOrderType == model.OrderTypeLimit {
 			if b.request.TpOrderPrice == nil || *b.request.TpOrderPrice <= 0 {
-				return model.TPSLOrderRequest{}, fmt.Errorf("tpOrderPrice is required when tpOrderType is LIMIT")
+				return model.TPSLOrderRequest{}, errors.NewValidationError("tpOrderPrice", "is required when tpOrderType is LIMIT", nil)
 			}
 		}
 	}
 
 	if slSet {
 		if *b.request.SlPrice <= 0 {
-			return model.TPSLOrderRequest{}, fmt.Errorf("slPrice must be greater than zero")
+			return model.TPSLOrderRequest{}, errors.NewValidationError("slPrice", "must be greater than zero", nil)
 		}
 
 		if !slQtySet {
-			return model.TPSLOrderRequest{}, fmt.Errorf("slQty is required when setting slPrice")
+			return model.TPSLOrderRequest{}, errors.NewValidationError("slQty", "is required when setting slPrice", nil)
 		}
 
 		if b.request.SlOrderType == model.OrderTypeLimit {
 			if b.request.SlOrderPrice == nil || *b.request.SlOrderPrice <= 0 {
-				return model.TPSLOrderRequest{}, fmt.Errorf("slOrderPrice is required when slOrderType is LIMIT")
+				return model.TPSLOrderRequest{}, errors.NewValidationError("slOrderPrice", "is required when slOrderType is LIMIT", nil)
 			}
 		}
 	}
@@ -99,17 +99,18 @@ func (b *TPSLOrderBuilder) Build() (model.TPSLOrderRequest, error) {
 func (c *apiClient) PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrderRequest) (*model.TpSlOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal order request: %w", err)
+		return nil, errors.NewInternalError("failed to marshal tpsl order request", err)
 	}
 
-	responseBody, err := c.restClient.Post(ctx, "/api/v1/futures/tpsl/place_order", nil, marshaledRequest)
+	endpoint := "/api/v1/futures/tpsl/place_order"
+	responseBody, err := c.restClient.Post(ctx, endpoint, nil, marshaledRequest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to place order request: %w", err)
+		return nil, err
 	}
 
 	response := &model.TpSlOrderResponse{}
-	if err := json.Unmarshal(responseBody, response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := handleAPIResponse(responseBody, endpoint, response); err != nil {
+		return nil, err
 	}
 
 	return response, nil

@@ -2,8 +2,6 @@ package bitunix
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"github.com/tradingiq/bitunix-client/model"
 	"net/url"
 	"strconv"
@@ -34,14 +32,15 @@ func (c *apiClient) GetTradeHistory(ctx context.Context, params model.TradeHisto
 		queryParams.Add("limit", strconv.FormatInt(params.Limit, 10))
 	}
 
-	responseBody, err := c.restClient.Get(ctx, "/api/v1/futures/trade/get_history_trades", queryParams)
+	endpoint := "/api/v1/futures/trade/get_history_trades"
+	responseBody, err := c.restClient.Get(ctx, endpoint, queryParams)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get trade history: %w", err)
+		return nil, err
 	}
 
 	response := &model.TradeHistoryResponse{}
-	if err := json.Unmarshal(responseBody, response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := handleAPIResponse(responseBody, endpoint, response); err != nil {
+		return nil, err
 	}
 
 	return response, nil
