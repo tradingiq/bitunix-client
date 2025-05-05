@@ -128,7 +128,7 @@ type subTest struct {
 	ch     chan struct{}
 }
 
-func (s *subTest) Handle(message *model.KLineChannelMessage) {
+func (s *subTest) SubscribeKLine(message *model.KLineChannelMessage) {
 	s.called = true
 	s.msg = *message
 
@@ -137,15 +137,15 @@ func (s *subTest) Handle(message *model.KLineChannelMessage) {
 	}
 }
 
-func (s *subTest) Interval() model.Interval {
+func (s *subTest) SubscribeInterval() model.Interval {
 	return model.Interval1Min
 }
 
-func (s *subTest) Symbol() model.Symbol {
+func (s *subTest) SubscribeSymbol() model.Symbol {
 	return model.Symbol("BTCUSDT")
 }
 
-func (s *subTest) PriceType() model.PriceType {
+func (s *subTest) SubscribePriceType() model.PriceType {
 	return model.PriceTypeMarket
 }
 

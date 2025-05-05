@@ -10,25 +10,25 @@ import (
 
 type BalanceHandler struct{}
 
-func (h *BalanceHandler) Handle(balance *model.BalanceChannelMessage) {
+func (h *BalanceHandler) SubscribeBalance(balance *model.BalanceChannelMessage) {
 	log.WithField("balance", balance).Debug("got balance")
 }
 
 type PositionHandler struct{}
 
-func (h *PositionHandler) Handle(position *model.PositionChannelMessage) {
+func (h *PositionHandler) SubscribePosition(position *model.PositionChannelMessage) {
 	log.WithField("position", position).Debug("got position")
 }
 
 type OrderHandler struct{}
 
-func (h *OrderHandler) Handle(order *model.OrderChannelMessage) {
+func (h *OrderHandler) SubscribeOrder(order *model.OrderChannelMessage) {
 	log.WithField("order", order).Debug("got order")
 }
 
 type TpSlOrderHandler struct{}
 
-func (h *TpSlOrderHandler) Handle(order *model.TpSlOrderChannelMessage) {
+func (h *TpSlOrderHandler) SubscribeTpSlOrder(order *model.TpSlOrderChannelMessage) {
 	log.WithField("tpslorder", order).Debug("got tpsl order")
 }
 

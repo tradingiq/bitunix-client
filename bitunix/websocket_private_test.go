@@ -138,7 +138,7 @@ type testBalanceSubscriber struct {
 	channel chan model.BalanceChannelMessage
 }
 
-func (s *testBalanceSubscriber) Handle(msg *model.BalanceChannelMessage) {
+func (s *testBalanceSubscriber) SubscribeBalance(msg *model.BalanceChannelMessage) {
 	s.channel <- *msg
 }
 
@@ -146,7 +146,7 @@ type testPositionSubscriber struct {
 	channel chan model.PositionChannelMessage
 }
 
-func (s *testPositionSubscriber) Handle(msg *model.PositionChannelMessage) {
+func (s *testPositionSubscriber) SubscribePosition(msg *model.PositionChannelMessage) {
 	s.channel <- *msg
 }
 
@@ -154,7 +154,7 @@ type testOrderSubscriber struct {
 	channel chan model.OrderChannelMessage
 }
 
-func (s *testOrderSubscriber) Handle(msg *model.OrderChannelMessage) {
+func (s *testOrderSubscriber) SubscribeOrder(msg *model.OrderChannelMessage) {
 	s.channel <- *msg
 }
 
@@ -162,7 +162,7 @@ type testTpSlOrderSubscriber struct {
 	channel chan model.TpSlOrderChannelMessage
 }
 
-func (s *testTpSlOrderSubscriber) Handle(msg *model.TpSlOrderChannelMessage) {
+func (s *testTpSlOrderSubscriber) SubscribeTpSlOrder(msg *model.TpSlOrderChannelMessage) {
 	s.channel <- *msg
 }
 

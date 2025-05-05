@@ -668,7 +668,7 @@ func TestSymbolNormalize(t *testing.T) {
 	for _, test := range tests {
 		result := test.input.Normalize()
 		if result != test.expected {
-			t.Errorf("Symbol.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+			t.Errorf("SubscribeSymbol.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
 		}
 	}
 }
@@ -704,7 +704,7 @@ func TestSymbolString(t *testing.T) {
 	for _, test := range tests {
 		result := test.input.String()
 		if result != test.expected {
-			t.Errorf("Symbol.String() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+			t.Errorf("SubscribeSymbol.String() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
 		}
 	}
 }
@@ -757,7 +757,7 @@ func TestIntervalNormalize(t *testing.T) {
 		t.Run(tc.input, func(t *testing.T) {
 			result := Interval(tc.input).Normalize()
 			if result != tc.expected {
-				t.Errorf("Interval.Normalize() with input '%s': expected '%s', got '%s'",
+				t.Errorf("SubscribeInterval.Normalize() with input '%s': expected '%s', got '%s'",
 					tc.input, tc.expected, result)
 			}
 
@@ -799,7 +799,7 @@ func TestPriceTypeNormalize(t *testing.T) {
 		t.Run(tc.input, func(t *testing.T) {
 			result := PriceType(tc.input).Normalize()
 			if result != tc.expected {
-				t.Errorf("PriceType.Normalize() with input '%s': expected '%s', got '%s'",
+				t.Errorf("SubscribePriceType.Normalize() with input '%s': expected '%s', got '%s'",
 					tc.input, tc.expected, result)
 			}
 

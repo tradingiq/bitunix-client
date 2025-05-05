@@ -59,11 +59,7 @@ func (ws *websocketClient) Disconnect() {
 	ws.client.Close()
 
 	close(ws.quit)
-
-	// drain channel
-	for len(ws.messageQueue) > 0 {
-		<-ws.messageQueue
-	}
+	close(ws.messageQueue)
 }
 
 func (ws *websocketClient) startWorkerPool(ctx context.Context) error {
@@ -143,9 +139,9 @@ func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) erro
 		return fmt.Errorf("subscriber cannot be nil")
 	}
 
-	symbol := subscriber.Symbol().Normalize()
-	priceType := subscriber.PriceType().Normalize()
-	interval := subscriber.Interval().Normalize()
+	symbol := subscriber.SubscribeSymbol().Normalize()
+	priceType := subscriber.SubscribePriceType().Normalize()
+	interval := subscriber.SubscribeInterval().Normalize()
 
 	channelName := fmt.Sprintf("%s_kline_%s", priceType, interval)
 
@@ -181,9 +177,9 @@ func (ws *publicWebsocketClient) UnsubscribeKLine(subscriber KLineSubscriber) er
 		return fmt.Errorf("subscriber cannot be nil")
 	}
 
-	symbol := subscriber.Symbol().Normalize()
-	priceType := subscriber.PriceType().Normalize()
-	interval := subscriber.Interval().Normalize()
+	symbol := subscriber.SubscribeSymbol().Normalize()
+	priceType := subscriber.SubscribePriceType().Normalize()
+	interval := subscriber.SubscribeInterval().Normalize()
 
 	channelName := fmt.Sprintf("%s_kline_%s", priceType, interval)
 
@@ -244,7 +240,6 @@ func parseChannel(channelStr string) (model.Interval, model.Channel, model.Price
 }
 
 func (ws *publicWebsocketClient) processMessage(bytes []byte) {
-
 	var result map[string]interface{}
 
 	err := json.Unmarshal(bytes, &result)
@@ -266,15 +261,15 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 
 				for subscriber := range ws.klineHandlers {
 
-					if subscriber.Interval().Normalize() == interval &&
-						subscriber.Symbol().Normalize() == symbol &&
-						subscriber.PriceType().Normalize() == priceType {
+					if subscriber.SubscribeInterval().Normalize() == interval &&
+						subscriber.SubscribeSymbol().Normalize() == symbol &&
+						subscriber.SubscribePriceType().Normalize() == priceType {
 						var klineMsg model.KLineChannelMessage
 						if err := json.Unmarshal(bytes, &klineMsg); err != nil {
 							log.WithError(fmt.Errorf("error unmarshaling kline message: %v", err)).Errorf("error unmarshaling kline message")
 							return
 						}
-						subscriber.Handle(&klineMsg)
+						subscriber.SubscribeKLine(&klineMsg)
 					}
 				}
 			}
@@ -313,16 +308,16 @@ type SubscribeRequest struct {
 }
 
 type KLineSubscriber interface {
-	Handle(*model.KLineChannelMessage)
-	Interval() model.Interval
-	Symbol() model.Symbol
-	PriceType() model.PriceType
+	SubscribeKLine(*model.KLineChannelMessage)
+	SubscribeInterval() model.Interval
+	SubscribeSymbol() model.Symbol
+	SubscribePriceType() model.PriceType
 }
 
 type PublicWebsocketClient interface {
 	Stream() error
 	Connect() error
 	Disconnect()
-	SubscribeKLine(handler KLineSubscriber) error
+	SubscribeKLine(subscriber KLineSubscriber) error
 	UnsubscribeKLine(subscriber KLineSubscriber) error
 }

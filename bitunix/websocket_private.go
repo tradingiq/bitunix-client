@@ -125,19 +125,19 @@ func (ws *privateWebsocketClient) UnsubscribePosition(subscriber PositionSubscri
 }
 
 type BalanceSubscriber interface {
-	Handle(*model.BalanceChannelMessage)
+	SubscribeBalance(*model.BalanceChannelMessage)
 }
 
 type PositionSubscriber interface {
-	Handle(*model.PositionChannelMessage)
+	SubscribePosition(*model.PositionChannelMessage)
 }
 
 type OrderSubscriber interface {
-	Handle(*model.OrderChannelMessage)
+	SubscribeOrder(*model.OrderChannelMessage)
 }
 
 type TpSlOrderSubscriber interface {
-	Handle(*model.TpSlOrderChannelMessage)
+	SubscribeTpSlOrder(*model.TpSlOrderChannelMessage)
 }
 
 func (ws *privateWebsocketClient) SubscribeOrders(subscriber OrderSubscriber) error {
@@ -225,7 +225,7 @@ func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 	ws.tpSlOrderSubscriberMtx.Lock()
 	defer ws.tpSlOrderSubscriberMtx.Unlock()
 	for sub := range ws.tpSlOrderSubscribers {
-		sub.Handle(&res)
+		sub.SubscribeTpSlOrder(&res)
 	}
 }
 
@@ -239,7 +239,7 @@ func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 	ws.orderSubscriberMtx.Lock()
 	defer ws.orderSubscriberMtx.Unlock()
 	for sub := range ws.orderSubscribers {
-		sub.Handle(&res)
+		sub.SubscribeOrder(&res)
 	}
 }
 
@@ -253,7 +253,7 @@ func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 	ws.positionSubscribersMtx.Lock()
 	defer ws.positionSubscribersMtx.Unlock()
 	for sub := range ws.positionSubscribers {
-		sub.Handle(&res)
+		sub.SubscribePosition(&res)
 	}
 }
 
@@ -267,7 +267,7 @@ func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
 	ws.balanceSubscriberMtx.Lock()
 	defer ws.balanceSubscriberMtx.Unlock()
 	for sub := range ws.balanceSubscribers {
-		sub.Handle(&res)
+		sub.SubscribeBalance(&res)
 	}
 }
 

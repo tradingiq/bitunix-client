@@ -1000,7 +1000,7 @@ func TestMarginCoinConsistencyWithSymbol(t *testing.T) {
 			parsedCoin := ParseMarginCoin(tc.marginCoinInput)
 
 			if !strings.HasSuffix(string(parsedSymbol), string(parsedCoin)) {
-				t.Errorf("Symbol '%s' should end with coin '%s' after normalization", parsedSymbol, parsedCoin)
+				t.Errorf("SubscribeSymbol '%s' should end with coin '%s' after normalization", parsedSymbol, parsedCoin)
 			}
 		})
 	}
