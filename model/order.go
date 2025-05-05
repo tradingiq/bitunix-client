@@ -77,11 +77,11 @@ type TPSLOrderResponseData struct {
 
 type OrderRequest struct {
 	Symbol       Symbol      `json:"symbol"`
-	TradeAction  TradeSide   `json:"side"`
+	TradeSide    TradeSide   `json:"side"`
 	Price        *float64    `json:"-"`
 	Qty          *float64    `json:"-"`
 	PositionID   string      `json:"positionId,omitempty"`
-	TradeSide    Side        `json:"tradeSide"`
+	Side         Side        `json:"tradeSide"`
 	OrderType    OrderType   `json:"orderType"`
 	ReduceOnly   bool        `json:"reduceOnly"`
 	Effect       TimeInForce `json:"effect,omitempty"`

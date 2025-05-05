@@ -18,9 +18,13 @@ func cancelOrderExample() {
 
 	bitunixClient, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
 
-	cancelRequest := bitunix.NewCancelOrderBuilder(model.ParseSymbol("BTCUSDT")).
-		WithOrderID("1915122868439269376").
-		Build()
+	cancelRequestBuilder := bitunix.NewCancelOrderBuilder(model.ParseSymbol("BTCUSDT")).
+		WithOrderID("1915122868439269376")
+		
+	cancelRequest, err := cancelRequestBuilder.Build()
+	if err != nil {
+		log.Fatalf("Failed to build cancel order request: %v", err)
+	}
 
 	ctx := context.Background()
 	response, err := bitunixClient.CancelOrders(ctx, &cancelRequest)

@@ -298,7 +298,7 @@ func TestTradeSideNormalize(t *testing.T) {
 	for _, test := range tests {
 		result := test.input.Normalize()
 		if result != test.expected {
-			t.Errorf("TradeSide.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
+			t.Errorf("Side.Normalize() with input '%s': expected '%s', got '%s'", test.input, test.expected, result)
 		}
 	}
 }
@@ -895,12 +895,12 @@ func TestWhitespaceNormalization(t *testing.T) {
 		}
 	})
 
-	t.Run("TradeSide", func(t *testing.T) {
+	t.Run("Side", func(t *testing.T) {
 		input := " BUY "
 		expected := TradeSideBuy
 		result := TradeSide(input).Normalize()
 		if result != expected {
-			t.Errorf("TradeSide.Normalize() with input '%s': expected '%s', got '%s'",
+			t.Errorf("Side.Normalize() with input '%s': expected '%s', got '%s'",
 				input, expected, result)
 		}
 	})

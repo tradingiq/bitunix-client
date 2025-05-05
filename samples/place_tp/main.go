@@ -21,9 +21,13 @@ func bitunixExample() {
 
 	ctx := context.Background()
 
-	request := bitunix.NewTPSLOrderBuilder("BTCUSDT", "50000").
-		WithTakeProfit(80000, 0.001, model.StopTypeLastPrice, model.OrderTypeLimit, 70000).
-		Build()
+	requestBuilder := bitunix.NewTPSLOrderBuilder("BTCUSDT", "50000").
+		WithTakeProfit(80000, 0.001, model.StopTypeLastPrice, model.OrderTypeLimit, 70000)
+		
+	request, err := requestBuilder.Build()
+	if err != nil {
+		log.Fatalf("Failed to build TPSL order: %v", err)
+	}
 
 	response, err := bitunixClient.PlaceTpSlOrder(ctx, &request)
 	if err != nil {

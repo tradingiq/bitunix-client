@@ -18,15 +18,19 @@ func bitunixExample() {
 
 	bitunixClient, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
 
-	limitOrder := bitunix.NewOrderBuilder(
+	orderBuilder := bitunix.NewOrderBuilder(
 		model.ParseSymbol("BTCUSDT"),
 		model.TradeSideSell,
 		model.SideOpen,
 		0.002,
 	).WithOrderType(model.OrderTypeLimit).
 		WithPrice(100000.0).
-		WithTimeInForce(model.TimeInForcePostOnly).
-		Build()
+		WithTimeInForce(model.TimeInForcePostOnly)
+		
+	limitOrder, err := orderBuilder.Build()
+	if err != nil {
+		log.Fatalf("Failed to build order: %v", err)
+	}
 
 	ctx := context.Background()
 	response, err := bitunixClient.PlaceOrder(ctx, &limitOrder)
