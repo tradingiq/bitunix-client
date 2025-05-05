@@ -38,8 +38,62 @@ func (b *TPSLOrderBuilder) WithStopLoss(price float64, qty float64, stopType mod
 	return b
 }
 
-func (b *TPSLOrderBuilder) Build() model.TPSLOrderRequest {
-	return b.request
+func (b *TPSLOrderBuilder) Build() (model.TPSLOrderRequest, error) {
+	if b.request.Symbol == "" {
+		return model.TPSLOrderRequest{}, fmt.Errorf("symbol is required")
+	}
+
+	if b.request.PositionID == "" {
+		return model.TPSLOrderRequest{}, fmt.Errorf("positionId is required")
+	}
+
+	tpSet := b.request.TpPrice != nil
+	slSet := b.request.SlPrice != nil
+
+	if !tpSet && !slSet {
+		return model.TPSLOrderRequest{}, fmt.Errorf("at least one of tpPrice or slPrice must be set")
+	}
+
+	tpQtySet := b.request.TpQty != nil && *b.request.TpQty > 0
+	slQtySet := b.request.SlQty != nil && *b.request.SlQty > 0
+
+	if !tpQtySet && !slQtySet {
+		return model.TPSLOrderRequest{}, fmt.Errorf("at least one of tpQty or slQty must be set")
+	}
+
+	if tpSet {
+		if *b.request.TpPrice <= 0 {
+			return model.TPSLOrderRequest{}, fmt.Errorf("tpPrice must be greater than zero")
+		}
+
+		if !tpQtySet {
+			return model.TPSLOrderRequest{}, fmt.Errorf("tpQty is required when setting tpPrice")
+		}
+
+		if b.request.TpOrderType == model.OrderTypeLimit {
+			if b.request.TpOrderPrice == nil || *b.request.TpOrderPrice <= 0 {
+				return model.TPSLOrderRequest{}, fmt.Errorf("tpOrderPrice is required when tpOrderType is LIMIT")
+			}
+		}
+	}
+
+	if slSet {
+		if *b.request.SlPrice <= 0 {
+			return model.TPSLOrderRequest{}, fmt.Errorf("slPrice must be greater than zero")
+		}
+
+		if !slQtySet {
+			return model.TPSLOrderRequest{}, fmt.Errorf("slQty is required when setting slPrice")
+		}
+
+		if b.request.SlOrderType == model.OrderTypeLimit {
+			if b.request.SlOrderPrice == nil || *b.request.SlOrderPrice <= 0 {
+				return model.TPSLOrderRequest{}, fmt.Errorf("slOrderPrice is required when slOrderType is LIMIT")
+			}
+		}
+	}
+
+	return b.request, nil
 }
 
 func (c *apiClient) PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrderRequest) (*model.TpSlOrderResponse, error) {
@@ -58,5 +112,5 @@ func (c *apiClient) PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrder
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	return response, err
+	return response, nil
 }

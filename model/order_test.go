@@ -75,11 +75,11 @@ func TestOrderRequestMarshalJSON(t *testing.T) {
 
 	req := &OrderRequest{
 		Symbol:       "BTCUSDT",
-		TradeAction:  TradeSideBuy,
+		TradeSide:    TradeSideBuy,
 		Price:        &price,
 		Qty:          &qty,
 		PositionID:   "position123",
-		TradeSide:    SideOpen,
+		Side:         SideOpen,
 		OrderType:    OrderTypeLimit,
 		ReduceOnly:   false,
 		Effect:       TimeInForceGTC,

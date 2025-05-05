@@ -34,16 +34,19 @@ func TestOrderBuilderCreation(t *testing.T) {
 	qty := 1.0
 
 	builder := NewOrderBuilder(symbol, side, tradeSide, qty)
-	order := builder.Build()
+	order, err := builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 
 	if order.Symbol != symbol {
 		t.Errorf("Expected symbol %s, got %s", symbol, order.Symbol)
 	}
-	if order.TradeAction != side {
-		t.Errorf("Expected side %s, got %s", side, order.TradeAction)
+	if order.TradeSide != side {
+		t.Errorf("Expected side %s, got %s", side, order.TradeSide)
 	}
-	if order.TradeSide != tradeSide {
-		t.Errorf("Expected tradeSide %s, got %s", tradeSide, order.TradeSide)
+	if order.Side != tradeSide {
+		t.Errorf("Expected tradeSide %s, got %s", tradeSide, order.Side)
 	}
 	if *order.Qty != qty {
 		t.Errorf("Expected qty %f, got %f", qty, *order.Qty)
@@ -69,42 +72,61 @@ func TestOrderBuilderMethods(t *testing.T) {
 
 	orderType := model.OrderTypeLimit
 	builder.WithOrderType(orderType)
-	order := builder.Build()
+	builder.WithPrice(10)
+	order, err := builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if order.OrderType != orderType {
 		t.Errorf("WithOrderType: Expected order type %s, got %s", orderType, order.OrderType)
 	}
 
 	price := 50000.0
 	builder.WithPrice(price)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if *order.Price != price {
 		t.Errorf("WithPrice: Expected price %f, got %f", price, *order.Price)
 	}
 
 	positionID := "position123"
 	builder.WithPositionID(positionID)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if order.PositionID != positionID {
 		t.Errorf("WithPositionID: Expected position ID %s, got %s", positionID, order.PositionID)
 	}
 
 	reduceOnly := true
 	builder.WithReduceOnly(reduceOnly)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if order.ReduceOnly != reduceOnly {
 		t.Errorf("WithReduceOnly: Expected reduce only %v, got %v", reduceOnly, order.ReduceOnly)
 	}
 
 	tif := model.TimeInForceIOC
 	builder.WithTimeInForce(tif)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if order.Effect != tif {
 		t.Errorf("WithTimeInForce: Expected time in force %s, got %s", tif, order.Effect)
 	}
 
 	clientID := "client123"
 	builder.WithClientID(clientID)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if order.ClientID != clientID {
 		t.Errorf("WithClientID: Expected apiClient ID %s, got %s", clientID, order.ClientID)
 	}
@@ -113,7 +135,11 @@ func TestOrderBuilderMethods(t *testing.T) {
 	tpStopType := model.StopTypeLastPrice
 	tpOrderType := model.OrderTypeLimit
 	builder.WithTakeProfit(tpPrice, tpStopType, tpOrderType)
-	order = builder.Build()
+	builder.WithTakeProfitPrice(10)
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if *order.TpPrice != tpPrice {
 		t.Errorf("WithTakeProfit: Expected TP price %f, got %f", tpPrice, *order.TpPrice)
 	}
@@ -126,7 +152,10 @@ func TestOrderBuilderMethods(t *testing.T) {
 
 	tpOrderPrice := 54500.0
 	builder.WithTakeProfitPrice(tpOrderPrice)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if *order.TpOrderPrice != tpOrderPrice {
 		t.Errorf("WithTakeProfitPrice: Expected TP order price %f, got %f", tpOrderPrice, *order.TpOrderPrice)
 	}
@@ -135,7 +164,10 @@ func TestOrderBuilderMethods(t *testing.T) {
 	slStopType := model.StopTypeMarkPrice
 	slOrderType := model.OrderTypeMarket
 	builder.WithStopLoss(slPrice, slStopType, slOrderType)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if *order.SlPrice != slPrice {
 		t.Errorf("WithStopLoss: Expected SL price %f, got %f", slPrice, *order.SlPrice)
 	}
@@ -148,7 +180,10 @@ func TestOrderBuilderMethods(t *testing.T) {
 
 	slOrderPrice := 45500.0
 	builder.WithStopLossPrice(slOrderPrice)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build order: %v", err)
+	}
 	if *order.SlOrderPrice != slOrderPrice {
 		t.Errorf("WithStopLossPrice: Expected SL order price %f, got %f", slOrderPrice, *order.SlOrderPrice)
 	}
@@ -183,13 +218,13 @@ func TestPlaceOrder(t *testing.T) {
 	price := 50000.0
 
 	orderReq := &model.OrderRequest{
-		Symbol:      "BTCUSDT",
-		TradeAction: model.TradeSideBuy,
-		Price:       &price,
-		Qty:         &qty,
-		TradeSide:   model.SideOpen,
-		OrderType:   model.OrderTypeLimit,
-		ClientID:    "client123",
+		Symbol:    "BTCUSDT",
+		TradeSide: model.TradeSideBuy,
+		Price:     &price,
+		Qty:       &qty,
+		Side:      model.SideOpen,
+		OrderType: model.OrderTypeLimit,
+		ClientID:  "client123",
 	}
 
 	response, err := mockAPI.client.PlaceOrder(context.Background(), orderReq)
@@ -215,13 +250,23 @@ func TestCancelOrderBuilderCreation(t *testing.T) {
 	symbol := model.ParseSymbol("BTCUSDT")
 
 	builder := NewCancelOrderBuilder(symbol)
-	cancelOrder := builder.Build()
+	cancelOrder, err := builder.Build()
+
+	if err == nil {
+		t.Fatal("Expected error due to no orders specified for cancellation, but got nil")
+	}
+
+	builder.WithOrderID("test-order-id")
+	cancelOrder, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build cancel order: %v", err)
+	}
 
 	if cancelOrder.Symbol != symbol {
 		t.Errorf("Expected symbol %s, got %s", symbol, cancelOrder.Symbol)
 	}
-	if len(cancelOrder.OrderList) != 0 {
-		t.Errorf("Expected empty order list, got %d items", len(cancelOrder.OrderList))
+	if len(cancelOrder.OrderList) != 1 {
+		t.Errorf("Expected order list with 1 item, got %d items", len(cancelOrder.OrderList))
 	}
 }
 
@@ -231,7 +276,10 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 
 	orderID := "order123"
 	builder.WithOrderID(orderID)
-	cancelOrder := builder.Build()
+	cancelOrder, err := builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build cancel order: %v", err)
+	}
 
 	if len(cancelOrder.OrderList) != 1 {
 		t.Fatalf("Expected 1 item in order list, got %d", len(cancelOrder.OrderList))
@@ -245,7 +293,10 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 
 	clientID := "client123"
 	builder.WithClientID(clientID)
-	cancelOrder = builder.Build()
+	cancelOrder, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build cancel order: %v", err)
+	}
 
 	if len(cancelOrder.OrderList) != 2 {
 		t.Fatalf("Expected 2 items in order list, got %d", len(cancelOrder.OrderList))

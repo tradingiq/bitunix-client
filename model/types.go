@@ -176,7 +176,7 @@ func ParseTradeSide(s string) (TradeSide, error) {
 	tradeSide = tradeSide.Normalize()
 
 	if !tradeSide.IsValid() {
-		return tradeSide, fmt.Errorf("%s is not a valid TradeSide", s)
+		return tradeSide, fmt.Errorf("%s is not a valid Side", s)
 	}
 
 	return tradeSide, nil

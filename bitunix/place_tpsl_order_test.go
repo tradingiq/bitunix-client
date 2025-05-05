@@ -12,7 +12,19 @@ func TestTPSLOrderBuilderCreation(t *testing.T) {
 	positionID := "position123"
 
 	builder := NewTPSLOrderBuilder(symbol, positionID)
-	order := builder.Build()
+	order, err := builder.Build()
+
+	if err == nil {
+		t.Fatal("Expected error due to neither TP nor SL being set, but got nil")
+	}
+
+	tpPrice := 55000.0
+	tpQty := 1.0
+	builder.WithTakeProfit(tpPrice, tpQty, model.StopTypeLastPrice, model.OrderTypeLimit, 54500.0)
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build TPSL order: %v", err)
+	}
 
 	if order.Symbol != symbol {
 		t.Errorf("Expected symbol %s, got %s", symbol, order.Symbol)
@@ -36,7 +48,10 @@ func TestTPSLOrderBuilderMethods(t *testing.T) {
 	tpOrderPrice := 54500.0
 
 	builder.WithTakeProfit(tpPrice, tpQty, tpStopType, tpOrderType, tpOrderPrice)
-	order := builder.Build()
+	order, err := builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build TPSL order: %v", err)
+	}
 
 	if *order.TpPrice != tpPrice {
 		t.Errorf("WithTakeProfit: Expected TP price %f, got %f", tpPrice, *order.TpPrice)
@@ -65,7 +80,10 @@ func TestTPSLOrderBuilderMethods(t *testing.T) {
 	slOrderPrice := 45500.0
 
 	builder.WithStopLoss(slPrice, slQty, slStopType, slOrderType, slOrderPrice)
-	order = builder.Build()
+	order, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Failed to build TPSL order: %v", err)
+	}
 
 	if *order.SlPrice != slPrice {
 		t.Errorf("WithStopLoss: Expected SL price %f, got %f", slPrice, *order.SlPrice)
