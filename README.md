@@ -245,6 +245,12 @@ if errors.Is(err, errors.ErrNetwork) {
 if apiErr, ok := err.(*errors.APIError); ok {
 fmt.Printf("API error code: %d, message: %s\n", apiErr.Code, apiErr.Message)
 }
+
+err := client.PlaceOrder(...)
+if errors.Is(err, errors.ErrInsufficientBalance) {
+// Handle insufficient balance case
+}
+
 ```
 
 ## Configuration

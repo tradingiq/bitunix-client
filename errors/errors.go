@@ -6,19 +6,24 @@ import (
 )
 
 var (
-	ErrValidation = errors.New("validation error")
-
-	ErrNetwork = errors.New("network error")
-
-	ErrAPI = errors.New("API error")
-
-	ErrAuthentication = errors.New("authentication error")
-
-	ErrWebsocket = errors.New("websocket error")
-
-	ErrInternal = errors.New("internal error")
-
-	ErrTimeout = errors.New("timeout error")
+	ErrValidation          = errors.New("validation error")
+	ErrNetwork             = errors.New("network error")
+	ErrAPI                 = errors.New("API error")
+	ErrAuthentication      = errors.New("authentication error")
+	ErrWebsocket           = errors.New("websocket error")
+	ErrInternal            = errors.New("internal error")
+	ErrTimeout             = errors.New("timeout error")
+	ErrParameterError      = errors.New("parameter error")
+	ErrRateLimitExceeded   = errors.New("rate limit exceeded")
+	ErrSignatureError      = errors.New("signature error")
+	ErrInsufficientBalance = errors.New("insufficient balance")
+	ErrOrderNotFound       = errors.New("order not found")
+	ErrPositionNotExist    = errors.New("position not exist")
+	ErrMarketNotExists     = errors.New("market not exists")
+	ErrAccountNotAllowed   = errors.New("account not allowed to trade")
+	ErrInvalidLeverage     = errors.New("invalid leverage")
+	ErrTPSLOrderError      = errors.New("take profit/stop loss order error")
+	ErrDuplicateClientID   = errors.New("client ID duplicate")
 )
 
 type ValidationError struct {
@@ -91,7 +96,13 @@ func (e *APIError) Unwrap() error {
 }
 
 func (e *APIError) Is(target error) bool {
-	return target == ErrAPI
+	if target == ErrAPI {
+		return true
+	}
+	if e.Err != nil {
+		return errors.Is(e.Err, target)
+	}
+	return false
 }
 
 type AuthenticationError struct {
