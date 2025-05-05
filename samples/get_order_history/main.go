@@ -41,7 +41,7 @@ func bitunixExample() {
 	for i, order := range response.Data.Orders {
 		fmt.Printf("Order %d:\n", i+1)
 		fmt.Printf("  OrderID: %s\n", order.OrderID)
-		fmt.Printf("  Symbol: %s\n", order.Symbol)
+		fmt.Printf("  SubscribeSymbol: %s\n", order.Symbol)
 		fmt.Printf("  Side: %s\n", order.Side)
 		fmt.Printf("  Type: %s\n", order.OrderType)
 		fmt.Printf("  Price: %s\n", order.Price)

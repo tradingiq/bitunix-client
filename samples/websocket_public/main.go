@@ -13,19 +13,19 @@ type subTest struct {
 	priceType model.PriceType
 }
 
-func (s subTest) Handle(message *model.KLineChannelMessage) {
+func (s subTest) SubscribeKLine(message *model.KLineChannelMessage) {
 	log.WithField("message", message).Debug("KLine")
 }
 
-func (s subTest) Interval() model.Interval {
+func (s subTest) SubscribeInterval() model.Interval {
 	return s.interval
 }
 
-func (s subTest) Symbol() model.Symbol {
+func (s subTest) SubscribeSymbol() model.Symbol {
 	return s.symbol
 }
 
-func (s subTest) PriceType() model.PriceType {
+func (s subTest) SubscribePriceType() model.PriceType {
 	return s.priceType
 }
 
