@@ -287,5 +287,5 @@ func TestClose(t *testing.T) {
 
 	err = client.Write([]byte(`{"test":true}`))
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not connected")
+	assert.Contains(t, err.Error(), " connection not established")
 }

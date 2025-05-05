@@ -116,7 +116,7 @@ func (ws *Client) Close() {
 
 func (ws *Client) Write(bytes []byte) error {
 	if ws.conn == nil {
-		return fmt.Errorf("not connected")
+		return fmt.Errorf("error writing to socket, connection not established")
 	}
 
 	log.WithField("payload", string(bytes)).Debug("write to websocket")
@@ -131,7 +131,7 @@ type HandlerFunc func([]byte) error
 
 func (ws *Client) Listen(handler HandlerFunc) error {
 	if ws.conn == nil {
-		return fmt.Errorf("not connected")
+		return fmt.Errorf("error writing to socket, connection not established")
 	}
 
 	for {

@@ -4,14 +4,17 @@ A Go client library for interacting with the Bitunix cryptocurrency futures exch
 
 ## Project Overview
 
-This Go library provides a comprehensive client for interacting with the Bitunix cryptocurrency exchange API, focusing on futures trading. It implements both REST API endpoints and WebSocket connections for real-time data streaming.
+This Go library provides a comprehensive client for interacting with the Bitunix cryptocurrency exchange API, focusing
+on futures trading. It implements both REST API endpoints and WebSocket connections for real-time data streaming.
 
-The client is designed to be reliable, efficient, and easy to use, with built-in support for request signing, WebSocket connection management, and detailed error handling.
+The client is designed to be reliable, efficient, and easy to use, with built-in support for request signing, WebSocket
+connection management, and detailed error handling.
 
 ## Key Features
 
 - **REST API Integration**: Full implementation of Bitunix's futures trading REST API endpoints
-- **WebSocket Support**: Real-time data streaming for account balances, positions, orders, and take-profit/stop-loss orders
+- **WebSocket Support**: Real-time data streaming for account balances, positions, orders, and take-profit/stop-loss
+  orders
 - **Flexible WebSocket Client**: Interface-based WebSocket client implementation for easy mocking and testing
 - **Order Management**: Place, cancel, and query orders with support for various order types
 - **Account Information**: Retrieve account balances and trading history
@@ -190,7 +193,8 @@ The `/samples` directory contains example applications demonstrating the client'
 
 ## Authentication
 
-The client handles authentication automatically by generating the required API signatures for both REST and WebSocket connections. Configure the client with your API and Secret keys from Bitunix:
+The client handles authentication automatically by generating the required API signatures for both REST and WebSocket
+connections. Configure the client with your API and Secret keys from Bitunix:
 
 ```go
 // For REST API
@@ -211,7 +215,8 @@ The samples use a configuration mechanism to load API credentials from environme
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to
+discuss what you would like to change.
 
 ## License
 

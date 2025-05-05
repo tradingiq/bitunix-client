@@ -1,12 +1,15 @@
 package security
 
-import "crypto/rand"
+import (
+	"crypto/rand"
+	"fmt"
+)
 
 func GenerateNonce(n int) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error generating nonce: %v", err)
 	}
 	return b, nil
 }

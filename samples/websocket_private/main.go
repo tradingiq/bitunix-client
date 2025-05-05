@@ -34,7 +34,7 @@ func (h *TpSlOrderHandler) SubscribeTpSlOrder(order *model.TpSlOrderChannelMessa
 
 func main() {
 	ctx := context.Background()
-	ws := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey)
+	ws, _ := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey)
 	defer ws.Disconnect()
 
 	if err := ws.Connect(); err != nil {

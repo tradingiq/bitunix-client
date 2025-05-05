@@ -31,7 +31,7 @@ func (s subTest) SubscribePriceType() model.PriceType {
 
 func main() {
 	ctx := context.Background()
-	ws := bitunix.NewPublicWebsocket(ctx)
+	ws, _ := bitunix.NewPublicWebsocket(ctx)
 	defer ws.Disconnect()
 	log.SetLevel(log.DebugLevel)
 
