@@ -45,13 +45,13 @@ client, _ := bitunix.NewApiClient("YOUR_API_KEY", "YOUR_SECRET_KEY")
 
 ```go
 params := model.AccountBalanceParams{
-    MarginCoin: "USDT",
+MarginCoin: "USDT",
 }
 
 ctx := context.Background()
 response, err := client.GetAccountBalance(ctx, params)
 if err != nil {
-    log.Fatal(err)
+log.Fatal(err)
 }
 
 fmt.Printf("Account Balance: %.6f %s\n", response.Data.Available, response.Data.MarginCoin)
@@ -62,19 +62,19 @@ fmt.Printf("Account Balance: %.6f %s\n", response.Data.Available, response.Data.
 ```go
 // Create a limit order using the builder pattern
 limitOrder := bitunix.NewOrderBuilder(
-    model.ParseSymbol("BTCUSDT"), // Symbol
-    model.TradeSideSell,          // Side (BUY/SELL)
-    model.SideOpen,               // Trade side (OPEN/CLOSE)
-    0.002,                       // Quantity
+model.ParseSymbol("BTCUSDT"), // Symbol
+model.TradeSideSell,          // Side (BUY/SELL)
+model.SideOpen,               // Trade side (OPEN/CLOSE)
+0.002,                        // Quantity
 ).WithOrderType(model.OrderTypeLimit).
-  WithPrice(100000.0).
-  WithTimeInForce(model.TimeInForcePostOnly).
-  Build()
+WithPrice(100000.0).
+WithTimeInForce(model.TimeInForcePostOnly).
+Build()
 
 // Submit the order
 response, err := client.PlaceOrder(ctx, &limitOrder)
 if err != nil {
-    log.Fatalf("Failed to place order: %v", err)
+log.Fatalf("Failed to place order: %v", err)
 }
 
 fmt.Printf("Order placed successfully: %+v\n", response)
@@ -90,36 +90,36 @@ defer ws.Disconnect()
 
 // Connect to the WebSocket server
 if err := ws.Connect(); err != nil {
-    log.Fatalf("Failed to connect to WebSocket: %v", err)
+log.Fatalf("Failed to connect to WebSocket: %v", err)
 }
 
 // Subscribe to balance updates
 balanceHandler := &BalanceHandler{}
 if err := ws.SubscribeBalance(balanceHandler); err != nil {
-    log.WithError(err).Fatal("Failed to subscribe to balance")
+log.WithError(err).Fatal("Failed to subscribe to balance")
 }
 
 // Subscribe to position updates
 positionHandler := &PositionHandler{}
 if err := ws.SubscribePositions(positionHandler); err != nil {
-    log.WithError(err).Fatal("Failed to subscribe to positions")
+log.WithError(err).Fatal("Failed to subscribe to positions")
 }
 
 // Subscribe to order updates
 orderHandler := &OrderHandler{}
 if err := ws.SubscribeOrders(orderHandler); err != nil {
-    log.WithError(err).Fatal("Failed to subscribe to orders")
+log.WithError(err).Fatal("Failed to subscribe to orders")
 }
 
 // Subscribe to TP/SL order updates
 tpslHandler := &TpSlOrderHandler{}
 if err := ws.SubscribeTpSlOrders(tpslHandler); err != nil {
-    log.WithError(err).Fatal("Failed to subscribe to TP/SL orders")
+log.WithError(err).Fatal("Failed to subscribe to TP/SL orders")
 }
 
 // Start the WebSocket stream
 if err := ws.Stream(); err != nil {
-    log.WithError(err).Fatal("Failed to stream")
+log.WithError(err).Fatal("Failed to stream")
 }
 ```
 
@@ -131,7 +131,7 @@ ws := bitunix.NewPublicWebsocket(ctx)
 defer ws.Disconnect()
 
 if err := ws.Connect(); err != nil {
-    log.Fatalf("Failed to connect to WebSocket: %v", err)
+log.Fatalf("Failed to connect to WebSocket: %v", err)
 }
 
 // Set up KLine subscription
@@ -140,18 +140,18 @@ symbol := model.ParseSymbol("BTCUSDT")
 priceType, _ := model.ParsePriceType("mark")
 
 sub := &KLineSubscriber{
-    interval:  interval,
-    symbol:    symbol,
-    priceType: priceType,
+interval:  interval,
+symbol:    symbol,
+priceType: priceType,
 }
 
 err = ws.SubscribeKLine(sub)
 if err != nil {
-    log.Fatalf("Failed to subscribe: %v", err)
+log.Fatalf("Failed to subscribe: %v", err)
 }
 
 if err := ws.Stream(); err != nil {
-    log.WithError(err).Fatal("Failed to stream")
+log.WithError(err).Fatal("Failed to stream")
 }
 ```
 
@@ -202,6 +202,49 @@ client, _ := bitunix.NewApiClient("YOUR_API_KEY", "YOUR_SECRET_KEY")
 
 // For WebSocket (private)
 ws := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY")
+```
+
+## Error Types
+
+The package defines several error types for different categories of errors:
+
+- `ValidationError`: Errors related to input validation
+- `NetworkError`: Errors related to network operations
+- `APIError`: Errors returned by the BitUnix API
+- `AuthenticationError`: Errors related to authentication
+- `WebsocketError`: Errors related to websocket operations
+- `InternalError`: Internal client errors
+- `TimeoutError`: Errors related to timeouts
+
+## Sentinel Errors
+
+The package defines sentinel errors that can be used with `errors.Is()` to check for specific error types:
+
+- `ErrValidation`
+- `ErrNetwork`
+- `ErrAPI`
+- `ErrAuthentication`
+- `ErrWebsocket`
+- `ErrInternal`
+- `ErrTimeout`
+
+### Checking Error Types
+
+```go
+// Check if an error is a validation error
+if errors.Is(err, errors.ErrValidation) {
+// Handle validation error
+}
+
+// Check if an error is a network error
+if errors.Is(err, errors.ErrNetwork) {
+// Handle network error
+}
+
+// Type assertion to get more details
+if apiErr, ok := err.(*errors.APIError); ok {
+fmt.Printf("API error code: %d, message: %s\n", apiErr.Code, apiErr.Message)
+}
 ```
 
 ## Configuration

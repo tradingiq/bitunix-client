@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/websocket"
 	"strings"
@@ -31,7 +32,7 @@ type websocketClient struct {
 
 func (ws *websocketClient) Connect() error {
 	if err := ws.client.Connect(); err != nil {
-		return fmt.Errorf("websocket client failed to connect: %w", err)
+		return errors.NewWebsocketError("connect", "client failed to connect", err)
 	}
 
 	return nil
@@ -48,7 +49,7 @@ func (ws *websocketClient) Stream() error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("websocket client failed to listen: %w", err)
+		return errors.NewWebsocketError("stream", "client failed to listen", err)
 	}
 
 	return nil
@@ -63,7 +64,7 @@ func (ws *websocketClient) Disconnect() {
 
 func (ws *websocketClient) startWorkerPool(ctx context.Context) error {
 	if ws.processFunc == nil {
-		return fmt.Errorf("processFunc is nil")
+		return errors.NewInternalError("processFunc is nil", nil)
 	}
 
 	for i := 0; i < ws.workerPoolSize; i++ {
@@ -127,7 +128,7 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 	wsc.processFunc = client.processMessage
 
 	if err := client.startWorkerPool(ctx); err != nil {
-		return nil, fmt.Errorf("public websocket client failed to start worker pool: %w", err)
+		return nil, errors.NewWebsocketError("initialize", "failed to start worker pool", err)
 	}
 
 	return client, nil
@@ -135,7 +136,7 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 
 func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "cannot be nil", nil)
 	}
 
 	symbol := subscriber.SubscribeSymbol().Normalize()
@@ -161,11 +162,11 @@ func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) erro
 
 	bytes, err := json.Marshal(req)
 	if err != nil {
-		return fmt.Errorf("failed to marshal subscription request: %w", err)
+		return errors.NewInternalError("failed to marshal subscription request", err)
 	}
 
 	if err := ws.client.Write(bytes); err != nil {
-		return fmt.Errorf("failed to send subscription request: %w", err)
+		return errors.NewWebsocketError("subscribe", "failed to send subscription request", err)
 	}
 
 	return nil
@@ -173,7 +174,7 @@ func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) erro
 
 func (ws *publicWebsocketClient) UnsubscribeKLine(subscriber KLineSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "cannot be nil", nil)
 	}
 
 	symbol := subscriber.SubscribeSymbol().Normalize()
@@ -199,11 +200,11 @@ func (ws *publicWebsocketClient) UnsubscribeKLine(subscriber KLineSubscriber) er
 
 	bytes, err := json.Marshal(req)
 	if err != nil {
-		return fmt.Errorf("failed to marshal unsubscription request: %w", err)
+		return errors.NewInternalError("failed to marshal unsubscription request", err)
 	}
 
 	if err := ws.client.Write(bytes); err != nil {
-		return fmt.Errorf("failed to send unsubscription request: %w", err)
+		return errors.NewWebsocketError("unsubscribe", "failed to send unsubscription request", err)
 	}
 
 	return nil
@@ -213,7 +214,11 @@ func parseChannel(channelStr string) (model.Interval, model.Channel, model.Price
 	parts := strings.Split(channelStr, "_")
 
 	if len(parts) != 3 {
-		return "", "", "", fmt.Errorf("invalid channel format: expected priceType_type_interval, got %s", channelStr)
+		return "", "", "", errors.NewValidationError(
+			"channel",
+			fmt.Sprintf("invalid channel format: expected priceType_type_interval, got %s", channelStr),
+			nil,
+		)
 	}
 
 	priceTypeStr := parts[0]
@@ -222,17 +227,17 @@ func parseChannel(channelStr string) (model.Interval, model.Channel, model.Price
 
 	priceType, err := model.ParsePriceType(priceTypeStr)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to parse price type: %w", err)
+		return "", "", "", errors.NewValidationError("priceType", "failed to parse price type", err)
 	}
 
 	interval, err := model.ParseInterval(intervalStr)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to parse interval: %w", err)
+		return "", "", "", errors.NewValidationError("interval", "failed to parse interval", err)
 	}
 
 	channel, err := model.ParseChannel(channelStr)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to parse channel: %w", err)
+		return "", "", "", errors.NewValidationError("channel", "failed to parse channel", err)
 	}
 
 	return interval, channel, priceType, nil
@@ -243,7 +248,16 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 
 	err := json.Unmarshal(bytes, &result)
 	if err != nil {
-		log.WithError(fmt.Errorf("error unmarshaling JSON: %v", err)).Errorf("error unmarshaling JSON")
+		log.WithError(
+			errors.NewInternalError("error unmarshaling JSON", err),
+		).Error("failed to process message")
+		return
+	}
+
+	if errMsg, hasError := result["error"].(string); hasError && errMsg != "" {
+		log.WithError(
+			errors.NewWebsocketError("message processing", errMsg, nil),
+		).Error("received error from websocket server")
 		return
 	}
 
@@ -251,7 +265,7 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 		if sym, symbolOk := result["symbol"].(string); symbolOk {
 			interval, channel, priceType, err := parseChannel(ch)
 			if err != nil {
-				log.WithError(err).Errorf("error parsing channel")
+				log.WithError(err).Error("error parsing channel")
 				return
 			}
 
@@ -259,15 +273,17 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 				symbol := model.ParseSymbol(sym).Normalize()
 
 				for subscriber := range ws.klineHandlers {
-
 					if subscriber.SubscribeInterval().Normalize() == interval &&
 						subscriber.SubscribeSymbol().Normalize() == symbol &&
 						subscriber.SubscribePriceType().Normalize() == priceType {
 						var klineMsg model.KLineChannelMessage
 						if err := json.Unmarshal(bytes, &klineMsg); err != nil {
-							log.WithError(fmt.Errorf("error unmarshaling kline message: %v", err)).Errorf("error unmarshaling kline message")
+							log.WithError(
+								errors.NewInternalError("error unmarshaling kline message", err),
+							).Error("failed to unmarshal kline message")
 							return
 						}
+
 						subscriber.SubscribeKLine(&klineMsg)
 					}
 				}

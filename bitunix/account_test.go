@@ -2,6 +2,8 @@ package bitunix
 
 import (
 	"context"
+	stderrors "errors"
+	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"net/http/httptest"
@@ -108,7 +110,12 @@ func TestAccountBalanceParamsValidation(t *testing.T) {
 		t.Fatal("expected error for missing marginCoin, got none")
 	}
 
-	if err.Error() != "marginCoin is required" {
+	expected := "validation error: field marginCoin: is required"
+	if err.Error() != expected {
 		t.Errorf("unexpected error message: %s", err.Error())
+	}
+
+	if !stderrors.Is(err, errors.ErrValidation) {
+		t.Errorf("error should be a validation error")
 	}
 }

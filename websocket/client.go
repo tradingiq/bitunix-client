@@ -7,6 +7,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -61,14 +62,17 @@ func New(ctx context.Context, uri string, options ...ClientOption) *Client {
 func (ws *Client) Connect() error {
 	u, err := url.Parse(ws.wsURL)
 	if err != nil {
-		return fmt.Errorf("error parsing WebSocket URL: %w", err)
+		return errors.NewInternalError("error parsing WebSocket URL", err)
 	}
 
 	conn, _, err := websocket.Dial(ws.ctx, u.String(), &websocket.DialOptions{
 		HTTPClient: http.DefaultClient,
 	})
 	if err != nil {
-		return fmt.Errorf("error connecting to WebSocket: %w", err)
+		if ws.ctx.Err() != nil {
+			return errors.NewTimeoutError("websocket connection", "", ws.ctx.Err())
+		}
+		return errors.NewWebsocketError("connect", "error connecting to WebSocket", err)
 	}
 
 	ws.conn = conn
@@ -76,18 +80,22 @@ func (ws *Client) Connect() error {
 	var initialMsg GenericMessage
 	if err := wsjson.Read(ws.ctx, conn, &initialMsg); err != nil {
 		conn.Close(websocket.StatusInternalError, "")
-		return fmt.Errorf("error reading initial message: %w", err)
+		return errors.NewWebsocketError("initial handshake", "error reading initial message", err)
 	}
 	log.WithField("payload", initialMsg).Debug("received initial message")
 
 	if ws.generateLoginMessage != nil {
 		if err := ws.login(); err != nil {
-			if err := conn.Close(websocket.StatusInternalError, ""); err != nil {
-				log.WithError(err).Error("error closing websocket connection")
-
-				return fmt.Errorf("login and successive connection closure failed: %w", err)
+			closeErr := conn.Close(websocket.StatusInternalError, "")
+			if closeErr != nil {
+				log.WithError(closeErr).Error("error closing websocket connection")
+				return errors.NewWebsocketError(
+					"login and connection closure",
+					"login failed and connection could not be closed properly",
+					err,
+				)
 			}
-			return fmt.Errorf("login failed: %w", err)
+			return err
 		}
 	}
 
@@ -116,12 +124,12 @@ func (ws *Client) Close() {
 
 func (ws *Client) Write(bytes []byte) error {
 	if ws.conn == nil {
-		return fmt.Errorf("error writing to socket, connection not established")
+		return errors.NewWebsocketError("write", "connection not established", nil)
 	}
 
 	log.WithField("payload", string(bytes)).Debug("write to websocket")
 	if err := ws.conn.Write(ws.ctx, websocket.MessageText, bytes); err != nil {
-		return fmt.Errorf("error writing: %w", err)
+		return errors.NewWebsocketError("write", "error writing to websocket", err)
 	}
 
 	return nil
@@ -131,7 +139,7 @@ type HandlerFunc func([]byte) error
 
 func (ws *Client) Listen(handler HandlerFunc) error {
 	if ws.conn == nil {
-		return fmt.Errorf("error writing to socket, connection not established")
+		return errors.NewWebsocketError("listen", "connection not established", nil)
 	}
 
 	for {
@@ -142,14 +150,17 @@ func (ws *Client) Listen(handler HandlerFunc) error {
 			var message json.RawMessage
 			err := wsjson.Read(ws.ctx, ws.conn, &message)
 			if err != nil {
-				return fmt.Errorf("connection closed: %w", err)
+				if ws.ctx.Err() != nil {
+					return errors.NewTimeoutError("websocket read", "", ws.ctx.Err())
+				}
+				return errors.NewWebsocketError("listen", "connection closed", err)
 			}
 
 			log.WithField("payload", string(message)).Debug("received message")
 
 			if handler != nil {
 				if err := handler(message); err != nil {
-					return fmt.Errorf("handler failed: %w", err)
+					return errors.NewWebsocketError("message handling", "handler failed", err)
 				}
 			}
 		}
@@ -160,22 +171,28 @@ func (ws *Client) login() error {
 	loginReq, err := ws.generateLoginMessage()
 
 	if err != nil {
-		return fmt.Errorf("error generating nonce for login request: %w", err)
+		return errors.NewAuthenticationError("error generating nonce for login request", err)
 	}
 
 	log.Debug("sending login message")
 	if err := ws.Write(loginReq); err != nil {
-		return fmt.Errorf("error sending login request: %w", err)
+		return errors.NewWebsocketError("login", "error sending login request", err)
 	}
 
 	var loginResp GenericMessage
 	if err := wsjson.Read(ws.ctx, ws.conn, &loginResp); err != nil {
-		return fmt.Errorf("error reading login response: %w", err)
+		return errors.NewWebsocketError("login", "error reading login response", err)
+	}
+	if op, ok := loginResp["op"].(string); ok && op == "login" {
+		data := loginResp["data"].(map[string]interface{})
+		if result, ok := data["result"].(bool); ok && result == true {
+
+			log.WithField("payload", loginResp).Debug("received login response")
+			return nil
+		}
 	}
 
-	log.WithField("payload", loginResp).Debug("received login response")
-
-	return nil
+	return errors.NewAuthenticationError(fmt.Sprintf("authentication failed"), nil)
 }
 
 func (ws *Client) sendHeartbeat() {

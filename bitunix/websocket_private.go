@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/security"
 	"github.com/tradingiq/bitunix-client/websocket"
@@ -66,7 +67,7 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 	wsc.processFunc = client.processMessage
 
 	if err := client.startWorkerPool(ctx); err != nil {
-		return nil, fmt.Errorf("public websocket client failed to start worker pool: %w", err)
+		return nil, errors.NewWebsocketError("initialize private websocket", "failed to start worker pool", err)
 	}
 
 	return client, nil
@@ -74,7 +75,7 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 
 func (ws *privateWebsocketClient) SubscribeBalance(subscriber BalanceSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("balance subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "balance subscriber cannot be nil", nil)
 	}
 
 	ws.balanceSubscriberMtx.Lock()
@@ -86,7 +87,7 @@ func (ws *privateWebsocketClient) SubscribeBalance(subscriber BalanceSubscriber)
 
 func (ws *privateWebsocketClient) UnsubscribeBalance(subscriber BalanceSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("balance subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "balance subscriber cannot be nil", nil)
 	}
 
 	ws.balanceSubscriberMtx.Lock()
@@ -100,7 +101,7 @@ func (ws *privateWebsocketClient) UnsubscribeBalance(subscriber BalanceSubscribe
 
 func (ws *privateWebsocketClient) SubscribePositions(subscriber PositionSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("position subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "position subscriber cannot be nil", nil)
 	}
 
 	ws.positionSubscribersMtx.Lock()
@@ -112,7 +113,7 @@ func (ws *privateWebsocketClient) SubscribePositions(subscriber PositionSubscrib
 
 func (ws *privateWebsocketClient) UnsubscribePosition(subscriber PositionSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("position subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "position subscriber cannot be nil", nil)
 	}
 
 	ws.positionSubscribersMtx.Lock()
@@ -142,7 +143,7 @@ type TpSlOrderSubscriber interface {
 
 func (ws *privateWebsocketClient) SubscribeOrders(subscriber OrderSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("order subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "order subscriber cannot be nil", nil)
 	}
 
 	ws.orderSubscriberMtx.Lock()
@@ -154,7 +155,7 @@ func (ws *privateWebsocketClient) SubscribeOrders(subscriber OrderSubscriber) er
 
 func (ws *privateWebsocketClient) UnsubscribeOrders(subscriber OrderSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("order subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "order subscriber cannot be nil", nil)
 	}
 
 	ws.orderSubscriberMtx.Lock()
@@ -168,7 +169,7 @@ func (ws *privateWebsocketClient) UnsubscribeOrders(subscriber OrderSubscriber) 
 
 func (ws *privateWebsocketClient) SubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("tp/sl order subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "tp/sl order subscriber cannot be nil", nil)
 	}
 
 	ws.tpSlOrderSubscriberMtx.Lock()
@@ -180,7 +181,7 @@ func (ws *privateWebsocketClient) SubscribeTpSlOrders(subscriber TpSlOrderSubscr
 
 func (ws *privateWebsocketClient) UnsubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error {
 	if subscriber == nil {
-		return fmt.Errorf("tp/sl order subscriber cannot be nil")
+		return errors.NewValidationError("subscriber", "tp/sl order subscriber cannot be nil", nil)
 	}
 
 	ws.tpSlOrderSubscriberMtx.Lock()
@@ -197,7 +198,16 @@ func (ws *privateWebsocketClient) processMessage(bytes []byte) {
 
 	err := json.Unmarshal(bytes, &result)
 	if err != nil {
-		log.WithError(fmt.Errorf("error unmarshaling JSON: %v", err)).Errorf("error unmarshaling JSON")
+		log.WithError(
+			errors.NewInternalError("error unmarshaling websocket message", err),
+		).Error("failed to process websocket message")
+		return
+	}
+
+	if errMsg, hasError := result["error"].(string); hasError && errMsg != "" {
+		log.WithError(
+			errors.NewWebsocketError("message processing", errMsg, nil),
+		).Error("received error from websocket server")
 		return
 	}
 
@@ -218,7 +228,9 @@ func (ws *privateWebsocketClient) processMessage(bytes []byte) {
 func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 	res := model.TpSlOrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(err).Errorf("error unmarshaling tpslorder response JSON")
+		log.WithError(
+			errors.NewInternalError("error unmarshaling tp/sl order response", err),
+		).Error("failed to process tp/sl order update")
 		return
 	}
 
@@ -232,7 +244,9 @@ func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 	res := model.OrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(err).Errorf("error unmarshaling order response JSON")
+		log.WithError(
+			errors.NewInternalError("error unmarshaling order response", err),
+		).Error("failed to process order update")
 		return
 	}
 
@@ -246,7 +260,9 @@ func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 	res := model.PositionChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(err).Errorf("error unmarshaling position response JSON")
+		log.WithError(
+			errors.NewInternalError("error unmarshaling position response", err),
+		).Error("failed to process position update")
 		return
 	}
 
@@ -260,7 +276,9 @@ func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
 	res := model.BalanceChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(err).Errorf("error unmarshaling balance response JSON")
+		log.WithError(
+			errors.NewInternalError("error unmarshaling balance response", err),
+		).Error("failed to process balance update")
 		return
 	}
 
@@ -310,10 +328,9 @@ func WithWorkerBufferSize(size int) WebsocketClientOption {
 
 func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
 	return func() ([]byte, error) {
-
 		nonce, err := security.GenerateNonce(32)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate nonce: %w", err)
+			return nil, errors.NewAuthenticationError("failed to generate nonce for websocket authentication", err)
 		}
 
 		sign, timestamp := generateWebsocketSignature(apiKey, apiSecret, time.Now().Unix(), nonce)
@@ -329,13 +346,13 @@ func WebsocketSigner(apiKey, apiSecret string) func() ([]byte, error) {
 				},
 			},
 		}
+
 		bytes, err := json.Marshal(loginReq)
 		if err != nil {
-			return bytes, err
+			return nil, errors.NewInternalError("failed to marshal login request", err)
 		}
 
 		return bytes, nil
-
 	}
 }
 

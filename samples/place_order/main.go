@@ -26,7 +26,7 @@ func bitunixExample() {
 	).WithOrderType(model.OrderTypeLimit).
 		WithPrice(100000.0).
 		WithTimeInForce(model.TimeInForcePostOnly)
-		
+
 	limitOrder, err := orderBuilder.Build()
 	if err != nil {
 		log.Fatalf("Failed to build order: %v", err)

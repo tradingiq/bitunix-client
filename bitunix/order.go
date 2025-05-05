@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"time"
 )
@@ -11,17 +12,18 @@ import (
 func (c *apiClient) PlaceOrder(ctx context.Context, request *model.OrderRequest) (*model.OrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal order request: %w", err)
+		return nil, errors.NewInternalError("failed to marshal order request", err)
 	}
 
-	responseBody, err := c.restClient.Post(ctx, "/api/v1/futures/trade/place_order", nil, marshaledRequest)
+	endpoint := "/api/v1/futures/trade/place_order"
+	responseBody, err := c.restClient.Post(ctx, endpoint, nil, marshaledRequest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to place order request: %w", err)
+		return nil, err
 	}
 
 	response := &model.OrderResponse{}
-	if err := json.Unmarshal(responseBody, response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := handleAPIResponse(responseBody, endpoint, response); err != nil {
+		return nil, err
 	}
 
 	return response, nil
@@ -30,17 +32,18 @@ func (c *apiClient) PlaceOrder(ctx context.Context, request *model.OrderRequest)
 func (c *apiClient) CancelOrders(ctx context.Context, request *model.CancelOrderRequest) (*model.CancelOrderResponse, error) {
 	marshaledRequest, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal cancel order request: %w", err)
+		return nil, errors.NewInternalError("failed to marshal cancel order request", err)
 	}
 
-	responseBody, err := c.restClient.Post(ctx, "/api/v1/futures/trade/cancel_orders", nil, marshaledRequest)
+	endpoint := "/api/v1/futures/trade/cancel_orders"
+	responseBody, err := c.restClient.Post(ctx, endpoint, nil, marshaledRequest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to cancel orders request: %w", err)
+		return nil, err
 	}
 
 	response := &model.CancelOrderResponse{}
-	if err := json.Unmarshal(responseBody, response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if err := handleAPIResponse(responseBody, endpoint, response); err != nil {
+		return nil, err
 	}
 
 	return response, nil
@@ -124,66 +127,66 @@ func (b *OrderBuilder) WithStopLossPrice(orderPrice float64) *OrderBuilder {
 
 func (b *OrderBuilder) Build() (model.OrderRequest, error) {
 	if b.request.Symbol == "" {
-		return model.OrderRequest{}, fmt.Errorf("symbol is required")
+		return model.OrderRequest{}, errors.NewValidationError("symbol", "is required", nil)
 	}
 
 	if b.request.TradeSide == "" {
-		return model.OrderRequest{}, fmt.Errorf("side (trade action) is required")
+		return model.OrderRequest{}, errors.NewValidationError("side", "trade action is required", nil)
 	}
 
 	if b.request.Side == "" {
-		return model.OrderRequest{}, fmt.Errorf("tradeSide is required")
+		return model.OrderRequest{}, errors.NewValidationError("tradeSide", "is required", nil)
 	}
 
 	if b.request.Qty == nil || *b.request.Qty <= 0 {
-		return model.OrderRequest{}, fmt.Errorf("qty (quantity) is required and must be greater than zero")
+		return model.OrderRequest{}, errors.NewValidationError("qty", "quantity is required and must be greater than zero", nil)
 	}
 
 	if b.request.Side == model.SideClose && b.request.PositionID == "" {
-		return model.OrderRequest{}, fmt.Errorf("positionId is required when tradeSide is CLOSE")
+		return model.OrderRequest{}, errors.NewValidationError("positionId", "is required when tradeSide is CLOSE", nil)
 	}
 
 	if b.request.OrderType == "" {
-		return model.OrderRequest{}, fmt.Errorf("orderType is required")
+		return model.OrderRequest{}, errors.NewValidationError("orderType", "is required", nil)
 	}
 
 	if b.request.OrderType == model.OrderTypeLimit && (b.request.Price == nil || *b.request.Price <= 0) {
-		return model.OrderRequest{}, fmt.Errorf("price is required for limit orders")
+		return model.OrderRequest{}, errors.NewValidationError("price", "is required for limit orders", nil)
 	}
 
 	if b.request.TpPrice != nil {
 		if *b.request.TpPrice <= 0 {
-			return model.OrderRequest{}, fmt.Errorf("take profit price must be greater than zero")
+			return model.OrderRequest{}, errors.NewValidationError("tpPrice", "take profit price must be greater than zero", nil)
 		}
 
 		if b.request.TpStopType == "" {
-			return model.OrderRequest{}, fmt.Errorf("tpStopType is required when setting take profit")
+			return model.OrderRequest{}, errors.NewValidationError("tpStopType", "is required when setting take profit", nil)
 		}
 
 		if b.request.TpOrderType == "" {
-			return model.OrderRequest{}, fmt.Errorf("tpOrderType is required when setting take profit")
+			return model.OrderRequest{}, errors.NewValidationError("tpOrderType", "is required when setting take profit", nil)
 		}
 
 		if b.request.TpOrderType == model.OrderTypeLimit && (b.request.TpOrderPrice == nil || *b.request.TpOrderPrice <= 0) {
-			return model.OrderRequest{}, fmt.Errorf("tpOrderPrice is required when tpOrderType is LIMIT")
+			return model.OrderRequest{}, errors.NewValidationError("tpOrderPrice", "is required when tpOrderType is LIMIT", nil)
 		}
 	}
 
 	if b.request.SlPrice != nil {
 		if *b.request.SlPrice <= 0 {
-			return model.OrderRequest{}, fmt.Errorf("stop loss price must be greater than zero")
+			return model.OrderRequest{}, errors.NewValidationError("slPrice", "stop loss price must be greater than zero", nil)
 		}
 
 		if b.request.SlStopType == "" {
-			return model.OrderRequest{}, fmt.Errorf("slStopType is required when setting stop loss")
+			return model.OrderRequest{}, errors.NewValidationError("slStopType", "is required when setting stop loss", nil)
 		}
 
 		if b.request.SlOrderType == "" {
-			return model.OrderRequest{}, fmt.Errorf("slOrderType is required when setting stop loss")
+			return model.OrderRequest{}, errors.NewValidationError("slOrderType", "is required when setting stop loss", nil)
 		}
 
 		if b.request.SlOrderType == model.OrderTypeLimit && (b.request.SlOrderPrice == nil || *b.request.SlOrderPrice <= 0) {
-			return model.OrderRequest{}, fmt.Errorf("slOrderPrice is required when slOrderType is LIMIT")
+			return model.OrderRequest{}, errors.NewValidationError("slOrderPrice", "is required when slOrderType is LIMIT", nil)
 		}
 	}
 
@@ -219,16 +222,20 @@ func (b *CancelOrderBuilder) WithClientID(clientID string) *CancelOrderBuilder {
 
 func (b *CancelOrderBuilder) Build() (model.CancelOrderRequest, error) {
 	if b.request.Symbol == "" {
-		return model.CancelOrderRequest{}, fmt.Errorf("symbol is required")
+		return model.CancelOrderRequest{}, errors.NewValidationError("symbol", "is required", nil)
 	}
 
 	if len(b.request.OrderList) == 0 {
-		return model.CancelOrderRequest{}, fmt.Errorf("orderList must contain at least one order to cancel")
+		return model.CancelOrderRequest{}, errors.NewValidationError("orderList", "must contain at least one order to cancel", nil)
 	}
 
 	for i, order := range b.request.OrderList {
 		if order.OrderID == "" && order.ClientID == "" {
-			return model.CancelOrderRequest{}, fmt.Errorf("order at index %d must have either orderId or clientId", i)
+			return model.CancelOrderRequest{}, errors.NewValidationError(
+				fmt.Sprintf("orderList[%d]", i),
+				"must have either orderId or clientId",
+				nil,
+			)
 		}
 	}
 

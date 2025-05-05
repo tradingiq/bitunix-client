@@ -84,7 +84,7 @@ func TestConnect(t *testing.T) {
 		receivedLogin = msg
 		loginCalled = true
 
-		err = c.Write(ctx, websocket.MessageText, []byte(`{"event":"login","success":true}`))
+		err = c.Write(ctx, websocket.MessageText, []byte(`{"op":"login","data":{"result":true}}`))
 		require.NoError(t, err)
 
 		time.Sleep(100 * time.Millisecond)
