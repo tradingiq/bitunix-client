@@ -94,7 +94,36 @@ func handleAPIResponse(responseBody []byte, endpoint string, result interface{})
 			if message == "" {
 				message = response.Msg
 			}
-			return errors.NewAPIError(response.Code, message, endpoint, nil)
+
+			var underlyingErr error
+			switch {
+			case response.Code == 10002:
+				underlyingErr = errors.ErrParameterError
+			case response.Code == 10005 || response.Code == 10006:
+				underlyingErr = errors.ErrRateLimitExceeded
+			case response.Code == 10007:
+				underlyingErr = errors.ErrSignatureError
+			case response.Code == 20001:
+				underlyingErr = errors.ErrMarketNotExists
+			case response.Code == 20003 || response.Code == 20008:
+				underlyingErr = errors.ErrInsufficientBalance
+			case response.Code == 20005:
+				underlyingErr = errors.ErrInvalidLeverage
+			case response.Code == 20007:
+				underlyingErr = errors.ErrOrderNotFound
+			case response.Code == 20011:
+				underlyingErr = errors.ErrAccountNotAllowed
+			case response.Code == 30004:
+				underlyingErr = errors.ErrPositionNotExist
+			case response.Code >= 30005 && response.Code <= 30038:
+				underlyingErr = errors.ErrTPSLOrderError
+			case response.Code == 30042:
+				underlyingErr = errors.ErrDuplicateClientID
+			default:
+				underlyingErr = errors.ErrAPI
+			}
+
+			return errors.NewAPIError(response.Code, message, endpoint, underlyingErr)
 		}
 	}
 
