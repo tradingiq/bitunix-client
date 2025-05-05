@@ -41,7 +41,7 @@ func (c *Client) SetOptions(options ...ClientOption) {
 func New(baseUri string, options ...ClientOption) (*Client, error) {
 	uri, err := url.Parse(baseUri)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing base uri %q: %s", baseUri, err)
 	}
 
 	client := &Client{
@@ -98,7 +98,7 @@ func (c *Client) Request(ctx context.Context, method, path string, query url.Val
 func (c *Client) Get(ctx context.Context, path string, query url.Values) ([]byte, error) {
 	respBody, err := c.Request(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to GET %s: %w", path, err)
 	}
 
 	return respBody, nil
@@ -107,7 +107,7 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values) ([]byte
 func (c *Client) Post(ctx context.Context, path string, query url.Values, body []byte) ([]byte, error) {
 	respBody, err := c.Request(ctx, http.MethodPost, path, query, body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to POST %s: %w", path, err)
 	}
 
 	return respBody, nil

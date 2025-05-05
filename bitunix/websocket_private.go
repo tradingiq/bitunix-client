@@ -25,7 +25,7 @@ type privateWebsocketClient struct {
 	tpSlOrderSubscriberMtx sync.Mutex
 }
 
-func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...WebsocketClientOption) PrivateWebsocketClient {
+func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...WebsocketClientOption) (PrivateWebsocketClient, error) {
 	wsc := &websocketClient{
 		uri:  "wss://fapi.bitunix.com/private/",
 		quit: make(chan struct{}),
@@ -66,10 +66,10 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 	wsc.processFunc = client.processMessage
 
 	if err := client.startWorkerPool(ctx); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("public websocket client failed to start worker pool: %w", err)
 	}
 
-	return client
+	return client, nil
 }
 
 func (ws *privateWebsocketClient) SubscribeBalance(subscriber BalanceSubscriber) error {

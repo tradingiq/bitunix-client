@@ -3,7 +3,6 @@ package bitunix
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/model"
@@ -32,7 +31,7 @@ type websocketClient struct {
 
 func (ws *websocketClient) Connect() error {
 	if err := ws.client.Connect(); err != nil {
-		return err
+		return fmt.Errorf("websocket client failed to connect: %w", err)
 	}
 
 	return nil
@@ -49,7 +48,7 @@ func (ws *websocketClient) Stream() error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("stream error: %v", err)
+		return fmt.Errorf("websocket client failed to listen: %w", err)
 	}
 
 	return nil
@@ -95,7 +94,7 @@ type publicWebsocketClient struct {
 
 type WebsocketClientOption func(*websocketClient)
 
-func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) PublicWebsocketClient {
+func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (PublicWebsocketClient, error) {
 	wsc := &websocketClient{
 		uri:  "wss://fapi.bitunix.com/public/",
 		quit: make(chan struct{}),
@@ -128,10 +127,10 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) P
 	wsc.processFunc = client.processMessage
 
 	if err := client.startWorkerPool(ctx); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("public websocket client failed to start worker pool: %w", err)
 	}
 
-	return client
+	return client, nil
 }
 
 func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) error {
@@ -214,7 +213,7 @@ func parseChannel(channelStr string) (model.Interval, model.Channel, model.Price
 	parts := strings.Split(channelStr, "_")
 
 	if len(parts) != 3 {
-		return "", "", "", errors.New("invalid channel format: expected priceType_type_interval")
+		return "", "", "", fmt.Errorf("invalid channel format: expected priceType_type_interval, got %s", channelStr)
 	}
 
 	priceTypeStr := parts[0]

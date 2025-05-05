@@ -48,7 +48,7 @@ func NewApiClient(apiKey, apiSecret string, option ...ClientOption) (ApiClient, 
 
 	restClient, err := rest.New(client.baseURI, rest.WithRequestSigner(RequestSigner(apiKey, apiSecret, generateTimestamp, security.GenerateNonce)))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating rest client: %w", err)
 	}
 
 	client.restClient = restClient
