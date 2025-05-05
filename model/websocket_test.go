@@ -971,6 +971,130 @@ func TestMarginCoinWithCommonCoins(t *testing.T) {
 	}
 }
 
+func TestKLineEventUnmarshalJSON(t *testing.T) {
+	jsonStr := `{
+		"o": "50000.50",
+		"h": "51000.25",
+		"l": "49500.75",
+		"c": "50800.00",
+		"b": "100.50",
+		"q": "5100000.25"
+	}`
+
+	var kline KLineEvent
+	err := json.Unmarshal([]byte(jsonStr), &kline)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal KLineEvent: %v", err)
+	}
+
+	if kline.OpenPrice != 50000.50 {
+		t.Errorf("Expected OpenPrice 50000.50, got %f", kline.OpenPrice)
+	}
+
+	if kline.HighPrice != 51000.25 {
+		t.Errorf("Expected HighPrice 51000.25, got %f", kline.HighPrice)
+	}
+
+	if kline.LowPrice != 49500.75 {
+		t.Errorf("Expected LowPrice 49500.75, got %f", kline.LowPrice)
+	}
+
+	if kline.ClosePrice != 50800.00 {
+		t.Errorf("Expected ClosePrice 50800.00, got %f", kline.ClosePrice)
+	}
+
+	if kline.BaseVolume != 100.50 {
+		t.Errorf("Expected BaseVolume 100.50, got %f", kline.BaseVolume)
+	}
+
+	if kline.QuoteVolume != 5100000.25 {
+		t.Errorf("Expected QuoteVolume 5100000.25, got %f", kline.QuoteVolume)
+	}
+
+	invalidJSON := `{
+		"o": "not-a-number",
+		"h": "51000.25",
+		"l": "49500.75",
+		"c": "50800.00",
+		"b": "100.50",
+		"q": "5100000.25"
+	}`
+
+	err = json.Unmarshal([]byte(invalidJSON), &kline)
+	if err == nil {
+		t.Fatal("Expected error for invalid number format, got none")
+	}
+}
+
+func TestKLineChannelMessageUnmarshalJSON(t *testing.T) {
+	jsonStr := `{
+		"ch": "kline",
+		"symbol": "BTCUSDT",
+		"ts": 1645123456000,
+		"data": {
+			"o": "50000.50",
+			"h": "51000.25",
+			"l": "49500.75",
+			"c": "50800.00",
+			"b": "100.50",
+			"q": "5100000.25"
+		}
+	}`
+
+	var message KLineChannelMessage
+	err := json.Unmarshal([]byte(jsonStr), &message)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal KLineChannelMessage: %v", err)
+	}
+
+	if message.Channel != "kline" {
+		t.Errorf("Expected Channel 'kline', got %s", message.Channel)
+	}
+
+	if message.Symbol != "BTCUSDT" {
+		t.Errorf("Expected Symbol 'BTCUSDT', got %s", message.Symbol)
+	}
+
+	if message.Ts != 1645123456000 {
+		t.Errorf("Expected Ts 1645123456000, got %d", message.Ts)
+	}
+
+	if message.Data.OpenPrice != 50000.50 {
+		t.Errorf("Expected OpenPrice 50000.50, got %f", message.Data.OpenPrice)
+	}
+
+	if message.Data.HighPrice != 51000.25 {
+		t.Errorf("Expected HighPrice 51000.25, got %f", message.Data.HighPrice)
+	}
+
+	if message.Data.LowPrice != 49500.75 {
+		t.Errorf("Expected LowPrice 49500.75, got %f", message.Data.LowPrice)
+	}
+
+	if message.Data.ClosePrice != 50800.00 {
+		t.Errorf("Expected ClosePrice 50800.00, got %f", message.Data.ClosePrice)
+	}
+
+	invalidJSON := `{
+		"ch": "kline",
+		"symbol": 12345,
+		"ts": 1645123456000,
+		"data": {
+			"o": "50000.50",
+			"h": "51000.25",
+			"l": "49500.75",
+			"c": "50800.00",
+			"b": "100.50",
+			"q": "5100000.25"
+		}
+	}`
+
+	err = json.Unmarshal([]byte(invalidJSON), &message)
+	if err == nil {
+		t.Fatal("Expected error for invalid symbol format, got none")
+	}
+}
+
 func TestMarginCoinConsistencyWithSymbol(t *testing.T) {
 	testCases := []struct {
 		symbolInput     string
