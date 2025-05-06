@@ -93,6 +93,18 @@ func main() {
 	}
 
 	if err := ws.Stream(); err != nil {
-		log.WithError(err).Fatal("failed to stream")
+		switch {
+		case errors.Is(err, bitunix_errors.ErrConnectionClosed):
+			log.Info("connection closed, bye!")
+		case errors.Is(err, bitunix_errors.ErrTimeout):
+			log.WithError(err).Fatalf("timeout while streaming")
+		default:
+			var sktErr *bitunix_errors.WebsocketError
+			if errors.As(err, &sktErr) {
+				log.Fatalf("Websocket error (code: %s): %s", sktErr.Operation, sktErr.Message)
+			} else {
+				log.Fatalf("Unexpected error: %s", err.Error())
+			}
+		}
 	}
 }
