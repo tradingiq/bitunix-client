@@ -65,9 +65,8 @@ func (r TPSLOrderRequest) MarshalJSON() ([]byte, error) {
 }
 
 type TpSlOrderResponse struct {
-	Code    int                     `json:"code"`
-	Message string                  `json:"msg"`
-	Data    []TPSLOrderResponseData `json:"data"`
+	BaseResponse
+	Data []TPSLOrderResponseData `json:"data"`
 }
 
 type TPSLOrderResponseData struct {
@@ -150,9 +149,8 @@ type OrderResponseData struct {
 }
 
 type CancelOrderResponse struct {
-	Code    int                     `json:"code"`
-	Message string                  `json:"msg"`
-	Data    CancelOrderResponseData `json:"data"`
+	BaseResponse
+	Data CancelOrderResponseData `json:"data"`
 }
 
 type CancelOrderResponseData struct {
@@ -195,9 +193,8 @@ type OrderHistoryParams struct {
 }
 
 type OrderHistoryResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"msg"`
-	Data    struct {
+	BaseResponse
+	Data struct {
 		Orders []HistoricalOrder `json:"orderList"`
 		Total  string            `json:"total"`
 	} `json:"data"`

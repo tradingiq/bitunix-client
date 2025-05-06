@@ -17,9 +17,8 @@ type PositionHistoryParams struct {
 }
 
 type PositionHistoryResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"msg"`
-	Data    struct {
+	BaseResponse
+	Data struct {
 		Positions []HistoricalPosition `json:"positionList"`
 		Total     string               `json:"total"`
 	} `json:"data"`

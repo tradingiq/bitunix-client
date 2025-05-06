@@ -18,9 +18,8 @@ type TradeHistoryParams struct {
 }
 
 type TradeHistoryResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"msg"`
-	Data    struct {
+	BaseResponse
+	Data struct {
 		Trades []HistoricalTrade `json:"tradeList"`
 		Total  string            `json:"total"`
 	} `json:"data"`
