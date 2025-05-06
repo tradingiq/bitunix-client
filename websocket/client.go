@@ -73,7 +73,7 @@ func (ws *Client) Connect() error {
 		switch {
 		case errors.Is(ws.ctx.Err(), context.Canceled):
 			return bitunix_errors.NewConnectionClosedError("listen", "context cancelled", ws.ctx.Err())
-		case ws.ctx.Err() != nil:
+		case errors.Is(ws.ctx.Err(), context.DeadlineExceeded):
 			return bitunix_errors.NewTimeoutError("websocket connection", "", ws.ctx.Err())
 		}
 
@@ -158,7 +158,7 @@ func (ws *Client) Listen(handler HandlerFunc) error {
 				switch {
 				case errors.Is(ws.ctx.Err(), context.Canceled):
 					return bitunix_errors.NewConnectionClosedError("listen", "context cancelled", ws.ctx.Err())
-				case ws.ctx.Err() != nil:
+				case errors.Is(ws.ctx.Err(), context.DeadlineExceeded):
 					return bitunix_errors.NewTimeoutError("websocket connection", "", ws.ctx.Err())
 				}
 

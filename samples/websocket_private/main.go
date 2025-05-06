@@ -87,6 +87,8 @@ func main() {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrTimeout):
 			log.WithError(err).Fatalf("timeout while streaming")
+		case errors.Is(err, bitunix_errors.ErrConnectionClosed):
+			log.WithError(err).Info("connection closed")
 		default:
 			var apiErr *bitunix_errors.WebsocketError
 			if errors.As(err, &apiErr) {
