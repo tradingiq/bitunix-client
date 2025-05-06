@@ -2,18 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/samples"
 )
 
 func main() {
-	cancelOrderExample()
-}
-
-func cancelOrderExample() {
 	log.SetLevel(log.DebugLevel)
 
 	bitunixClient, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
@@ -29,17 +26,34 @@ func cancelOrderExample() {
 	ctx := context.Background()
 	response, err := bitunixClient.CancelOrders(ctx, &cancelRequest)
 	if err != nil {
-		log.Fatalf("Failed to cancel orders: %v", err)
+		switch {
+		case errors.Is(err, bitunix_errors.ErrAuthentication):
+			log.Fatalf("Authentication failed: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrSignatureError):
+			log.Fatalf("Signature error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrNetwork):
+			log.Fatalf("Network error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrIPNotAllowed):
+			log.Fatalf("IP restriction error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrRateLimitExceeded):
+			log.Fatalf("Rate limit exceeded: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrParameterError):
+			log.Fatalf("Parameter error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrAccountNotAllowed):
+			log.Fatalf("Account not allowed error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrOrderNotFound):
+			log.Fatalf("Order not found error: %s", err.Error())
+
+			// and so on...
+		default:
+			var apiErr *bitunix_errors.APIError
+			if errors.As(err, &apiErr) {
+				log.Fatalf("API error (code: %d): %s", apiErr.Code, apiErr.Message)
+			} else {
+				log.Fatalf("Unexpected error: %s", err.Error())
+			}
+		}
 	}
 
-	fmt.Println("Successfully canceled orders:")
-	for _, success := range response.Data.SuccessList {
-		fmt.Printf("- Order ID: %s, client ID: %s\n", success.OrderId, success.ClientId)
-	}
-
-	fmt.Println("Failed to cancel orders:")
-	for _, failure := range response.Data.FailureList {
-		fmt.Printf("- Order ID: %s, client ID: %s, Error: %s (Code: %s)\n",
-			failure.OrderId, failure.ClientId, failure.ErrorMsg, failure.ErrorCode)
-	}
+	log.WithField("response", response).Info("got cancellation response")
 }
