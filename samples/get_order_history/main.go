@@ -2,19 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/samples"
 	"time"
 )
 
 func main() {
-	bitunixExample()
-}
-
-func bitunixExample() {
 	log.SetLevel(log.DebugLevel)
 
 	client, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
@@ -30,30 +27,28 @@ func bitunixExample() {
 	ctx := context.Background()
 	response, err := client.GetOrderHistory(ctx, params)
 	if err != nil {
-		log.Fatal(err)
+		switch {
+		case errors.Is(err, bitunix_errors.ErrAuthentication):
+			log.Fatalf("Authentication failed: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrSignatureError):
+			log.Fatalf("Signature error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrNetwork):
+			log.Fatalf("Network error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrIPNotAllowed):
+			log.Fatalf("IP restriction error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrRateLimitExceeded):
+			log.Fatalf("Rate limit exceeded: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrParameterError):
+			log.Fatalf("Parameter error: %s", err.Error())
+		default:
+			var apiErr *bitunix_errors.APIError
+			if errors.As(err, &apiErr) {
+				log.Fatalf("API error (code: %d): %s", apiErr.Code, apiErr.Message)
+			} else {
+				log.Fatalf("Unexpected error: %s", err.Error())
+			}
+		}
 	}
 
-	log.WithField("response", response).Debug("Get Order History")
-
-	fmt.Printf("Found %d orders\n", len(response.Data.Orders))
-	fmt.Printf("Total orders: %s\n\n", response.Data.Total)
-
-	for i, order := range response.Data.Orders {
-		fmt.Printf("Order %d:\n", i+1)
-		fmt.Printf("  OrderID: %s\n", order.OrderID)
-		fmt.Printf("  SubscribeSymbol: %s\n", order.Symbol)
-		fmt.Printf("  Side: %s\n", order.Side)
-		fmt.Printf("  Type: %s\n", order.OrderType)
-		fmt.Printf("  Price: %s\n", order.Price)
-		fmt.Printf("  Quantity: %.6f\n", order.Quantity)
-		fmt.Printf("  Trade Quantity: %.6f\n", order.TradeQuantity)
-		fmt.Printf("  Status: %s\n", order.Status)
-		fmt.Printf("  Create Time: %s\n", order.CreateTime.Format(time.RFC3339))
-		fmt.Printf("  Last Modified: %s\n", order.ModifyTime.Format(time.RFC3339))
-		fmt.Printf("  Fee: %.6f\n", order.Fee)
-		fmt.Printf("  Realized PNL: %.2f\n", order.RealizedPNL)
-		fmt.Println()
-	}
-
-	time.Sleep(5 * time.Second)
+	log.WithField("response", response).Info("got order history")
 }

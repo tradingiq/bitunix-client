@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
+	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/samples"
 )
@@ -38,30 +40,74 @@ func main() {
 	defer ws.Disconnect()
 
 	if err := ws.Connect(); err != nil {
-		log.Fatalf("failed to connect to WebSocket: %v", err)
+		switch {
+		case errors.Is(err, bitunix_errors.ErrAuthentication):
+			log.Fatalf("Authentication failed: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrSignatureError):
+			log.Fatalf("Signature error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrNetwork):
+			log.Fatalf("Network error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrIPNotAllowed):
+			log.Fatalf("IP restriction error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrTimeout):
+			log.Fatalf("Timeout error: %s", err.Error())
+		case errors.Is(err, bitunix_errors.ErrInternal):
+			log.Fatalf("Internal error: %s", err.Error())
+		default:
+			var sktErr *bitunix_errors.WebsocketError
+			if errors.As(err, &sktErr) {
+				log.Fatalf("Websocket error (code: %s): %s", sktErr.Operation, sktErr.Message)
+			} else {
+				log.Fatalf("Unexpected error: %s", err.Error())
+			}
+		}
 	}
 
 	balanceHandler := &BalanceHandler{}
 	if err := ws.SubscribeBalance(balanceHandler); err != nil {
-		log.WithError(err).Fatal("failed to subscribe to balance")
+		handleError(err, "balance")
 	}
 
 	positionHandler := &PositionHandler{}
 	if err := ws.SubscribePositions(positionHandler); err != nil {
-		log.WithError(err).Fatal("failed to subscribe to positions")
+		handleError(err, "positions")
 	}
 
 	orderHandler := &OrderHandler{}
 	if err := ws.SubscribeOrders(orderHandler); err != nil {
-		log.WithError(err).Fatal("failed to subscribe to orders")
+		handleError(err, "orders")
 	}
 
 	tpslHandler := &TpSlOrderHandler{}
 	if err := ws.SubscribeTpSlOrders(tpslHandler); err != nil {
-		log.WithError(err).Fatal("failed to subscribe to TP/SL orders")
+		handleError(err, "tpsl orders")
 	}
 
 	if err := ws.Stream(); err != nil {
-		log.WithError(err).Fatal("failed to stream")
+		switch {
+		case errors.Is(err, bitunix_errors.ErrTimeout):
+			log.WithError(err).Fatalf("timeout while streaming")
+		default:
+			var apiErr *bitunix_errors.WebsocketError
+			if errors.As(err, &apiErr) {
+				log.Fatalf("Websocket error (code: %s): %s", apiErr.Operation, apiErr.Message)
+			} else {
+				log.Fatalf("Unexpected error: %s", err.Error())
+			}
+		}
+	}
+}
+
+func handleError(err error, name string) {
+	switch {
+	case errors.Is(err, bitunix_errors.ErrValidation):
+		log.WithError(err).Fatalf("failed to subscribe to %s", name)
+	default:
+		var apiErr *bitunix_errors.WebsocketError
+		if errors.As(err, &apiErr) {
+			log.Fatalf("Websocket error (code: %s): %s", apiErr.Operation, apiErr.Message)
+		} else {
+			log.Fatalf("Unexpected error: %s", err.Error())
+		}
 	}
 }
