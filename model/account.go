@@ -11,9 +11,9 @@ type AccountBalanceParams struct {
 }
 
 type AccountBalanceResponse struct {
-	Code    int                 `json:"code"`
-	Message string              `json:"msg"`
-	Data    AccountBalanceEntry `json:"data"`
+	Code    int                  `json:"code"`
+	Message string               `json:"msg"`
+	Data    *AccountBalanceEntry `json:"data"`
 }
 
 type AccountBalanceEntry struct {

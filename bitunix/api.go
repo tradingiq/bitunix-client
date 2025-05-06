@@ -97,30 +97,66 @@ func handleAPIResponse(responseBody []byte, endpoint string, result interface{})
 
 			var underlyingErr error
 			switch {
+			case response.Code == 10001:
+				underlyingErr = errors.ErrNetwork
 			case response.Code == 10002:
 				underlyingErr = errors.ErrParameterError
+			case response.Code == 10003:
+				underlyingErr = errors.ErrAuthentication
+			case response.Code == 10004:
+				underlyingErr = errors.ErrIPNotAllowed
 			case response.Code == 10005 || response.Code == 10006:
 				underlyingErr = errors.ErrRateLimitExceeded
 			case response.Code == 10007:
 				underlyingErr = errors.ErrSignatureError
+			case response.Code == 10008:
+				underlyingErr = errors.ErrInvalidValue
+
 			case response.Code == 20001:
 				underlyingErr = errors.ErrMarketNotExists
+			case response.Code == 20002:
+				underlyingErr = errors.ErrPositionLimitExceeded
 			case response.Code == 20003 || response.Code == 20008:
 				underlyingErr = errors.ErrInsufficientBalance
+			case response.Code == 20004:
+				underlyingErr = errors.ErrInsufficientTrader
 			case response.Code == 20005:
 				underlyingErr = errors.ErrInvalidLeverage
+			case response.Code == 20006:
+				underlyingErr = errors.ErrOpenOrdersExist
 			case response.Code == 20007:
 				underlyingErr = errors.ErrOrderNotFound
+			case response.Code == 20009:
+				underlyingErr = errors.ErrPositionsModeChange
+			case response.Code == 20010:
+				underlyingErr = errors.ErrInsufficientBalance
 			case response.Code == 20011:
 				underlyingErr = errors.ErrAccountNotAllowed
+			case response.Code == 20012 || response.Code == 20015:
+				underlyingErr = errors.ErrFuturesNotSupported
+			case response.Code == 20013 || response.Code == 20014:
+				underlyingErr = errors.ErrAccountInactive
+
+			case response.Code >= 30001 && response.Code <= 30003:
+				underlyingErr = errors.ErrOrderPriceIssue
 			case response.Code == 30004:
 				underlyingErr = errors.ErrPositionNotExist
 			case response.Code >= 30005 && response.Code <= 30038:
 				underlyingErr = errors.ErrTPSLOrderError
+			case response.Code == 30039:
+				underlyingErr = errors.ErrOrderQuantityIssue
+			case response.Code == 30041:
+				underlyingErr = errors.ErrTriggerPriceInvalid
 			case response.Code == 30042:
 				underlyingErr = errors.ErrDuplicateClientID
+
+			case response.Code >= 40001 && response.Code <= 40004:
+				underlyingErr = errors.ErrLeadTrading
+			case response.Code >= 40005 && response.Code <= 40008:
+				underlyingErr = errors.ErrSubAccountIssue
+
 			default:
-				underlyingErr = errors.ErrAPI
+				underlyingErr = errors.UnkownAPIError
 			}
 
 			return errors.NewAPIError(response.Code, message, endpoint, underlyingErr)

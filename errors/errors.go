@@ -6,24 +6,37 @@ import (
 )
 
 var (
-	ErrValidation          = errors.New("validation error")
-	ErrNetwork             = errors.New("network error")
-	ErrAPI                 = errors.New("API error")
-	ErrAuthentication      = errors.New("authentication error")
-	ErrWebsocket           = errors.New("websocket error")
-	ErrInternal            = errors.New("internal error")
-	ErrTimeout             = errors.New("timeout error")
-	ErrParameterError      = errors.New("parameter error")
-	ErrRateLimitExceeded   = errors.New("rate limit exceeded")
-	ErrSignatureError      = errors.New("signature error")
-	ErrInsufficientBalance = errors.New("insufficient balance")
-	ErrOrderNotFound       = errors.New("order not found")
-	ErrPositionNotExist    = errors.New("position not exist")
-	ErrMarketNotExists     = errors.New("market not exists")
-	ErrAccountNotAllowed   = errors.New("account not allowed to trade")
-	ErrInvalidLeverage     = errors.New("invalid leverage")
-	ErrTPSLOrderError      = errors.New("take profit/stop loss order error")
-	ErrDuplicateClientID   = errors.New("client ID duplicate")
+	ErrValidation            = errors.New("validation error")
+	ErrNetwork               = errors.New("network error")
+	UnkownAPIError           = errors.New("API error")
+	ErrAuthentication        = errors.New("authentication error")
+	ErrWebsocket             = errors.New("websocket error")
+	ErrInternal              = errors.New("internal error")
+	ErrTimeout               = errors.New("timeout error")
+	ErrParameterError        = errors.New("parameter error")
+	ErrRateLimitExceeded     = errors.New("rate limit exceeded")
+	ErrSignatureError        = errors.New("signature error")
+	ErrInsufficientBalance   = errors.New("insufficient balance")
+	ErrOrderNotFound         = errors.New("order not found")
+	ErrPositionNotExist      = errors.New("position not exist")
+	ErrMarketNotExists       = errors.New("market not exists")
+	ErrAccountNotAllowed     = errors.New("account not allowed to trade")
+	ErrInvalidLeverage       = errors.New("invalid leverage")
+	ErrTPSLOrderError        = errors.New("take profit/stop loss order error")
+	ErrDuplicateClientID     = errors.New("client ID duplicate")
+	ErrIPNotAllowed          = errors.New("IP not in whitelist")
+	ErrInvalidValue          = errors.New("value does not comply with rule")
+	ErrPositionLimitExceeded = errors.New("position amount exceeded maximum open limit")
+	ErrInsufficientTrader    = errors.New("insufficient trader")
+	ErrOpenOrdersExist       = errors.New("open orders exist")
+	ErrPositionsModeChange   = errors.New("positions mode cannot be updated")
+	ErrAccountInactive       = errors.New("account inactive or deleted")
+	ErrFuturesNotSupported   = errors.New("futures not supported or allowed")
+	ErrOrderPriceIssue       = errors.New("order price issue")
+	ErrOrderQuantityIssue    = errors.New("order quantity issue")
+	ErrTriggerPriceInvalid   = errors.New("trigger price invalid")
+	ErrLeadTrading           = errors.New("lead trading error")
+	ErrSubAccountIssue       = errors.New("sub-account issue")
 )
 
 type ValidationError struct {
@@ -92,11 +105,11 @@ func (e *APIError) Unwrap() error {
 	if e.Err != nil {
 		return e.Err
 	}
-	return ErrAPI
+	return UnkownAPIError
 }
 
 func (e *APIError) Is(target error) bool {
-	if target == ErrAPI {
+	if target == UnkownAPIError {
 		return true
 	}
 	if e.Err != nil {
