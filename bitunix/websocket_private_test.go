@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/security"
 	"net/http"
 	"net/http/httptest"
@@ -285,8 +287,8 @@ func TestPrivateWebsocketClient(t *testing.T) {
 	go func() {
 		defer close(streamDone)
 		err := client.Stream()
-		if err != nil {
-			t.Logf("Streaming error: %v", err)
+		if !errors.Is(err, bitunix_errors.ErrConnectionClosed) {
+			t.Logf("Streaming error: %v", err.Error())
 		}
 	}()
 

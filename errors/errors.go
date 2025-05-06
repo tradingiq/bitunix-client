@@ -8,7 +8,7 @@ import (
 var (
 	ErrValidation            = errors.New("validation error")
 	ErrNetwork               = errors.New("network error")
-	UnkownAPIError           = errors.New("API error")
+	UnknownAPIError          = errors.New("API error")
 	ErrAuthentication        = errors.New("authentication error")
 	ErrWebsocket             = errors.New("websocket error")
 	ErrInternal              = errors.New("internal error")
@@ -37,6 +37,7 @@ var (
 	ErrTriggerPriceInvalid   = errors.New("trigger price invalid")
 	ErrLeadTrading           = errors.New("lead trading error")
 	ErrSubAccountIssue       = errors.New("sub-account issue")
+	ErrConnectionClosed      = errors.New("connection closed")
 )
 
 type ValidationError struct {
@@ -61,6 +62,30 @@ func (e *ValidationError) Unwrap() error {
 
 func (e *ValidationError) Is(target error) bool {
 	return target == ErrValidation
+}
+
+type ConnectionClosedError struct {
+	Operation string
+	Message   string
+	Err       error
+}
+
+func (e *ConnectionClosedError) Error() string {
+	if e.Operation != "" {
+		return fmt.Sprintf("connection closed error during %s: %s", e.Operation, e.Message)
+	}
+	return fmt.Sprintf("connection closed error: %s", e.Message)
+}
+
+func (e *ConnectionClosedError) Unwrap() error {
+	if e.Err != nil {
+		return e.Err
+	}
+	return ErrConnectionClosed
+}
+
+func (e *ConnectionClosedError) Is(target error) bool {
+	return target == ErrConnectionClosed
 }
 
 type NetworkError struct {
@@ -105,11 +130,11 @@ func (e *APIError) Unwrap() error {
 	if e.Err != nil {
 		return e.Err
 	}
-	return UnkownAPIError
+	return UnknownAPIError
 }
 
 func (e *APIError) Is(target error) bool {
-	if target == UnkownAPIError {
+	if target == UnknownAPIError {
 		return true
 	}
 	if e.Err != nil {
@@ -259,6 +284,14 @@ func NewTimeoutError(operation, timeout string, err error) error {
 	return &TimeoutError{
 		Operation: operation,
 		Timeout:   timeout,
+		Err:       err,
+	}
+}
+
+func NewConnectionClosedError(operation, message string, err error) error {
+	return &ConnectionClosedError{
+		Operation: operation,
+		Message:   message,
 		Err:       err,
 	}
 }

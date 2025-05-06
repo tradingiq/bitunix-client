@@ -156,7 +156,7 @@ func handleAPIResponse(responseBody []byte, endpoint string, result interface{})
 				underlyingErr = errors.ErrSubAccountIssue
 
 			default:
-				underlyingErr = errors.UnkownAPIError
+				underlyingErr = errors.UnknownAPIError
 			}
 
 			return errors.NewAPIError(response.Code, message, endpoint, underlyingErr)

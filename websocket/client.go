@@ -3,11 +3,12 @@ package websocket
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	log "github.com/sirupsen/logrus"
-	"github.com/tradingiq/bitunix-client/errors"
+	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -62,17 +63,21 @@ func New(ctx context.Context, uri string, options ...ClientOption) *Client {
 func (ws *Client) Connect() error {
 	u, err := url.Parse(ws.wsURL)
 	if err != nil {
-		return errors.NewInternalError("error parsing WebSocket URL", err)
+		return bitunix_errors.NewInternalError("error parsing WebSocket URL", err)
 	}
 
 	conn, _, err := websocket.Dial(ws.ctx, u.String(), &websocket.DialOptions{
 		HTTPClient: http.DefaultClient,
 	})
 	if err != nil {
-		if ws.ctx.Err() != nil {
-			return errors.NewTimeoutError("websocket connection", "", ws.ctx.Err())
+		switch {
+		case errors.Is(ws.ctx.Err(), context.Canceled):
+			return bitunix_errors.NewConnectionClosedError("listen", "context cancelled", ws.ctx.Err())
+		case ws.ctx.Err() != nil:
+			return bitunix_errors.NewTimeoutError("websocket connection", "", ws.ctx.Err())
 		}
-		return errors.NewWebsocketError("connect", "error connecting to WebSocket", err)
+
+		return bitunix_errors.NewWebsocketError("connect", "error connecting to WebSocket", err)
 	}
 
 	ws.conn = conn
@@ -80,16 +85,16 @@ func (ws *Client) Connect() error {
 	var initialMsg GenericMessage
 	if err := wsjson.Read(ws.ctx, conn, &initialMsg); err != nil {
 		conn.Close(websocket.StatusInternalError, "")
-		return errors.NewWebsocketError("initial handshake", "error reading initial message", err)
+		return bitunix_errors.NewWebsocketError("initial handshake", "error reading initial message", err)
 	}
+
 	log.WithField("payload", initialMsg).Debug("received initial message")
 
 	if ws.generateLoginMessage != nil {
 		if err := ws.login(); err != nil {
 			closeErr := conn.Close(websocket.StatusInternalError, "")
 			if closeErr != nil {
-				log.WithError(closeErr).Error("error closing websocket connection")
-				return errors.NewWebsocketError(
+				return bitunix_errors.NewWebsocketError(
 					"login and connection closure",
 					"login failed and connection could not be closed properly",
 					err,
@@ -124,12 +129,12 @@ func (ws *Client) Close() {
 
 func (ws *Client) Write(bytes []byte) error {
 	if ws.conn == nil {
-		return errors.NewWebsocketError("write", "connection not established", nil)
+		return bitunix_errors.NewWebsocketError("write", "connection not established", nil)
 	}
 
 	log.WithField("payload", string(bytes)).Debug("write to websocket")
 	if err := ws.conn.Write(ws.ctx, websocket.MessageText, bytes); err != nil {
-		return errors.NewWebsocketError("write", "error writing to websocket", err)
+		return bitunix_errors.NewWebsocketError("write", "error writing to websocket", err)
 	}
 
 	return nil
@@ -139,7 +144,7 @@ type HandlerFunc func([]byte) error
 
 func (ws *Client) Listen(handler HandlerFunc) error {
 	if ws.conn == nil {
-		return errors.NewWebsocketError("listen", "connection not established", nil)
+		return bitunix_errors.NewWebsocketError("listen", "connection not established", nil)
 	}
 
 	for {
@@ -150,17 +155,21 @@ func (ws *Client) Listen(handler HandlerFunc) error {
 			var message json.RawMessage
 			err := wsjson.Read(ws.ctx, ws.conn, &message)
 			if err != nil {
-				if ws.ctx.Err() != nil {
-					return errors.NewTimeoutError("websocket read", "", ws.ctx.Err())
+				switch {
+				case errors.Is(ws.ctx.Err(), context.Canceled):
+					return bitunix_errors.NewConnectionClosedError("listen", "context cancelled", ws.ctx.Err())
+				case ws.ctx.Err() != nil:
+					return bitunix_errors.NewTimeoutError("websocket connection", "", ws.ctx.Err())
 				}
-				return errors.NewWebsocketError("listen", "connection closed", err)
+
+				return bitunix_errors.NewWebsocketError("listen", "connection closed", err)
 			}
 
 			log.WithField("payload", string(message)).Debug("received message")
 
 			if handler != nil {
 				if err := handler(message); err != nil {
-					return errors.NewWebsocketError("message handling", "handler failed", err)
+					return bitunix_errors.NewWebsocketError("message handling", "handler failed", err)
 				}
 			}
 		}
@@ -171,17 +180,17 @@ func (ws *Client) login() error {
 	loginReq, err := ws.generateLoginMessage()
 
 	if err != nil {
-		return errors.NewAuthenticationError("error generating nonce for login request", err)
+		return bitunix_errors.NewAuthenticationError("error generating nonce for login request", err)
 	}
 
 	log.Debug("sending login message")
 	if err := ws.Write(loginReq); err != nil {
-		return errors.NewWebsocketError("login", "error sending login request", err)
+		return bitunix_errors.NewWebsocketError("login", "error sending login request", err)
 	}
 
 	var loginResp GenericMessage
 	if err := wsjson.Read(ws.ctx, ws.conn, &loginResp); err != nil {
-		return errors.NewWebsocketError("login", "error reading login response", err)
+		return bitunix_errors.NewWebsocketError("login", "error reading login response", err)
 	}
 	if op, ok := loginResp["op"].(string); ok && op == "login" {
 		data := loginResp["data"].(map[string]interface{})
@@ -192,7 +201,7 @@ func (ws *Client) login() error {
 		}
 	}
 
-	return errors.NewAuthenticationError(fmt.Sprintf("authentication failed"), nil)
+	return bitunix_errors.NewAuthenticationError(fmt.Sprintf("authentication failed"), nil)
 }
 
 func (ws *Client) sendHeartbeat() {

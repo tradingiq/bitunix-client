@@ -39,8 +39,8 @@ func TestAPIError(t *testing.T) {
 		t.Errorf("Wrong error message. Expected '%s', got '%s'", expected, err.Error())
 	}
 
-	if !errors.Is(err, UnkownAPIError) {
-		t.Error("errors.Is(err, UnkownAPIError) should be true")
+	if !errors.Is(err, UnknownAPIError) {
+		t.Error("errors.Is(err, UnknownAPIError) should be true")
 	}
 
 	apiErr, ok := err.(*APIError)
@@ -101,8 +101,8 @@ func TestErrorHierarchy(t *testing.T) {
 	networkErr := NewNetworkError("HTTP", "connection error", originalErr)
 	apiErr := NewAPIError(500, "Internal Server Error", "/api", networkErr)
 
-	if !errors.Is(apiErr, UnkownAPIError) {
-		t.Error("errors.Is(apiErr, UnkownAPIError) should be true")
+	if !errors.Is(apiErr, UnknownAPIError) {
+		t.Error("errors.Is(apiErr, UnknownAPIError) should be true")
 	}
 	if !errors.Is(apiErr, ErrNetwork) {
 		t.Error("errors.Is(apiErr, ErrNetwork) should be true")
