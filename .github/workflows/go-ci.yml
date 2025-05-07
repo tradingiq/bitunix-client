@@ -29,6 +29,13 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic ./...
+          
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.out
+          fail_ci_if_error: false
+          verbose: true
 
   lint:
     runs-on: ubuntu-latest
