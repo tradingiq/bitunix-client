@@ -111,7 +111,7 @@ func (ws *privateWebsocketClient) SubscribePositions(subscriber PositionSubscrib
 	return nil
 }
 
-func (ws *privateWebsocketClient) UnsubscribePosition(subscriber PositionSubscriber) error {
+func (ws *privateWebsocketClient) UnsubscribePositions(subscriber PositionSubscriber) error {
 	if subscriber == nil {
 		return errors.NewValidationError("subscriber", "position subscriber cannot be nil", nil)
 	}
@@ -360,7 +360,7 @@ type PrivateWebsocketClient interface {
 	SubscribeBalance(subscriber BalanceSubscriber) error
 	UnsubscribeBalance(subscriber BalanceSubscriber) error
 	SubscribePositions(subscriber PositionSubscriber) error
-	UnsubscribePosition(subscriber PositionSubscriber) error
+	UnsubscribePositions(subscriber PositionSubscriber) error
 	SubscribeOrders(subscriber OrderSubscriber) error
 	UnsubscribeOrders(subscriber OrderSubscriber) error
 	SubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error

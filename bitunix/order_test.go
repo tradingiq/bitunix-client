@@ -48,8 +48,8 @@ func TestOrderBuilderCreation(t *testing.T) {
 	if order.Side != tradeSide {
 		t.Errorf("Expected tradeSide %s, got %s", tradeSide, order.Side)
 	}
-	if *order.Qty != qty {
-		t.Errorf("Expected qty %f, got %f", qty, *order.Qty)
+	if order.Qty != qty {
+		t.Errorf("Expected qty %f, got %f", qty, order.Qty)
 	}
 	if order.OrderType != model.OrderTypeMarket {
 		t.Errorf("Expected order type %s, got %s", model.OrderTypeMarket, order.OrderType)
@@ -221,7 +221,7 @@ func TestPlaceOrder(t *testing.T) {
 		Symbol:    "BTCUSDT",
 		TradeSide: model.TradeSideBuy,
 		Price:     &price,
-		Qty:       &qty,
+		Qty:       qty,
 		Side:      model.SideOpen,
 		OrderType: model.OrderTypeLimit,
 		ClientID:  "client123",
@@ -397,15 +397,13 @@ func TestCancelOrders(t *testing.T) {
 	}
 }
 
-func NewTestClient(baseURL string) (*rest.Client, error) {
-	apiClient, err := rest.New(baseURL)
+func NewTestClient(baseURL string) (rest.Client, error) {
+	apiClient, err := rest.New(baseURL, rest.WithRequestSigner(func(req *http.Request, body []byte) error {
+		return nil
+	}))
 	if err != nil {
 		return nil, err
 	}
-
-	apiClient.SetOptions(rest.WithRequestSigner(func(req *http.Request, body []byte) error {
-		return nil
-	}))
 
 	return apiClient, nil
 }

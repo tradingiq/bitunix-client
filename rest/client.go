@@ -14,33 +14,32 @@ import (
 	"time"
 )
 
-type Client struct {
+type Client interface {
+	Get(ctx context.Context, path string, query url.Values) ([]byte, error)
+	Post(ctx context.Context, path string, query url.Values, body []byte) ([]byte, error)
+}
+
+type client struct {
 	httpClient  *http.Client
 	signRequest func(req *http.Request, body []byte) error
 	baseUri     *url.URL
 }
 
-type ClientOption func(*Client)
+type ClientOption func(*client)
 
 func WithRequestSigner(requestSigner func(req *http.Request, body []byte) error) ClientOption {
-	return func(c *Client) {
+	return func(c *client) {
 		c.signRequest = requestSigner
 	}
 }
 
 func WithDefaultTimeout(timeout time.Duration) ClientOption {
-	return func(c *Client) {
+	return func(c *client) {
 		c.httpClient.Timeout = timeout
 	}
 }
 
-func (c *Client) SetOptions(options ...ClientOption) {
-	for _, option := range options {
-		option(c)
-	}
-}
-
-func New(baseUri string, options ...ClientOption) (*Client, error) {
+func New(baseUri string, options ...ClientOption) (Client, error) {
 	uri, err := url.Parse(baseUri)
 	if err != nil {
 		return nil, errors.NewInternalError(
@@ -49,14 +48,15 @@ func New(baseUri string, options ...ClientOption) (*Client, error) {
 		)
 	}
 
-	client := &Client{
+	c := &client{
 		httpClient: &http.Client{},
 		baseUri:    uri,
 	}
+	for _, option := range options {
+		option(c)
+	}
 
-	client.SetOptions(options...)
-
-	return client, nil
+	return c, nil
 }
 
 type APIResponse struct {
@@ -66,7 +66,7 @@ type APIResponse struct {
 	Data    json.RawMessage `json:"data,omitempty"`
 }
 
-func (c *Client) Request(ctx context.Context, method, path string, query url.Values, bodyBytes []byte) ([]byte, error) {
+func (c *client) request(ctx context.Context, method, path string, query url.Values, bodyBytes []byte) ([]byte, error) {
 	reqURL := *c.baseUri
 	reqURL.Path = path
 
@@ -133,8 +133,8 @@ func (c *Client) Request(ctx context.Context, method, path string, query url.Val
 	return respBody, nil
 }
 
-func (c *Client) Get(ctx context.Context, path string, query url.Values) ([]byte, error) {
-	respBody, err := c.Request(ctx, http.MethodGet, path, query, nil)
+func (c *client) Get(ctx context.Context, path string, query url.Values) ([]byte, error) {
+	respBody, err := c.request(ctx, http.MethodGet, path, query, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +142,8 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values) ([]byte
 	return respBody, nil
 }
 
-func (c *Client) Post(ctx context.Context, path string, query url.Values, body []byte) ([]byte, error) {
-	respBody, err := c.Request(ctx, http.MethodPost, path, query, body)
+func (c *client) Post(ctx context.Context, path string, query url.Values, body []byte) ([]byte, error) {
+	respBody, err := c.request(ctx, http.MethodPost, path, query, body)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (c *Client) Post(ctx context.Context, path string, query url.Values, body [
 	return respBody, nil
 }
 
-func (c *Client) logRequest(req *http.Request, body []byte) {
+func (c *client) logRequest(req *http.Request, body []byte) {
 	logging := log.WithField("method", req.Method).WithField("uri", req.URL.String())
 
 	for k, v := range req.Header {
@@ -164,7 +164,7 @@ func (c *Client) logRequest(req *http.Request, body []byte) {
 	logging.Debug("request")
 }
 
-func (c *Client) logResponse(resp *http.Response, body []byte) {
+func (c *client) logResponse(resp *http.Response, body []byte) {
 	logging := log.WithField("status_code", resp.StatusCode)
 
 	for k, v := range resp.Header {

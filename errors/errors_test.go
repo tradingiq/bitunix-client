@@ -32,9 +32,9 @@ func TestValidationError(t *testing.T) {
 
 func TestAPIError(t *testing.T) {
 
-	err := NewAPIError(400, "Bad Request", "/api/endpoint", nil)
+	err := NewAPIError(400, "Bad request", "/api/endpoint", nil)
 
-	expected := "API error on /api/endpoint: code=400, message=Bad Request"
+	expected := "API error on /api/endpoint: code=400, message=Bad request"
 	if err.Error() != expected {
 		t.Errorf("Wrong error message. Expected '%s', got '%s'", expected, err.Error())
 	}
@@ -51,8 +51,8 @@ func TestAPIError(t *testing.T) {
 	if apiErr.Code != 400 {
 		t.Errorf("Expected Code=400, got %d", apiErr.Code)
 	}
-	if apiErr.Message != "Bad Request" {
-		t.Errorf("Expected Message='Bad Request', got '%s'", apiErr.Message)
+	if apiErr.Message != "Bad request" {
+		t.Errorf("Expected Message='Bad request', got '%s'", apiErr.Message)
 	}
 	if apiErr.Endpoint != "/api/endpoint" {
 		t.Errorf("Expected Endpoint='/api/endpoint', got '%s'", apiErr.Endpoint)

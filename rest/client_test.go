@@ -10,7 +10,7 @@ import (
 )
 
 func TestClientOptions(t *testing.T) {
-	client := &Client{
+	client := &client{
 		httpClient: &http.Client{},
 	}
 
@@ -36,14 +36,9 @@ func TestClientOptions(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-
-	client, err := New("https://api.example.com")
+	_, err := New("https://api.example.com")
 	if err != nil {
 		t.Fatalf("New client with valid URL returned error: %v", err)
-	}
-	if client.baseUri.String() != "https://api.example.com" {
-		t.Errorf("Base URI not set correctly, expected %s, got %s",
-			"https://api.example.com", client.baseUri.String())
 	}
 
 	_, err = New("://invalid")
@@ -75,15 +70,13 @@ func TestClientRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := New(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	client.SetOptions(WithRequestSigner(func(req *http.Request, body []byte) error {
+	client, err := New(server.URL, WithRequestSigner(func(req *http.Request, body []byte) error {
 		req.Header.Set("test-header", "test-value")
 		return nil
 	}))
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
 
 	query := url.Values{}
 	query.Set("param", "value")
@@ -113,14 +106,12 @@ func TestClientRequestErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client, err := New(server.URL)
+	client, err := New(server.URL, WithRequestSigner(func(req *http.Request, body []byte) error {
+		return nil
+	}))
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-
-	client.SetOptions(WithRequestSigner(func(req *http.Request, body []byte) error {
-		return nil
-	}))
 
 	_, err = client.Get(context.Background(), "/test/path", nil)
 	if err == nil {

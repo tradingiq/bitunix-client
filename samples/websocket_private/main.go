@@ -89,6 +89,8 @@ func main() {
 			log.WithError(err).Fatalf("timeout while streaming")
 		case errors.Is(err, bitunix_errors.ErrConnectionClosed):
 			log.WithError(err).Info("connection closed")
+		case errors.Is(err, bitunix_errors.ErrWorkgroupExhausted):
+			log.WithError(err).Info("workgroup is exhausted")
 		default:
 			var apiErr *bitunix_errors.WebsocketError
 			if errors.As(err, &apiErr) {

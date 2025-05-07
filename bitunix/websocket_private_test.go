@@ -331,7 +331,7 @@ func TestPrivateWebsocketClient(t *testing.T) {
 		err := client.SubscribePositions(positionSubscriber)
 		require.NoError(t, err)
 
-		defer client.UnsubscribePosition(positionSubscriber)
+		defer client.UnsubscribePositions(positionSubscriber)
 
 		mockServer.broadcastToAll([]byte(mockPositionJSON))
 
