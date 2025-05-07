@@ -14,7 +14,7 @@ func TestTPSLOrderRequestMarshalJSON(t *testing.T) {
 	slQty := 1.0
 	slOrderPrice := 45500.0
 
-	req := TPSLOrderRequest{
+	req := &TPSLOrderRequest{
 		Symbol:       "BTCUSDT",
 		PositionID:   "position123",
 		TpPrice:      &tpPrice,

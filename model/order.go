@@ -136,9 +136,9 @@ func (r *OrderRequest) MarshalJSON() ([]byte, error) {
 }
 
 type OrderResponse struct {
-	Code    int                `json:"code"`
-	Message string             `json:"message"`
-	Data    *OrderResponseData `json:"data"`
+	Code    int               `json:"code"`
+	Message string            `json:"message"`
+	Data    OrderResponseData `json:"data"`
 }
 
 type OrderResponseData struct {
