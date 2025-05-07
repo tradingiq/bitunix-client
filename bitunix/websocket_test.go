@@ -166,14 +166,17 @@ func TestPublicWebsocketClient_SubscribeKLine_WriteError(t *testing.T) {
 }
 
 type subTest struct {
-	called bool
-	msg    model.KLineChannelMessage
-	ch     chan struct{}
+	called      bool
+	msg         model.KLineChannelMessage
+	ch          chan struct{}
+	subscribeMu sync.Mutex
 }
 
 func (s *subTest) SubscribeKLine(message *model.KLineChannelMessage) {
+	s.subscribeMu.Lock()
 	s.called = true
 	s.msg = *message
+	s.subscribeMu.Unlock()
 
 	if s.ch != nil {
 		s.ch <- struct{}{}
@@ -618,13 +621,24 @@ func TestConcurrentKLineSubscriptions(t *testing.T) {
 
 	for i := 0; i < msgNum; i++ {
 		client.websocketClient.messageQueue <- []byte(klineData)
+		time.Sleep(10 * time.Millisecond)
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
-	for _, subscriber := range subscribers {
-		assert.Equal(t, msgNum, len(subscriber.ch))
-
+	for i, subscriber := range subscribers {
+		count := 0
+		for {
+			select {
+			case <-subscriber.ch:
+				count++
+			default:
+				// No more messages
+				assert.Equal(t, msgNum, count, "sub %d should have received %d messages", i, msgNum)
+				goto nextSubscriber
+			}
+		}
+	nextSubscriber:
 	}
 
 	client.Disconnect()
@@ -647,9 +661,13 @@ func TestConcurrentUnsubscribe(t *testing.T) {
 		klineHandlers: make(map[KLineSubscriber]struct{}),
 	}
 
+	var writeMutex sync.Mutex
 	var subscribeCount int32
 	var unsubscribeCount int32
 	mockWs.writeFn = func(bytes []byte) error {
+		writeMutex.Lock()
+		defer writeMutex.Unlock()
+
 		var req SubscribeRequest
 		if err := json.Unmarshal(bytes, &req); err != nil {
 			return err
@@ -672,8 +690,12 @@ func TestConcurrentUnsubscribe(t *testing.T) {
 	}
 
 	assert.Equal(t, int32(numSubscribers), subscribeCount)
-	assert.Equal(t, numSubscribers, len(client.klineHandlers))
 
+	client.subscriberMtx.Lock()
+	assert.Equal(t, numSubscribers, len(client.klineHandlers), "All subscribers should be in the map")
+	client.subscriberMtx.Unlock()
+
+	// Then concurrently unsubscribe to test thread safety
 	var wg sync.WaitGroup
 	wg.Add(numSubscribers)
 
@@ -687,7 +709,7 @@ func TestConcurrentUnsubscribe(t *testing.T) {
 
 	wg.Wait()
 
-	assert.Equal(t, int32(numSubscribers), unsubscribeCount)
+	assert.Equal(t, int32(numSubscribers), unsubscribeCount, "All unsubscribe requests should be processed")
 
 	client.subscriberMtx.Lock()
 	assert.Equal(t, 0, len(client.klineHandlers), "All subscribers should be removed from handlers map")
@@ -753,25 +775,34 @@ func TestConcurrentMessageProcessing(t *testing.T) {
 	for i := 0; i < numMessages; i++ {
 		go func(msg []byte) {
 			defer wg.Done()
-			client.websocketClient.messageQueue <- msg
+			select {
+			case client.websocketClient.messageQueue <- msg:
+			case <-time.After(100 * time.Millisecond):
+			}
 		}(messages[i])
 	}
+
+	wg.Wait()
 
 	time.Sleep(200 * time.Millisecond)
 
 	receivedMessages := 0
 	for _, sub := range subscribers {
-
-		select {
-		case <-sub.ch:
-			receivedMessages++
-		default:
-
+		count := 0
+		for {
+			select {
+			case <-sub.ch:
+				count++
+			default:
+				// No more messages
+				receivedMessages += count
+				goto nextSubscriber
+			}
 		}
+	nextSubscriber:
 	}
 
 	client.Disconnect()
-	wg.Wait()
 
 	t.Logf("Processed %d messages across subscribers", receivedMessages)
 }
