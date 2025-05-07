@@ -77,6 +77,126 @@ func TestNetworkError(t *testing.T) {
 	}
 }
 
+func TestConnectionClosedError(t *testing.T) {
+	err := NewConnectionClosedError("WebSocket", "remote server closed connection", nil)
+
+	expected := "connection closed error during WebSocket: remote server closed connection"
+	if err.Error() != expected {
+		t.Errorf("Wrong error message. Expected '%s', got '%s'", expected, err.Error())
+	}
+
+	if !errors.Is(err, ErrConnectionClosed) {
+		t.Error("errors.Is(err, ErrConnectionClosed) should be true")
+	}
+
+	originalErr := errors.New("original error")
+	wrappedErr := NewConnectionClosedError("WebSocket", "connection error", originalErr)
+
+	if !errors.Is(wrappedErr, originalErr) {
+		t.Error("errors.Is(wrappedErr, originalErr) should be true")
+	}
+
+	if _, ok := err.(*ConnectionClosedError); !ok {
+		t.Error("Type assertion to *ConnectionClosedError should succeed")
+	}
+}
+
+func TestWorkgroupExhaustedError(t *testing.T) {
+	err := NewWorkgroupExhaustedError("Queue Processing", "queue is full", nil)
+
+	expected := "work group exhausted error during Queue Processing: queue is full"
+	if err.Error() != expected {
+		t.Errorf("Wrong error message. Expected '%s', got '%s'", expected, err.Error())
+	}
+
+	if !errors.Is(err, ErrWorkgroupExhausted) {
+		t.Error("errors.Is(err, ErrWorkgroupExhausted) should be true")
+	}
+
+	originalErr := errors.New("original error")
+	wrappedErr := NewWorkgroupExhaustedError("Queue Processing", "queue is full", originalErr)
+
+	if !errors.Is(wrappedErr, originalErr) {
+		t.Error("errors.Is(wrappedErr, originalErr) should be true")
+	}
+
+	if _, ok := err.(*WorkgroupExhaustedError); !ok {
+		t.Error("Type assertion to *WorkgroupExhaustedError should succeed")
+	}
+}
+
+func TestAuthenticationError(t *testing.T) {
+	err := NewAuthenticationError("invalid API key", nil)
+
+	expected := "authentication error: invalid API key"
+	if err.Error() != expected {
+		t.Errorf("Wrong error message. Expected '%s', got '%s'", expected, err.Error())
+	}
+
+	if !errors.Is(err, ErrAuthentication) {
+		t.Error("errors.Is(err, ErrAuthentication) should be true")
+	}
+
+	originalErr := errors.New("original error")
+	wrappedErr := NewAuthenticationError("invalid API key", originalErr)
+
+	if !errors.Is(wrappedErr, originalErr) {
+		t.Error("errors.Is(wrappedErr, originalErr) should be true")
+	}
+
+	if _, ok := err.(*AuthenticationError); !ok {
+		t.Error("Type assertion to *AuthenticationError should succeed")
+	}
+}
+
+func TestWebsocketError(t *testing.T) {
+	err := NewWebsocketError("subscription", "failed to subscribe to topic", nil)
+
+	expected := "websocket error during subscription: failed to subscribe to topic"
+	if err.Error() != expected {
+		t.Errorf("Wrong error message. Expected '%s', got '%s'", expected, err.Error())
+	}
+
+	if !errors.Is(err, ErrWebsocket) {
+		t.Error("errors.Is(err, ErrWebsocket) should be true")
+	}
+
+	originalErr := errors.New("original error")
+	wrappedErr := NewWebsocketError("subscription", "failed to subscribe to topic", originalErr)
+
+	if !errors.Is(wrappedErr, originalErr) {
+		t.Error("errors.Is(wrappedErr, originalErr) should be true")
+	}
+
+	if _, ok := err.(*WebsocketError); !ok {
+		t.Error("Type assertion to *WebsocketError should succeed")
+	}
+}
+
+func TestInternalError(t *testing.T) {
+	err := NewInternalError("unexpected state", nil)
+
+	expected := "internal error: unexpected state"
+	if err.Error() != expected {
+		t.Errorf("Wrong error message. Expected '%s', got '%s'", expected, err.Error())
+	}
+
+	if !errors.Is(err, ErrInternal) {
+		t.Error("errors.Is(err, ErrInternal) should be true")
+	}
+
+	originalErr := errors.New("original error")
+	wrappedErr := NewInternalError("unexpected state", originalErr)
+
+	if !errors.Is(wrappedErr, originalErr) {
+		t.Error("errors.Is(wrappedErr, originalErr) should be true")
+	}
+
+	if _, ok := err.(*InternalError); !ok {
+		t.Error("Type assertion to *InternalError should succeed")
+	}
+}
+
 func TestTimeoutError(t *testing.T) {
 
 	err := NewTimeoutError("operation", "5s", nil)

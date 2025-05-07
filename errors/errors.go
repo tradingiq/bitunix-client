@@ -97,9 +97,9 @@ type WorkgroupExhaustedError struct {
 
 func (e *WorkgroupExhaustedError) Error() string {
 	if e.Operation != "" {
-		return fmt.Sprintf("connection closed error during %s: %s", e.Operation, e.Message)
+		return fmt.Sprintf("work group exhausted error during %s: %s", e.Operation, e.Message)
 	}
-	return fmt.Sprintf("connection closed error: %s", e.Message)
+	return fmt.Sprintf("work group exhausted error: %s", e.Message)
 }
 
 func (e *WorkgroupExhaustedError) Unwrap() error {
