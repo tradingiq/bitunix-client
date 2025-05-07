@@ -254,13 +254,6 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 		return
 	}
 
-	if errMsg, hasError := result["error"].(string); hasError && errMsg != "" {
-		log.WithError(
-			errors.NewWebsocketError("message processing", errMsg, nil),
-		).Error("received error from websocket server")
-		return
-	}
-
 	if ch, ok := result["ch"].(string); ok {
 		if sym, symbolOk := result["symbol"].(string); symbolOk {
 			interval, channel, priceType, err := parseChannel(ch)
@@ -271,7 +264,8 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 
 			if channel == model.ChannelKline {
 				symbol := model.ParseSymbol(sym).Normalize()
-
+				ws.subscriberMtx.Lock()
+				defer ws.subscriberMtx.Unlock()
 				for subscriber := range ws.klineHandlers {
 					if subscriber.SubscribeInterval().Normalize() == interval &&
 						subscriber.SubscribeSymbol().Normalize() == symbol &&
