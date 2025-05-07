@@ -3,10 +3,14 @@ package bitunix
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/websocket"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -122,6 +126,45 @@ func TestPublicWebsocketClient_SubscribeKLine(t *testing.T) {
 	assert.True(t, exists)
 }
 
+func TestPublicWebsocketClient_SubscribeKLine_NilSubscriber(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client: mockWs,
+			uri:    "wss://test.com",
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+
+	err := client.SubscribeKLine(nil)
+	assert.Error(t, err, "Should return error when subscriber is nil")
+}
+
+func TestPublicWebsocketClient_SubscribeKLine_WriteError(t *testing.T) {
+	mockWs := &mockWsClient{}
+	mockErr := errors.New("write error")
+
+	mockWs.writeFn = func(bytes []byte) error {
+		return mockErr
+	}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client: mockWs,
+			uri:    "wss://test.com",
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+
+	sub := &subTest{ch: make(chan struct{}, 1)}
+	err := client.SubscribeKLine(sub)
+	assert.Error(t, err, "Should return error when write fails")
+
+	_, exists := client.klineHandlers[sub]
+	assert.True(t, exists, "Handler should be added before write is attempted")
+}
+
 type subTest struct {
 	called bool
 	msg    model.KLineChannelMessage
@@ -147,6 +190,138 @@ func (s *subTest) SubscribeSymbol() model.Symbol {
 
 func (s *subTest) SubscribePriceType() model.PriceType {
 	return model.PriceTypeMarket
+}
+
+func TestPublicWebsocketClient_UnsubscribeKLine(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client: mockWs,
+			uri:    "wss://test.com",
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+
+	var sentBytes []byte
+	mockWs.writeFn = func(bytes []byte) error {
+		sentBytes = bytes
+		return nil
+	}
+
+	sub := &subTest{ch: make(chan struct{}, 1)}
+	client.klineHandlers[sub] = struct{}{}
+
+	err := client.UnsubscribeKLine(sub)
+	assert.NoError(t, err)
+
+	var req SubscribeRequest
+	err = json.Unmarshal(sentBytes, &req)
+	assert.NoError(t, err)
+	assert.Equal(t, "unsubscribe", req.Op)
+
+	_, exists := client.klineHandlers[sub]
+	assert.False(t, exists, "Handler should be removed after unsubscribe")
+}
+
+func TestPublicWebsocketClient_UnsubscribeKLine_NilSubscriber(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client: mockWs,
+			uri:    "wss://test.com",
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+
+	err := client.UnsubscribeKLine(nil)
+	assert.Error(t, err, "Should return error when subscriber is nil")
+}
+
+func TestPublicWebsocketClient_UnsubscribeKLine_WriteError(t *testing.T) {
+	mockWs := &mockWsClient{}
+	mockErr := errors.New("write error")
+
+	mockWs.writeFn = func(bytes []byte) error {
+		return mockErr
+	}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client: mockWs,
+			uri:    "wss://test.com",
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+
+	sub := &subTest{ch: make(chan struct{}, 1)}
+	client.klineHandlers[sub] = struct{}{}
+
+	err := client.UnsubscribeKLine(sub)
+	assert.Error(t, err, "Should return error when write fails")
+
+	_, exists := client.klineHandlers[sub]
+	assert.False(t, exists, "Handler should be removed even if unsubscribe message fails")
+}
+
+func TestWebsocketClient_Connect_Error(t *testing.T) {
+	mockWs := &mockWsClient{}
+	mockErr := errors.New("connection error")
+
+	mockWs.connectFn = func() error {
+		return mockErr
+	}
+
+	client := &websocketClient{
+		client: mockWs,
+		uri:    "wss://test.com",
+	}
+
+	err := client.Connect()
+	assert.Error(t, err, "Should return error when connect fails")
+}
+
+func TestWebsocketClient_Stream_Error(t *testing.T) {
+	mockWs := &mockWsClient{}
+	mockErr := errors.New("listen error")
+
+	mockWs.listenFn = func(callback websocket.HandlerFunc) error {
+		return mockErr
+	}
+
+	client := &websocketClient{
+		client:       mockWs,
+		uri:          "wss://test.com",
+		messageQueue: make(chan []byte, 10),
+	}
+
+	err := client.Stream()
+	assert.Error(t, err, "Should return error when listen fails")
+}
+
+func TestWebsocketClient_Stream_WorkgroupExhausted(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &websocketClient{
+		client:       mockWs,
+		uri:          "wss://test.com",
+		messageQueue: make(chan []byte, 1),
+	}
+
+	client.messageQueue <- []byte("test message")
+
+	var listenCallback websocket.HandlerFunc
+	mockWs.listenFn = func(callback websocket.HandlerFunc) error {
+		listenCallback = callback
+		return nil
+	}
+
+	err := client.Stream()
+	assert.NoError(t, err)
+
+	err = listenCallback([]byte("another message"))
+	assert.Error(t, err, "Should return error when queue is full")
 }
 
 func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
@@ -212,4 +387,441 @@ func TestPublicWebsocketClient_Stream_KLine(t *testing.T) {
 	assert.Equal(t, model.ParseSymbol("BTCUSDT"), klineMsg.Symbol)
 	assert.Equal(t, int64(1732178884994), klineMsg.Ts)
 	assert.Equal(t, 0.0010, klineMsg.Data.OpenPrice)
+}
+
+func TestPublicWebsocketClient_ProcessInvalidJSON(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   1,
+			workerBufferSize: 10,
+			messageQueue:     make(chan []byte, 10),
+			quit:             make(chan struct{}),
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+	client.websocketClient.processFunc = client.processMessage
+
+	invalidJSON := []byte(`{ invalid json }`)
+	client.processMessage(invalidJSON)
+
+}
+
+func TestPublicWebsocketClient_ProcessErrorMessage(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   1,
+			workerBufferSize: 10,
+			messageQueue:     make(chan []byte, 10),
+			quit:             make(chan struct{}),
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+	client.websocketClient.processFunc = client.processMessage
+
+	errorMsg := []byte(`{ "error": "subscription failed" }`)
+	client.processMessage(errorMsg)
+
+}
+
+func TestPublicWebsocketClient_ProcessInvalidChannel(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   1,
+			workerBufferSize: 10,
+			messageQueue:     make(chan []byte, 10),
+			quit:             make(chan struct{}),
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+	client.websocketClient.processFunc = client.processMessage
+
+	invalidChannelMsg := []byte(`{ "ch": "invalid_channel_format", "symbol": "BTCUSDT" }`)
+	client.processMessage(invalidChannelMsg)
+
+}
+
+func TestStartWorkerPool_NilProcessFunc(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &websocketClient{
+		client:       mockWs,
+		uri:          "wss://test.com",
+		messageQueue: make(chan []byte, 10),
+		processFunc:  nil,
+	}
+
+	err := client.startWorkerPool(context.Background())
+	assert.Error(t, err, "Should return error when processFunc is nil")
+}
+
+func TestNewPublicWebsocket_WithOptions(t *testing.T) {
+	customURI := "wss://custom.example.com/"
+	customWorkerPoolSize := 5
+	customBufferSize := 50
+
+	uriOption := func(ws *websocketClient) {
+		ws.uri = customURI
+	}
+
+	client, err := NewPublicWebsocket(context.Background(), uriOption, WithWorkerBufferSize(customBufferSize), WithWorkerPoolSize(customWorkerPoolSize))
+	assert.NoError(t, err)
+
+	pubClient, ok := client.(*publicWebsocketClient)
+	assert.True(t, ok)
+
+	assert.Equal(t, customURI, pubClient.websocketClient.uri)
+	assert.Equal(t, customWorkerPoolSize, pubClient.websocketClient.workerPoolSize)
+	assert.Equal(t, customBufferSize, cap(pubClient.websocketClient.messageQueue))
+
+	pubClient.Disconnect()
+}
+
+func TestParseChannel(t *testing.T) {
+	testCases := []struct {
+		name             string
+		channelStr       string
+		expectError      bool
+		expectedChannel  model.Channel
+		expectedType     model.PriceType
+		expectedInterval model.Interval
+	}{
+		{
+			name:             "Valid Market KLine Channel",
+			channelStr:       "market_kline_1min",
+			expectError:      false,
+			expectedChannel:  model.ChannelKline,
+			expectedType:     model.PriceTypeMarket,
+			expectedInterval: model.Interval1Min,
+		},
+		{
+			name:             "Valid Mark KLine Channel",
+			channelStr:       "mark_kline_5min",
+			expectError:      false,
+			expectedChannel:  model.ChannelKline,
+			expectedType:     model.PriceTypeMark,
+			expectedInterval: model.Interval5Min,
+		},
+		{
+			name:        "Invalid Channel Format - Too Few Parts",
+			channelStr:  "market_kline",
+			expectError: true,
+		},
+		{
+			name:        "Invalid Channel Format - Invalid Price Type",
+			channelStr:  "invalid_kline_1min",
+			expectError: true,
+		},
+		{
+			name:        "Invalid Channel Format - Invalid Channel",
+			channelStr:  "market_invalid_1min",
+			expectError: true,
+		},
+		{
+			name:        "Invalid Channel Format - Invalid Interval",
+			channelStr:  "market_kline_invalid",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			interval, channel, priceType, err := parseChannel(tc.channelStr)
+
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedInterval, interval)
+				assert.Equal(t, tc.expectedChannel, channel)
+				assert.Equal(t, tc.expectedType, priceType)
+			}
+		})
+	}
+}
+
+func TestConcurrentKLineSubscriptions(t *testing.T) {
+
+	numSubscribers := 10
+
+	mockWs := &mockWsClient{}
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   3,
+			workerBufferSize: 100,
+			messageQueue:     make(chan []byte, 100),
+			quit:             make(chan struct{}),
+		},
+		subscriberMtx: sync.Mutex{},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+	client.websocketClient.processFunc = client.processMessage
+
+	var callCount int32
+	mockWs.writeFn = func(bytes []byte) error {
+		atomic.AddInt32(&callCount, 1)
+		return nil
+	}
+
+	subscribers := make([]*subTest, numSubscribers)
+	var wg sync.WaitGroup
+	wg.Add(numSubscribers)
+
+	msgNum := 5
+
+	for i := 0; i < numSubscribers; i++ {
+		subscribers[i] = &subTest{ch: make(chan struct{}, msgNum)}
+
+		go func(idx int) {
+			defer wg.Done()
+			err := client.SubscribeKLine(subscribers[idx])
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	wg.Wait()
+
+	assert.Equal(t, int32(numSubscribers), callCount, "Expected all subscription requests to be processed")
+
+	client.subscriberMtx.Lock()
+	assert.Equal(t, numSubscribers, len(client.klineHandlers), "All subscribers should be in the handlers map")
+	client.subscriberMtx.Unlock()
+
+	klineData := `{
+		"ch": "market_kline_1min",
+		"symbol": "BTCUSDT",
+		"ts": 1732178884994,
+		"data": {
+			"o": "0.0010",
+			"c": "0.0020",
+			"h": "0.0025",
+			"l": "0.0015",
+			"b": "1.01",
+			"q": "1.09"
+		}
+	}`
+
+	client.websocketClient.startWorkerPool(context.Background())
+
+	for i := 0; i < msgNum; i++ {
+		client.websocketClient.messageQueue <- []byte(klineData)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	for _, subscriber := range subscribers {
+		assert.Equal(t, msgNum, len(subscriber.ch))
+
+	}
+
+	client.Disconnect()
+}
+
+func TestConcurrentUnsubscribe(t *testing.T) {
+	numSubscribers := 10
+
+	mockWs := &mockWsClient{}
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   3,
+			workerBufferSize: 100,
+			messageQueue:     make(chan []byte, 100),
+			quit:             make(chan struct{}),
+		},
+		subscriberMtx: sync.Mutex{},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+
+	var subscribeCount int32
+	var unsubscribeCount int32
+	mockWs.writeFn = func(bytes []byte) error {
+		var req SubscribeRequest
+		if err := json.Unmarshal(bytes, &req); err != nil {
+			return err
+		}
+
+		if req.Op == "subscribe" {
+			atomic.AddInt32(&subscribeCount, 1)
+		} else if req.Op == "unsubscribe" {
+			atomic.AddInt32(&unsubscribeCount, 1)
+		}
+
+		return nil
+	}
+
+	subscribers := make([]*subTest, numSubscribers)
+	for i := 0; i < numSubscribers; i++ {
+		subscribers[i] = &subTest{ch: make(chan struct{}, 1)}
+		err := client.SubscribeKLine(subscribers[i])
+		assert.NoError(t, err)
+	}
+
+	assert.Equal(t, int32(numSubscribers), subscribeCount)
+	assert.Equal(t, numSubscribers, len(client.klineHandlers))
+
+	var wg sync.WaitGroup
+	wg.Add(numSubscribers)
+
+	for i := 0; i < numSubscribers; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			err := client.UnsubscribeKLine(subscribers[idx])
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	wg.Wait()
+
+	assert.Equal(t, int32(numSubscribers), unsubscribeCount)
+
+	client.subscriberMtx.Lock()
+	assert.Equal(t, 0, len(client.klineHandlers), "All subscribers should be removed from handlers map")
+	client.subscriberMtx.Unlock()
+}
+
+func TestConcurrentMessageProcessing(t *testing.T) {
+	mockWs := &mockWsClient{}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   5,
+			workerBufferSize: 100,
+			messageQueue:     make(chan []byte, 100),
+			quit:             make(chan struct{}),
+		},
+		subscriberMtx: sync.Mutex{},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+	client.websocketClient.processFunc = client.processMessage
+
+	numSubscribers := 20
+	subscribers := make([]*subTest, numSubscribers)
+	for i := 0; i < numSubscribers; i++ {
+		subscribers[i] = &subTest{ch: make(chan struct{}, 10)}
+		client.klineHandlers[subscribers[i]] = struct{}{}
+	}
+
+	client.websocketClient.startWorkerPool(context.Background())
+
+	numMessages := 50
+	messages := make([][]byte, numMessages)
+
+	for i := 0; i < numMessages; i++ {
+		klineData := fmt.Sprintf(`{
+			"ch": "market_kline_1min",
+			"symbol": "BTCUSDT",
+			"ts": %d,
+			"data": {
+				"o": "%0.4f",
+				"c": "%0.4f",
+				"h": "%0.4f",
+				"l": "%0.4f",
+				"b": "%0.2f",
+				"q": "%0.2f"
+			}
+		}`, time.Now().UnixNano()/int64(time.Millisecond),
+			0.0010+float64(i)*0.0001,
+			0.0020+float64(i)*0.0001,
+			0.0025+float64(i)*0.0001,
+			0.0015+float64(i)*0.0001,
+			1.01+float64(i)*0.01,
+			1.09+float64(i)*0.01)
+
+		messages[i] = []byte(klineData)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(numMessages)
+
+	for i := 0; i < numMessages; i++ {
+		go func(msg []byte) {
+			defer wg.Done()
+			client.websocketClient.messageQueue <- msg
+		}(messages[i])
+	}
+
+	time.Sleep(200 * time.Millisecond)
+
+	receivedMessages := 0
+	for _, sub := range subscribers {
+
+		select {
+		case <-sub.ch:
+			receivedMessages++
+		default:
+
+		}
+	}
+
+	client.Disconnect()
+	wg.Wait()
+
+	t.Logf("Processed %d messages across subscribers", receivedMessages)
+}
+
+func TestWaitForDisconnection(t *testing.T) {
+
+	mockWs := &mockWsClient{}
+
+	var closeMethodCalled bool
+	mockWs.closeFn = func() {
+		closeMethodCalled = true
+	}
+
+	client := &websocketClient{
+		client:       mockWs,
+		uri:          "wss://test.com",
+		messageQueue: make(chan []byte, 10),
+		quit:         make(chan struct{}),
+	}
+
+	done := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-client.quit:
+				close(done)
+				return
+			}
+		}
+	}()
+
+	client.Disconnect()
+
+	assert.True(t, closeMethodCalled, "The close method should have been called")
+
+	select {
+	case <-done:
+
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("Worker goroutine did not exit in time")
+	}
+
+	_, ok := <-client.messageQueue
+	assert.False(t, ok, "Message queue should be closed")
+
+	_, ok = <-client.quit
+	assert.False(t, ok, "Quit channel should be closed")
 }

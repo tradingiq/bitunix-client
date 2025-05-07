@@ -2,8 +2,8 @@ package bitunix
 
 import (
 	"context"
+	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
-	"github.com/tradingiq/bitunix-client/rest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -189,6 +189,165 @@ func TestOrderBuilderMethods(t *testing.T) {
 	}
 }
 
+func TestOrderBuilder_ValidationErrors(t *testing.T) {
+	testCases := []struct {
+		name          string
+		setupBuilder  func() *OrderBuilder
+		expectedError string
+	}{
+		{
+			name: "Missing Symbol",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("", model.TradeSideBuy, model.SideOpen, 1.0)
+				return builder
+			},
+			expectedError: "validation error: field symbol: is required",
+		},
+		{
+			name: "Missing TradeSide",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", "", model.SideOpen, 1.0)
+				return builder
+			},
+			expectedError: "validation error: field side: trade action is required",
+		},
+		{
+			name: "Missing Side",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, "", 1.0)
+				return builder
+			},
+			expectedError: "validation error: field tradeSide: is required",
+		},
+		{
+			name: "Zero Quantity",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 0)
+				return builder
+			},
+			expectedError: "validation error: field qty: quantity is required and must be greater than zero",
+		},
+		{
+			name: "Negative Quantity",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, -1.0)
+				return builder
+			},
+			expectedError: "validation error: field qty: quantity is required and must be greater than zero",
+		},
+		{
+			name: "Missing PositionID for CLOSE Side",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideClose, 1.0)
+				return builder
+			},
+			expectedError: "validation error: field positionId: is required when tradeSide is CLOSE",
+		},
+		{
+			name: "Missing Price for Limit Order",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				builder.WithOrderType(model.OrderTypeLimit)
+				return builder
+			},
+			expectedError: "validation error: field price: is required for limit orders",
+		},
+		{
+			name: "Zero Price for Limit Order",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				builder.WithOrderType(model.OrderTypeLimit)
+				price := 0.0
+				builder.WithPrice(price)
+				return builder
+			},
+			expectedError: "validation error: field price: is required for limit orders",
+		},
+		{
+			name: "Missing TP StopType with TP Price",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				tpPrice := 50000.0
+				builder.request.TpPrice = &tpPrice
+				return builder
+			},
+			expectedError: "validation error: field tpStopType: is required when setting take profit",
+		},
+		{
+			name: "Missing TP OrderType with TP Price",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				tpPrice := 50000.0
+				builder.request.TpPrice = &tpPrice
+				builder.request.TpStopType = model.StopTypeLastPrice
+				return builder
+			},
+			expectedError: "validation error: field tpOrderType: is required when setting take profit",
+		},
+		{
+			name: "Missing TP OrderPrice with Limit TP",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				tpPrice := 50000.0
+				builder.request.TpPrice = &tpPrice
+				builder.request.TpStopType = model.StopTypeLastPrice
+				builder.request.TpOrderType = model.OrderTypeLimit
+				return builder
+			},
+			expectedError: "validation error: field tpOrderPrice: is required when tpOrderType is LIMIT",
+		},
+		{
+			name: "Missing SL StopType with SL Price",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				slPrice := 40000.0
+				builder.request.SlPrice = &slPrice
+				return builder
+			},
+			expectedError: "validation error: field slStopType: is required when setting stop loss",
+		},
+		{
+			name: "Missing SL OrderType with SL Price",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				slPrice := 40000.0
+				builder.request.SlPrice = &slPrice
+				builder.request.SlStopType = model.StopTypeMarkPrice
+				return builder
+			},
+			expectedError: "validation error: field slOrderType: is required when setting stop loss",
+		},
+		{
+			name: "Missing SL OrderPrice with Limit SL",
+			setupBuilder: func() *OrderBuilder {
+				builder := NewOrderBuilder("BTCUSDT", model.TradeSideBuy, model.SideOpen, 1.0)
+				slPrice := 40000.0
+				builder.request.SlPrice = &slPrice
+				builder.request.SlStopType = model.StopTypeMarkPrice
+				builder.request.SlOrderType = model.OrderTypeLimit
+				return builder
+			},
+			expectedError: "validation error: field slOrderPrice: is required when slOrderType is LIMIT",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			builder := tc.setupBuilder()
+			_, err := builder.Build()
+
+			if err == nil {
+				t.Error("Expected validation error, got nil")
+				return
+			}
+
+			if err.Error() != tc.expectedError {
+				t.Errorf("Expected error message '%s', got '%s'", tc.expectedError, err.Error())
+			}
+		})
+	}
+}
+
 func TestPlaceOrder(t *testing.T) {
 	mockResponse := `{
 		"code": 0,
@@ -243,6 +402,117 @@ func TestPlaceOrder(t *testing.T) {
 	}
 	if response.Data.ClientId != "client123" {
 		t.Errorf("Expected apiClient ID 'client123', got %s", response.Data.ClientId)
+	}
+}
+
+func TestPlaceOrder_Error(t *testing.T) {
+	testCases := []struct {
+		name           string
+		mockResponse   string
+		responseStatus int
+		expectError    bool
+		errorCode      int
+	}{
+		{
+			name: "Order Price Issue",
+			mockResponse: `{
+				"code": 30001,
+				"message": "Invalid price"
+			}`,
+			responseStatus: http.StatusOK,
+			expectError:    true,
+			errorCode:      30001,
+		},
+		{
+			name: "Insufficient Balance",
+			mockResponse: `{
+				"code": 20003,
+				"message": "Insufficient balance"
+			}`,
+			responseStatus: http.StatusOK,
+			expectError:    true,
+			errorCode:      20003,
+		},
+		{
+			name: "Authentication Error",
+			mockResponse: `{
+				"code": 10003,
+				"message": "Invalid signature"
+			}`,
+			responseStatus: http.StatusUnauthorized,
+			expectError:    true,
+			errorCode:      10003,
+		},
+		{
+			name: "Network Error",
+			mockResponse: `{
+				"code": 10001,
+				"message": "Internal server error"
+			}`,
+			responseStatus: http.StatusInternalServerError,
+			expectError:    true,
+			errorCode:      10001,
+		},
+		{
+			name:           "HTTP Error",
+			mockResponse:   `Internal Server Error`,
+			responseStatus: http.StatusInternalServerError,
+			expectError:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockAPI := NewMockAPI(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.responseStatus)
+				w.Write([]byte(tc.mockResponse))
+			})
+			defer mockAPI.Close()
+
+			qty := 1.0
+			price := 50000.0
+
+			orderReq := &model.OrderRequest{
+				Symbol:    "BTCUSDT",
+				TradeSide: model.TradeSideBuy,
+				Price:     &price,
+				Qty:       qty,
+				Side:      model.SideOpen,
+				OrderType: model.OrderTypeLimit,
+				ClientID:  "client123",
+			}
+
+			response, err := mockAPI.client.PlaceOrder(context.Background(), orderReq)
+
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+					return
+				}
+
+				if tc.errorCode > 0 {
+					apiErr, ok := err.(*errors.APIError)
+					if !ok {
+						t.Errorf("Expected *errors.APIError, got %T", err)
+						return
+					}
+
+					if apiErr.Code != tc.errorCode {
+						t.Errorf("Expected error code %d, got %d", tc.errorCode, apiErr.Code)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+					return
+				}
+
+				if response == nil {
+					t.Errorf("Expected response but got nil")
+				}
+			}
+		})
 	}
 }
 
@@ -306,6 +576,75 @@ func TestCancelOrderBuilderMethods(t *testing.T) {
 	}
 	if cancelOrder.OrderList[1].OrderID != "" {
 		t.Errorf("WithClientID: Expected empty order ID, got %s", cancelOrder.OrderList[1].OrderID)
+	}
+}
+
+func TestCancelOrderBuilder_ValidationErrors(t *testing.T) {
+	testCases := []struct {
+		name          string
+		setupBuilder  func() *CancelOrderBuilder
+		expectedError string
+	}{
+		{
+			name: "Missing Symbol",
+			setupBuilder: func() *CancelOrderBuilder {
+				builder := NewCancelOrderBuilder("")
+				builder.WithOrderID("order123")
+				return builder
+			},
+			expectedError: "validation error: field symbol: is required",
+		},
+		{
+			name: "Empty OrderList",
+			setupBuilder: func() *CancelOrderBuilder {
+				builder := NewCancelOrderBuilder("BTCUSDT")
+				return builder
+			},
+			expectedError: "validation error: field orderList: must contain at least one order to cancel",
+		},
+		{
+			name: "Order with Neither OrderID nor ClientID",
+			setupBuilder: func() *CancelOrderBuilder {
+				builder := NewCancelOrderBuilder("BTCUSDT")
+
+				builder.request.OrderList = append(builder.request.OrderList, model.CancelOrderParam{
+					OrderID:  "",
+					ClientID: "",
+				})
+				return builder
+			},
+			expectedError: "validation error: field orderList[0]: must have either orderId or clientId",
+		},
+		{
+			name: "Multiple Orders with One Invalid",
+			setupBuilder: func() *CancelOrderBuilder {
+				builder := NewCancelOrderBuilder("BTCUSDT")
+				builder.WithOrderID("order123")
+
+				builder.request.OrderList = append(builder.request.OrderList, model.CancelOrderParam{
+					OrderID:  "",
+					ClientID: "",
+				})
+				return builder
+			},
+			expectedError: "validation error: field orderList[1]: must have either orderId or clientId",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			builder := tc.setupBuilder()
+			_, err := builder.Build()
+
+			if err == nil {
+				t.Error("Expected validation error, got nil")
+				return
+			}
+
+			if err.Error() != tc.expectedError {
+				t.Errorf("Expected error message '%s', got '%s'", tc.expectedError, err.Error())
+			}
+		})
 	}
 }
 
@@ -397,13 +736,130 @@ func TestCancelOrders(t *testing.T) {
 	}
 }
 
-func NewTestClient(baseURL string) (rest.Client, error) {
-	apiClient, err := rest.New(baseURL, rest.WithRequestSigner(func(req *http.Request, body []byte) error {
-		return nil
-	}))
-	if err != nil {
-		return nil, err
+func TestCancelOrders_Error(t *testing.T) {
+	testCases := []struct {
+		name           string
+		mockResponse   string
+		responseStatus int
+		expectError    bool
+		errorCode      int
+	}{
+		{
+			name: "Authentication Error",
+			mockResponse: `{
+				"code": 10003,
+				"message": "Invalid API key"
+			}`,
+			responseStatus: http.StatusUnauthorized,
+			expectError:    true,
+			errorCode:      10003,
+		},
+		{
+			name: "Order Not Found",
+			mockResponse: `{
+				"code": 20007,
+				"message": "Order not found"
+			}`,
+			responseStatus: http.StatusOK,
+			expectError:    true,
+			errorCode:      20007,
+		},
+		{
+			name: "All Orders Successful",
+			mockResponse: `{
+				"code": 0,
+				"msg": "Success",
+				"data": {
+					"successList": [
+						{
+							"orderId": "11111",
+							"clientId": "22222"
+						}
+					],
+					"failureList": []
+				}
+			}`,
+			responseStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name: "All Orders Failed",
+			mockResponse: `{
+				"code": 0,
+				"msg": "Success",
+				"data": {
+					"successList": [],
+					"failureList": [
+						{
+							"orderId": "33333",
+							"clientId": "44444",
+							"errorMsg": "Order not found",
+							"errorCode": "10001"
+						}
+					]
+				}
+			}`,
+			responseStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name:           "Invalid JSON Response",
+			mockResponse:   `{ invalid json }`,
+			responseStatus: http.StatusOK,
+			expectError:    true,
+		},
 	}
 
-	return apiClient, nil
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockAPI := NewMockAPI(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.responseStatus)
+				w.Write([]byte(tc.mockResponse))
+			})
+			defer mockAPI.Close()
+
+			cancelOrderReq := &model.CancelOrderRequest{
+				Symbol: "BTCUSDT",
+				OrderList: []model.CancelOrderParam{
+					{
+						OrderID: "11111",
+					},
+					{
+						ClientID: "22223",
+					},
+				},
+			}
+
+			response, err := mockAPI.client.CancelOrders(context.Background(), cancelOrderReq)
+
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got nil")
+					return
+				}
+
+				if tc.errorCode > 0 {
+					apiErr, ok := err.(*errors.APIError)
+					if !ok {
+						t.Errorf("Expected *errors.APIError, got %T", err)
+						return
+					}
+
+					if apiErr.Code != tc.errorCode {
+						t.Errorf("Expected error code %d, got %d", tc.errorCode, apiErr.Code)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error, got %v", err)
+					return
+				}
+
+				if response == nil {
+					t.Errorf("Expected response but got nil")
+				}
+			}
+		})
+	}
 }
