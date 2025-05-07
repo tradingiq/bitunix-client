@@ -1,5 +1,7 @@
 # Bitunix Client
 
+[![codecov](https://codecov.io/github/tradingiq/bitunix-client/graph/badge.svg?token=21PSK71QHJ)](https://codecov.io/github/tradingiq/bitunix-client)
+
 A Go client library for interacting with the Bitunix cryptocurrency futures exchange API.
 
 ## Project Overview
