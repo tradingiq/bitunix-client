@@ -77,7 +77,7 @@ func TestOrderRequestMarshalJSON(t *testing.T) {
 		Symbol:       "BTCUSDT",
 		TradeSide:    TradeSideBuy,
 		Price:        &price,
-		Qty:          &qty,
+		Qty:          qty,
 		PositionID:   "position123",
 		Side:         SideOpen,
 		OrderType:    OrderTypeLimit,

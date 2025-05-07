@@ -28,7 +28,7 @@ type ApiClient interface {
 func generateTimestamp() int64 { return time.Now().UnixMilli() }
 
 type apiClient struct {
-	restClient *rest.Client
+	restClient rest.Client
 	baseURI    string
 }
 

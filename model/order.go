@@ -22,7 +22,7 @@ type TPSLOrderRequest struct {
 	SlQty        *float64  `json:"-"`
 }
 
-func (r TPSLOrderRequest) MarshalJSON() ([]byte, error) {
+func (r *TPSLOrderRequest) MarshalJSON() ([]byte, error) {
 	type Alias TPSLOrderRequest
 
 	aux := &struct {
@@ -34,7 +34,7 @@ func (r TPSLOrderRequest) MarshalJSON() ([]byte, error) {
 		SlQty        string `json:"slQty,omitempty"`
 		*Alias
 	}{
-		Alias: (*Alias)(&r),
+		Alias: (*Alias)(r),
 	}
 
 	if r.TpPrice != nil {
@@ -78,7 +78,7 @@ type OrderRequest struct {
 	Symbol       Symbol      `json:"symbol"`
 	TradeSide    TradeSide   `json:"side"`
 	Price        *float64    `json:"-"`
-	Qty          *float64    `json:"-"`
+	Qty          float64     `json:"-"`
 	PositionID   string      `json:"positionId,omitempty"`
 	Side         Side        `json:"tradeSide"`
 	OrderType    OrderType   `json:"orderType"`
@@ -114,9 +114,7 @@ func (r *OrderRequest) MarshalJSON() ([]byte, error) {
 		aux.Price = strconv.FormatFloat(*r.Price, 'f', -1, 64)
 	}
 
-	if r.Qty != nil {
-		aux.Qty = strconv.FormatFloat(*r.Qty, 'f', -1, 64)
-	}
+	aux.Qty = strconv.FormatFloat(r.Qty, 'f', -1, 64)
 
 	if r.TpPrice != nil {
 		aux.TpPrice = strconv.FormatFloat(*r.TpPrice, 'f', -1, 64)
@@ -138,9 +136,9 @@ func (r *OrderRequest) MarshalJSON() ([]byte, error) {
 }
 
 type OrderResponse struct {
-	Code    int               `json:"code"`
-	Message string            `json:"message"`
-	Data    OrderResponseData `json:"data"`
+	Code    int                `json:"code"`
+	Message string             `json:"message"`
+	Data    *OrderResponseData `json:"data"`
 }
 
 type OrderResponseData struct {

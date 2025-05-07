@@ -43,7 +43,7 @@ func (ws *websocketClient) Stream() error {
 		select {
 		case ws.messageQueue <- bytes:
 		default:
-			log.Error("message queue is full, dropping message")
+			return errors.NewWorkgroupExhaustedError("stream", "workgroup exhausted", nil)
 		}
 		return nil
 	})

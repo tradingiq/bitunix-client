@@ -63,7 +63,7 @@ func NewOrderBuilder(symbol model.Symbol, side model.TradeSide, tradeSide model.
 			OrderType:  model.OrderTypeMarket,
 			TradeSide:  side,
 			Side:       tradeSide,
-			Qty:        &qtyVal,
+			Qty:        qtyVal,
 			ReduceOnly: false,
 			ClientID:   fmt.Sprintf("client_%d", time.Now().UnixNano()),
 			Effect:     model.TimeInForceGTC,
@@ -138,7 +138,7 @@ func (b *OrderBuilder) Build() (model.OrderRequest, error) {
 		return model.OrderRequest{}, errors.NewValidationError("tradeSide", "is required", nil)
 	}
 
-	if b.request.Qty == nil || *b.request.Qty <= 0 {
+	if b.request.Qty <= 0 {
 		return model.OrderRequest{}, errors.NewValidationError("qty", "quantity is required and must be greater than zero", nil)
 	}
 
