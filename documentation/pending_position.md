@@ -3,19 +3,21 @@
 > Rate Limit: 10 req/sec/uid
 
 ## Description
+
 Get Pending Positions from the futures API.
 
 ## HTTP Request
+
 ```
 GET /api/v1/futures/position/get_pending_positions
 ```
 
 ## Request Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| symbol | string | false | Trading pair |
-| positionId | string | false | Position ID |
+| Parameter  | Type   | Required | Description  |
+|------------|--------|----------|--------------|
+| symbol     | string | false    | Trading pair |
+| positionId | string | false    | Position ID  |
 
 ## Request Example
 
@@ -31,26 +33,26 @@ curl -X 'GET'  --location 'https://fapi.bitunix.com/api/v1/futures/position/get_
 
 ## Response Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| positionId | string | Position ID |
-| symbol | string | Trading pair |
-| qty | string | Position amount |
-| entryValue | string | Available amount for positions |
-| side | string | **LONG** or **SHORT** |
-| marginMode | string | **ISOLATION** or **CROSS** |
-| positionMode | string | **ONE_WAY** or **HEDGE** |
-| leverage | int32 | Leverage |
-| fees | string | Deducted transaction fees: transaction fees deducted during the position |
-| funding | string | Total funding fee during the position |
-| realizedPNL | string | Realized PnL (exclude funding fee and transaction fee) |
-| margin | string | Locked asset of the position |
-| unrealizedPNL | string | Unrealized PnL |
-| liqPrice | string | Estimated liquidation price. If the value <= 0, it means the position is at low risk and there is no liquidation price at this time |
-| marginRate | string | Margin ratio |
-| avgOpenPrice | string | Average open price |
-| ctime | int64 | Create timestamp |
-| mtime | int64 | Latest modify timestamp |
+| Parameter     | Notes                                                 | Type   | Description                                                                                                                         |
+|---------------|-------------------------------------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------|
+| positionId    |                                                       | string | Position ID                                                                                                                         |
+| symbol        |                                                       | string | Trading pair                                                                                                                        |
+| qty           |                                                       | string | Position amount                                                                                                                     |
+| entryValue    |                                                       | string | Available amount for positions                                                                                                      |
+| side          | #broken: returns BUY or SELL instead of LONG or SHORT | string | **LONG** or **SHORT**                                                                                                               |
+| marginMode    |                                                       | string | **ISOLATION** or **CROSS**                                                                                                          |
+| positionMode  |                                                       | string | **ONE_WAY** or **HEDGE**                                                                                                            |
+| leverage      |                                                       | int32  | Leverage                                                                                                                            |
+| fees          |                                                       | string | Deducted transaction fees: transaction fees deducted during the position                                                            |
+| funding       |                                                       | string | Total funding fee during the position                                                                                               |
+| realizedPNL   |                                                       | string | Realized PnL (exclude funding fee and transaction fee)                                                                              |
+| margin        |                                                       | string | Locked asset of the position                                                                                                        |
+| unrealizedPNL |                                                       | string | Unrealized PnL                                                                                                                      |
+| liqPrice      |                                                       | string | Estimated liquidation price. If the value <= 0, it means the position is at low risk and there is no liquidation price at this time |
+| marginRate    |                                                       | string | Margin ratio                                                                                                                        |
+| avgOpenPrice  |                                                       | string | Average open price                                                                                                                  |
+| ctime         | #broken: actually returned as string, not int         | int64  | Create timestamp                                                                                                                    |
+| mtime         | #broken: actually returned as string, not int                                                      | int64  | Latest modify timestamp                                                                                                             |
 
 ## Response Example
 
@@ -64,6 +66,7 @@ curl -X 'GET'  --location 'https://fapi.bitunix.com/api/v1/futures/position/get_
       "qty": "0.5",
       "entryValue": "30000",
       "side": "LONG",
+      // documentation is invalid, actually BUY or SELL
       "positionMode": "HEDGE",
       "marginMode": "ISOLATION",
       "leverage": 100,
@@ -76,7 +79,9 @@ curl -X 'GET'  --location 'https://fapi.bitunix.com/api/v1/futures/position/get_
       "marginRate": "0.1",
       "avgOpenPrice": "60000",
       "ctime": 1659076670000,
+      // documentation is invalid, actually returned as string
       "mtime": 1659086670000
+      // documentation is invalid, actually returned as string
     }
   ]
 }
