@@ -18,7 +18,7 @@ func TestGetPendingPositions(t *testing.T) {
 				"symbol": "BTCUSDT",
 				"qty": "0.5",
 				"entryValue": "30000",
-				"side": "LONG",
+				"side": "BUY",
 				"positionMode": "HEDGE",
 				"marginMode": "ISOLATION",
 				"leverage": 100,
@@ -30,8 +30,8 @@ func TestGetPendingPositions(t *testing.T) {
 				"liqPrice": "29100.5",
 				"marginRate": "0.1",
 				"avgOpenPrice": "60000",
-				"ctime": 1659076670000,
-				"mtime": 1659086670000
+				"ctime": "1659076670000",
+				"mtime": "1659086670000"
 			}
 		]
 	}`
@@ -99,8 +99,8 @@ func TestGetPendingPositions(t *testing.T) {
 			t.Errorf("Expected entryValue 30000, got %f", position.EntryValue)
 		}
 
-		if position.Side != model.PositionSideLong {
-			t.Errorf("Expected side LONG, got %s", position.Side)
+		if position.Side != model.TradeSideBuy {
+			t.Errorf("Expected side BUY, got %s", position.Side)
 		}
 
 		if position.PositionMode != model.PositionModeHedge {
@@ -196,7 +196,7 @@ func TestPendingPositionUnmarshal(t *testing.T) {
 		"symbol": "BTCUSDT",
 		"qty": "0.5",
 		"entryValue": "30000",
-		"side": "LONG",
+		"side": "BUY",
 		"positionMode": "HEDGE",
 		"marginMode": "ISOLATION",
 		"leverage": 100,
@@ -208,8 +208,8 @@ func TestPendingPositionUnmarshal(t *testing.T) {
 		"liqPrice": "29100.5",
 		"marginRate": "0.1",
 		"avgOpenPrice": "60000",
-		"ctime": 1659076670000,
-		"mtime": 1659086670000
+		"ctime": "1659076670000",
+		"mtime": "1659086670000"
 	}`
 
 	var position model.PendingPosition
@@ -234,8 +234,8 @@ func TestPendingPositionUnmarshal(t *testing.T) {
 		t.Errorf("Expected entryValue 30000, got %f", position.EntryValue)
 	}
 
-	if position.Side != model.PositionSideLong {
-		t.Errorf("Expected side LONG, got %s", position.Side)
+	if position.Side != model.TradeSideBuy {
+		t.Errorf("Expected side BUY, got %s", position.Side)
 	}
 
 	if position.PositionMode != model.PositionModeHedge {
@@ -316,12 +316,12 @@ func TestPendingPositionUnmarshalErrors(t *testing.T) {
 		},
 		{
 			name:     "Invalid margin mode",
-			jsonData: `{"positionId": "123", "side": "LONG", "marginMode": "INVALID"}`,
+			jsonData: `{"positionId": "123", "side": "BUY", "marginMode": "INVALID"}`,
 			errMsg:   "invalid margin mode",
 		},
 		{
 			name:     "Invalid position mode",
-			jsonData: `{"positionId": "123", "side": "LONG", "marginMode": "CROSS", "positionMode": "INVALID"}`,
+			jsonData: `{"positionId": "123", "side": "BUY", "marginMode": "CROSS", "positionMode": "INVALID"}`,
 			errMsg:   "invalid position mode",
 		},
 	}
