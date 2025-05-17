@@ -52,7 +52,7 @@ curl -X 'GET'  --location 'https://fapi.bitunix.com/api/v1/futures/position/get_
 | marginRate    |                                                       | string | Margin ratio                                                                                                                        |
 | avgOpenPrice  |                                                       | string | Average open price                                                                                                                  |
 | ctime         | #broken: actually returned as string, not int         | int64  | Create timestamp                                                                                                                    |
-| mtime         | #broken: actually returned as string, not int                                                      | int64  | Latest modify timestamp                                                                                                             |
+| mtime         | #broken: actually returned as string, not int         | int64  | Latest modify timestamp                                                                                                             |
 
 ## Response Example
 
