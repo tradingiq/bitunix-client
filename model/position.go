@@ -10,10 +10,12 @@ import (
 type PositionHistoryParams struct {
 	Symbol     Symbol
 	PositionID string
-	StartTime  *time.Time
-	EndTime    *time.Time
-	Skip       int64
-	Limit      int64
+	// StartTime usage of StartTime only has effect if EndTime is provided too
+	StartTime *time.Time
+	// EndTime usage of EndTime only has effect if StartTime is provided too
+	EndTime *time.Time
+	Skip    int64
+	Limit   int64
 }
 
 type PositionHistoryResponse struct {

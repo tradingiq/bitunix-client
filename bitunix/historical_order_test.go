@@ -169,32 +169,60 @@ func TestGetOrderHistory(t *testing.T) {
 		t.Errorf("unexpected realized PNL: %f", order.RealizedPNL)
 	}
 
-	if order.TpPrice != 45000 {
-		t.Errorf("unexpected TP price: %f", order.TpPrice)
+	if order.TpPrice == nil || *order.TpPrice != 45000 {
+		if order.TpPrice == nil {
+			t.Errorf("unexpected TP price: nil")
+		} else {
+			t.Errorf("unexpected TP price: %f", *order.TpPrice)
+		}
 	}
 
-	if order.TpStopType != model.StopTypeMarkPrice {
-		t.Errorf("unexpected TP stop type: %s", order.TpStopType)
+	if order.TpStopType == nil || *order.TpStopType != model.StopTypeMarkPrice {
+		if order.TpStopType == nil {
+			t.Errorf("unexpected TP stop type: nil")
+		} else {
+			t.Errorf("unexpected TP stop type: %s", *order.TpStopType)
+		}
 	}
 
-	if order.TpOrderType != model.OrderTypeLimit {
-		t.Errorf("unexpected TP order type: %s", order.TpOrderType)
+	if order.TpOrderType == nil || *order.TpOrderType != model.OrderTypeLimit {
+		if order.TpOrderType == nil {
+			t.Errorf("unexpected TP order type: nil")
+		} else {
+			t.Errorf("unexpected TP order type: %s", *order.TpOrderType)
+		}
 	}
 
-	if order.TpOrderPrice != 45000 {
-		t.Errorf("unexpected TP order price: %f", order.TpOrderPrice)
+	if order.TpOrderPrice == nil || *order.TpOrderPrice != 45000 {
+		if order.TpOrderPrice == nil {
+			t.Errorf("unexpected TP order price: nil")
+		} else {
+			t.Errorf("unexpected TP order price: %f", *order.TpOrderPrice)
+		}
 	}
 
-	if order.SlPrice != 35000 {
-		t.Errorf("unexpected SL price: %f", order.SlPrice)
+	if order.SlPrice == nil || *order.SlPrice != 35000 {
+		if order.SlPrice == nil {
+			t.Errorf("unexpected SL price: nil")
+		} else {
+			t.Errorf("unexpected SL price: %f", *order.SlPrice)
+		}
 	}
 
-	if order.SlStopType != model.StopTypeMarkPrice {
-		t.Errorf("unexpected SL stop type: %s", order.SlStopType)
+	if order.SlStopType == nil || *order.SlStopType != model.StopTypeMarkPrice {
+		if order.SlStopType == nil {
+			t.Errorf("unexpected SL stop type: nil")
+		} else {
+			t.Errorf("unexpected SL stop type: %s", *order.SlStopType)
+		}
 	}
 
-	if order.SlOrderType != model.OrderTypeMarket {
-		t.Errorf("unexpected SL order type: %s", order.SlOrderType)
+	if order.SlOrderType == nil || *order.SlOrderType != model.OrderTypeMarket {
+		if order.SlOrderType == nil {
+			t.Errorf("unexpected SL order type: nil")
+		} else {
+			t.Errorf("unexpected SL order type: %s", *order.SlOrderType)
+		}
 	}
 
 	expectedCreateTime := time.Unix(0, 1659076670000*1000000)
