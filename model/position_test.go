@@ -12,7 +12,7 @@ func TestPendingPositionUnmarshalJSON(t *testing.T) {
 		"symbol": "BTCUSDT",
 		"qty": "0.5",
 		"entryValue": "30000",
-		"side": "LONG",
+		"side": "BUY",
 		"positionMode": "HEDGE",
 		"marginMode": "ISOLATION",
 		"leverage": 100,
@@ -24,8 +24,8 @@ func TestPendingPositionUnmarshalJSON(t *testing.T) {
 		"liqPrice": "29100.5",
 		"marginRate": "0.1",
 		"avgOpenPrice": "60000",
-		"ctime": 1659076670000,
-		"mtime": 1659086670000
+		"ctime": "1659076670000",
+		"mtime": "1659086670000"
 	}`
 
 	var pos PendingPosition
@@ -50,8 +50,8 @@ func TestPendingPositionUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected entryValue 30000, got %f", pos.EntryValue)
 	}
 
-	if pos.Side != PositionSideLong {
-		t.Errorf("Expected side LONG, got %s", pos.Side)
+	if pos.Side != TradeSideBuy {
+		t.Errorf("Expected side BUY, got %s", pos.Side)
 	}
 
 	if pos.PositionMode != PositionModeHedge {
