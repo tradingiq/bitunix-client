@@ -15,7 +15,7 @@ func main() {
 	}
 
 	// Example 1: Get order detail by order ID
-	request := &bitunix.GetOrderDetailRequest{
+	request := &bitunix.OrderDetailRequest{
 		OrderID: "1923822405555130369",
 	}
 
@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// Example 2: Get order detail by client ID
-	request2 := &bitunix.GetOrderDetailRequest{
+	request2 := &bitunix.OrderDetailRequest{
 		ClientID: "my-client-order-123",
 	}
 
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	// Example 3: Using both order ID and client ID
-	request3 := &bitunix.GetOrderDetailRequest{
+	request3 := &bitunix.OrderDetailRequest{
 		OrderID:  "123456789",
 		ClientID: "my-client-order-123",
 	}

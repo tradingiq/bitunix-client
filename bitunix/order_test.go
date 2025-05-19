@@ -519,7 +519,7 @@ func TestPlaceOrder_Error(t *testing.T) {
 func TestGetOrderDetail(t *testing.T) {
 	tests := []struct {
 		name          string
-		request       *GetOrderDetailRequest
+		request       *OrderDetailRequest
 		expectedURL   string
 		responseBody  string
 		expectedCode  int
@@ -527,7 +527,7 @@ func TestGetOrderDetail(t *testing.T) {
 	}{
 		{
 			name: "valid request with order ID",
-			request: &GetOrderDetailRequest{
+			request: &OrderDetailRequest{
 				OrderID: "123456",
 			},
 			expectedURL: "/api/v1/futures/trade/get_order_detail?orderId=123456",
@@ -558,7 +558,7 @@ func TestGetOrderDetail(t *testing.T) {
 		},
 		{
 			name: "valid request with client ID",
-			request: &GetOrderDetailRequest{
+			request: &OrderDetailRequest{
 				ClientID: "client123",
 			},
 			expectedURL: "/api/v1/futures/trade/get_order_detail?clientId=client123",
@@ -588,7 +588,7 @@ func TestGetOrderDetail(t *testing.T) {
 		},
 		{
 			name: "request with both order ID and client ID",
-			request: &GetOrderDetailRequest{
+			request: &OrderDetailRequest{
 				OrderID:  "123456",
 				ClientID: "client123",
 			},
@@ -620,12 +620,12 @@ func TestGetOrderDetail(t *testing.T) {
 		},
 		{
 			name:          "error - missing both IDs",
-			request:       &GetOrderDetailRequest{},
+			request:       &OrderDetailRequest{},
 			expectedError: errors.NewValidationError("request", "either orderId or clientId is required", nil),
 		},
 		{
 			name: "API error - order not found",
-			request: &GetOrderDetailRequest{
+			request: &OrderDetailRequest{
 				OrderID: "nonexistent",
 			},
 			expectedURL: "/api/v1/futures/trade/get_order_detail?orderId=nonexistent",
