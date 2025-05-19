@@ -194,12 +194,12 @@ func (b *OrderBuilder) Build() (model.OrderRequest, error) {
 	return b.request, nil
 }
 
-type GetOrderDetailRequest struct {
+type OrderDetailRequest struct {
 	OrderID  string
 	ClientID string
 }
 
-func (c *apiClient) GetOrderDetail(ctx context.Context, request *GetOrderDetailRequest) (*model.OrderDetailResponse, error) {
+func (c *apiClient) GetOrderDetail(ctx context.Context, request *OrderDetailRequest) (*model.OrderDetailResponse, error) {
 	params := url.Values{}
 
 	// At least one of orderId or clientId is required
