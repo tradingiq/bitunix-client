@@ -516,6 +516,174 @@ func TestPlaceOrder_Error(t *testing.T) {
 	}
 }
 
+func TestGetOrderDetail(t *testing.T) {
+	tests := []struct {
+		name          string
+		request       *GetOrderDetailRequest
+		expectedURL   string
+		responseBody  string
+		expectedCode  int
+		expectedError error
+	}{
+		{
+			name: "valid request with order ID",
+			request: &GetOrderDetailRequest{
+				OrderID: "123456",
+			},
+			expectedURL: "/api/v1/futures/trade/get_order_detail?orderId=123456",
+			responseBody: `{
+				"code": 0,
+				"data": {
+					"orderId": "123456",
+					"symbol": "BTCUSDT",
+					"qty": "1.0",
+					"tradeQty": "0.5",
+					"price": "50000",
+					"side": "BUY",
+					"leverage": 10,
+					"orderType": "LIMIT",
+					"status": "PART_FILLED",
+					"clientId": "",
+					"positionMode": "ONE_WAY",
+					"marginMode": "ISOLATION",
+					"effect": "GTC",
+					"reduceOnly": false,
+					"fee": "0.05",
+					"realizedPNL": "0",
+					"ctime": "1700000000000",
+					"mtime": "1700000000000"
+				}
+			}`,
+			expectedCode: 0,
+		},
+		{
+			name: "valid request with client ID",
+			request: &GetOrderDetailRequest{
+				ClientID: "client123",
+			},
+			expectedURL: "/api/v1/futures/trade/get_order_detail?clientId=client123",
+			responseBody: `{
+				"code": 0,
+				"data": {
+					"orderId": "123456",
+					"clientId": "client123",
+					"symbol": "BTCUSDT",
+					"qty": "1.0",
+					"price": "50000",
+					"side": "BUY",
+					"leverage": 10,
+					"orderType": "LIMIT",
+					"status": "NEW",
+					"positionMode": "ONE_WAY",
+					"marginMode": "ISOLATION",
+					"effect": "GTC",
+					"reduceOnly": false,
+					"fee": "0",
+					"realizedPNL": "0",
+					"ctime": "1700000000000",
+					"mtime": "1700000000000"
+				}
+			}`,
+			expectedCode: 0,
+		},
+		{
+			name: "request with both order ID and client ID",
+			request: &GetOrderDetailRequest{
+				OrderID:  "123456",
+				ClientID: "client123",
+			},
+			expectedURL: "/api/v1/futures/trade/get_order_detail?clientId=client123&orderId=123456",
+			responseBody: `{
+				"code": 0,
+				"data": {
+					"orderId": "123456",
+					"clientId": "client123",
+					"symbol": "BTCUSDT",
+					"qty": "1.0",
+					"tradeQty": "0",
+					"price": "50000",
+					"side": "BUY",
+					"leverage": 10,
+					"orderType": "LIMIT",
+					"status": "NEW",
+					"positionMode": "ONE_WAY",
+					"marginMode": "ISOLATION",
+					"effect": "GTC",
+					"reduceOnly": false,
+					"fee": "0",
+					"realizedPNL": "0",
+					"ctime": "1700000000000",
+					"mtime": "1700000000000"
+				}
+			}`,
+			expectedCode: 0,
+		},
+		{
+			name:          "error - missing both IDs",
+			request:       &GetOrderDetailRequest{},
+			expectedError: errors.NewValidationError("request", "either orderId or clientId is required", nil),
+		},
+		{
+			name: "API error - order not found",
+			request: &GetOrderDetailRequest{
+				OrderID: "nonexistent",
+			},
+			expectedURL: "/api/v1/futures/trade/get_order_detail?orderId=nonexistent",
+			responseBody: `{
+				"code": 20007,
+				"message": "Order not found"
+			}`,
+			expectedCode:  20007,
+			expectedError: errors.NewAPIError(20007, "Order not found", "/api/v1/futures/trade/get_order_detail", errors.ErrOrderNotFound),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var capturedURL string
+			mockAPI := NewMockAPI(func(w http.ResponseWriter, r *http.Request) {
+				capturedURL = r.URL.String()
+				w.Header().Set("Content-Type", "application/json")
+				if tt.responseBody != "" {
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(tt.responseBody))
+				} else {
+					w.WriteHeader(http.StatusBadRequest)
+				}
+			})
+			defer mockAPI.Close()
+
+			response, err := mockAPI.client.GetOrderDetail(context.Background(), tt.request)
+
+			if tt.expectedError != nil {
+				if err == nil {
+					t.Errorf("Expected error %v, got nil", tt.expectedError)
+				} else if err.Error() != tt.expectedError.Error() {
+					t.Errorf("Expected error %v, got %v", tt.expectedError, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if tt.expectedURL != "" && capturedURL != tt.expectedURL {
+				t.Errorf("Expected URL %s, got %s", tt.expectedURL, capturedURL)
+			}
+
+			if response.Code != tt.expectedCode {
+				t.Errorf("Expected code %d, got %d", tt.expectedCode, response.Code)
+			}
+
+			// Validate response data if successful
+			if tt.expectedCode == 0 && response.Data.OrderID != "" {
+				t.Logf("Received order detail: %+v", response.Data)
+			}
+		})
+	}
+}
+
 func TestCancelOrderBuilderCreation(t *testing.T) {
 	symbol := model.ParseSymbol("BTCUSDT")
 
