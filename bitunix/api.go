@@ -24,6 +24,7 @@ type ApiClient interface {
 	PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrderRequest) (*model.TpSlOrderResponse, error)
 	GetAccountBalance(ctx context.Context, params model.AccountBalanceParams) (*model.AccountBalanceResponse, error)
 	GetPendingPositions(ctx context.Context, params model.PendingPositionParams) (*model.PendingPositionResponse, error)
+	GetOrderDetail(ctx context.Context, request *GetOrderDetailRequest) (*model.OrderDetailResponse, error)
 }
 
 func generateTimestamp() int64 { return time.Now().UnixMilli() }

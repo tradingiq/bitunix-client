@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
+	"net/url"
 	"time"
 )
 
@@ -191,6 +192,41 @@ func (b *OrderBuilder) Build() (model.OrderRequest, error) {
 	}
 
 	return b.request, nil
+}
+
+type GetOrderDetailRequest struct {
+	OrderID  string
+	ClientID string
+}
+
+func (c *apiClient) GetOrderDetail(ctx context.Context, request *GetOrderDetailRequest) (*model.OrderDetailResponse, error) {
+	params := url.Values{}
+
+	// At least one of orderId or clientId is required
+	if request.OrderID == "" && request.ClientID == "" {
+		return nil, errors.NewValidationError("request", "either orderId or clientId is required", nil)
+	}
+
+	if request.OrderID != "" {
+		params.Set("orderId", request.OrderID)
+	}
+
+	if request.ClientID != "" {
+		params.Set("clientId", request.ClientID)
+	}
+
+	endpoint := "/api/v1/futures/trade/get_order_detail"
+	responseBody, err := c.restClient.Get(ctx, endpoint, params)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &model.OrderDetailResponse{}
+	if err := handleAPIResponse(responseBody, endpoint, response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 type CancelOrderBuilder struct {

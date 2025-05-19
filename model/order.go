@@ -198,6 +198,236 @@ type OrderHistoryResponse struct {
 	} `json:"data"`
 }
 
+type OrderDetailResponse struct {
+	BaseResponse
+	Data *OrderDetail `json:"data"`
+}
+
+type OrderDetail struct {
+	OrderID       string       `json:"orderId"`
+	Symbol        Symbol       `json:"symbol"`
+	Quantity      float64      `json:"-"`
+	TradeQuantity float64      `json:"-"`
+	PositionMode  PositionMode `json:"-"`
+	MarginMode    MarginMode   `json:"-"`
+	Leverage      int          `json:"leverage"`
+	Price         string       `json:"price"`
+	Side          TradeSide    `json:"-"`
+	OrderType     OrderType    `json:"-"`
+	Effect        TimeInForce  `json:"-"`
+	ClientID      string       `json:"clientId"`
+	ReduceOnly    bool         `json:"reduceOnly"`
+	Status        OrderStatus  `json:"-"`
+	Fee           float64      `json:"-"`
+	RealizedPNL   float64      `json:"-"`
+	TpPrice       *float64     `json:"-"`
+	TpOrderPrice  *float64     `json:"-"`
+	SlPrice       *float64     `json:"-"`
+	TpStopType    *StopType    `json:"-"`
+	TpOrderType   *OrderType   `json:"-"`
+	SlStopType    *StopType    `json:"-"`
+	SlOrderType   *OrderType   `json:"-"`
+	SlOrderPrice  *float64     `json:"-"`
+	CreateTime    time.Time    `json:"-"`
+	ModifyTime    time.Time    `json:"-"`
+}
+
+func (o *OrderDetail) UnmarshalJSON(data []byte) error {
+	type Alias OrderDetail
+	aux := &struct {
+		Quantity      string  `json:"qty"`
+		TradeQuantity string  `json:"tradeQty"`
+		Fee           string  `json:"fee"`
+		RealizedPNL   string  `json:"realizedPNL"`
+		TpPrice       *string `json:"tpPrice"`
+		TpOrderPrice  *string `json:"tpOrderPrice"`
+		SlPrice       *string `json:"slPrice"`
+		SlOrderPrice  *string `json:"slOrderPrice"`
+		CreateTime    string  `json:"ctime"`
+		ModifyTime    string  `json:"mtime"`
+		Status        string  `json:"status"`
+		PositionMode  string  `json:"positionMode"`
+		MarginMode    string  `json:"marginMode"`
+		Side          string  `json:"side"`
+		OrderType     string  `json:"orderType"`
+		Effect        string  `json:"effect"`
+		TpStopType    *string `json:"tpStopType"`
+		TpOrderType   *string `json:"tpOrderType"`
+		SlStopType    *string `json:"slStopType"`
+		SlOrderType   *string `json:"slOrderType"`
+		Symbol        string  `json:"symbol"`
+		*Alias
+	}{
+		Alias: (*Alias)(o),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	o.Symbol = ParseSymbol(aux.Symbol)
+
+	if aux.Quantity != "" {
+		quantity, err := strconv.ParseFloat(aux.Quantity, 64)
+		if err == nil {
+			o.Quantity = quantity
+		} else {
+			return fmt.Errorf("invalid quantity: %w", err)
+		}
+	}
+
+	if aux.TradeQuantity != "" {
+		tradeQty, err := strconv.ParseFloat(aux.TradeQuantity, 64)
+		if err == nil {
+			o.TradeQuantity = tradeQty
+		} else {
+			return fmt.Errorf("invalid trade quantity: %w", err)
+		}
+	}
+
+	if aux.Fee != "" {
+		fee, err := strconv.ParseFloat(aux.Fee, 64)
+		if err == nil {
+			o.Fee = fee
+		} else {
+			return fmt.Errorf("invalid fee: %w", err)
+		}
+	}
+
+	if aux.RealizedPNL != "" {
+		realizedPNL, err := strconv.ParseFloat(aux.RealizedPNL, 64)
+		if err == nil {
+			o.RealizedPNL = realizedPNL
+		} else {
+			return fmt.Errorf("invalid realized pnl: %w", err)
+		}
+	}
+
+	if aux.TpPrice != nil {
+		tpPrice, err := strconv.ParseFloat(*aux.TpPrice, 64)
+		if err == nil {
+			o.TpPrice = &tpPrice
+		} else {
+			return fmt.Errorf("invalid tp price: %w", err)
+		}
+	}
+
+	if aux.TpOrderPrice != nil {
+		tpOrderPrice, err := strconv.ParseFloat(*aux.TpOrderPrice, 64)
+		if err == nil {
+			o.TpOrderPrice = &tpOrderPrice
+		} else {
+			return fmt.Errorf("invalid tp order price: %w", err)
+		}
+	}
+
+	if aux.SlPrice != nil {
+		slPrice, err := strconv.ParseFloat(*aux.SlPrice, 64)
+		if err == nil {
+			o.SlPrice = &slPrice
+		} else {
+			return fmt.Errorf("invalid sl price: %w", err)
+		}
+	}
+
+	if aux.SlOrderPrice != nil {
+		slOrderPrice, err := strconv.ParseFloat(*aux.SlOrderPrice, 64)
+		if err == nil {
+			o.SlOrderPrice = &slOrderPrice
+		} else {
+			return fmt.Errorf("invalid sl order price: %w", err)
+		}
+	}
+
+	if aux.CreateTime != "" {
+		createTime, err := strconv.ParseInt(aux.CreateTime, 10, 64)
+		if err == nil {
+			o.CreateTime = time.Unix(0, createTime*1000000)
+		} else {
+			return fmt.Errorf("invalid create time: %w", err)
+		}
+	}
+
+	if aux.ModifyTime != "" {
+		modifyTime, err := strconv.ParseInt(aux.ModifyTime, 10, 64)
+		if err == nil {
+			o.ModifyTime = time.Unix(0, modifyTime*1000000)
+		} else {
+			return fmt.Errorf("invalid modify time: %w", err)
+		}
+	}
+
+	status, err := ParseOrderStatus(aux.Status)
+	if err != nil {
+		return fmt.Errorf("invalid order status: %w", err)
+	}
+	o.Status = status
+
+	marginMode, err := ParseMarginMode(aux.MarginMode)
+	if err != nil {
+		return fmt.Errorf("invalid margin mode: %w", err)
+	}
+	o.MarginMode = marginMode
+
+	positionMode, err := ParsePositionMode(aux.PositionMode)
+	if err != nil {
+		return fmt.Errorf("invalid position mode: %w", err)
+	}
+	o.PositionMode = positionMode
+
+	side, err := ParseTradeSide(aux.Side)
+	if err != nil {
+		return fmt.Errorf("invalid side: %w", err)
+	}
+	o.Side = side
+
+	orderType, err := ParseOrderType(aux.OrderType)
+	if err != nil {
+		return fmt.Errorf("invalid order type: %w", err)
+	}
+	o.OrderType = orderType
+
+	effect, err := ParseTimeInForce(aux.Effect)
+	if err != nil {
+		return fmt.Errorf("invalid effect: %w", err)
+	}
+	o.Effect = effect
+
+	if aux.SlStopType != nil {
+		slStopType, err := ParseStopType(*aux.SlStopType)
+		if err != nil {
+			return fmt.Errorf("invalid sl stop type: %w", err)
+		}
+		o.SlStopType = &slStopType
+	}
+
+	if aux.TpStopType != nil {
+		tpStopType, err := ParseStopType(*aux.TpStopType)
+		if err != nil {
+			return fmt.Errorf("invalid tp stop type: %w", err)
+		}
+		o.TpStopType = &tpStopType
+	}
+
+	if aux.TpOrderType != nil {
+		tpOrderType, err := ParseOrderType(*aux.TpOrderType)
+		if err != nil {
+			return fmt.Errorf("invalid tp order type: %w", err)
+		}
+		o.TpOrderType = &tpOrderType
+	}
+
+	if aux.SlOrderType != nil {
+		slOrderType, err := ParseOrderType(*aux.SlOrderType)
+		if err != nil {
+			return fmt.Errorf("invalid sl order type: %w", err)
+		}
+		o.SlOrderType = &slOrderType
+	}
+
+	return nil
+}
+
 type HistoricalOrder struct {
 	OrderID       string       `json:"orderId"`
 	Symbol        Symbol       `json:"symbol"`
