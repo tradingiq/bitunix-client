@@ -211,7 +211,7 @@ type OrderDetail struct {
 	PositionMode  PositionMode `json:"-"`
 	MarginMode    MarginMode   `json:"-"`
 	Leverage      int          `json:"leverage"`
-	Price         string       `json:"price"`
+	Price         *float64     `json:"-"`
 	Side          TradeSide    `json:"-"`
 	OrderType     OrderType    `json:"-"`
 	Effect        TimeInForce  `json:"-"`
@@ -240,6 +240,7 @@ func (o *OrderDetail) UnmarshalJSON(data []byte) error {
 		Fee           string  `json:"fee"`
 		RealizedPNL   string  `json:"realizedPNL"`
 		TpPrice       *string `json:"tpPrice"`
+		Price         *string `json:"price"`
 		TpOrderPrice  *string `json:"tpOrderPrice"`
 		SlPrice       *string `json:"slPrice"`
 		SlOrderPrice  *string `json:"slOrderPrice"`
@@ -266,6 +267,15 @@ func (o *OrderDetail) UnmarshalJSON(data []byte) error {
 	}
 
 	o.Symbol = ParseSymbol(aux.Symbol)
+
+	if aux.Price != nil {
+		price, err := strconv.ParseFloat(*aux.Price, 64)
+		if err == nil {
+			o.Price = &price
+		} else {
+			return fmt.Errorf("invalid price: %w", err)
+		}
+	}
 
 	if aux.Quantity != "" {
 		quantity, err := strconv.ParseFloat(aux.Quantity, 64)
