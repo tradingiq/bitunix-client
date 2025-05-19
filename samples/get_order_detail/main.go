@@ -28,7 +28,7 @@ func main() {
 		fmt.Printf("Symbol: %s\n", response.Data.Symbol)
 		fmt.Printf("Quantity: %f\n", response.Data.Quantity)
 		fmt.Printf("Trade Quantity: %f\n", response.Data.TradeQuantity)
-		fmt.Printf("Price: %f\n", *response.Data.Price)
+		fmt.Printf("Price: %f\n", response.Data.Price)
 		fmt.Printf("Side: %s\n", response.Data.Side)
 		fmt.Printf("Status: %s\n", response.Data.Status)
 		fmt.Printf("Leverage: %d\n", response.Data.Leverage)
