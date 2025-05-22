@@ -6,15 +6,18 @@ import (
 	"github.com/tradingiq/bitunix-client/bitunix"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/samples"
-	"log"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 )
 
 func main() {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	client, err := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
 	if err != nil {
-		log.Fatalf("Failed to create API client: %v", err)
+		logger.Fatal("Failed to create API client", zap.Error(err))
 	}
 
 	ctx := context.Background()
@@ -37,7 +40,7 @@ func main() {
 	// Get order history
 	historyResponse, err := client.GetOrderHistory(ctx, historyParams)
 	if err != nil {
-		log.Fatalf("Error getting order history: %v", err)
+		logger.Fatal("Error getting order history", zap.Error(err))
 	}
 
 	fmt.Printf("Found %d orders in history\n", len(historyResponse.Data.Orders))
@@ -61,7 +64,7 @@ func main() {
 
 		detailResponse, err := client.GetOrderDetail(ctx, detailRequest)
 		if err != nil {
-			log.Printf("Error getting details for order %s: %v", order.OrderID, err)
+			logger.Error("Error getting details for order", zap.String("orderID", order.OrderID), zap.Error(err))
 			continue
 		}
 

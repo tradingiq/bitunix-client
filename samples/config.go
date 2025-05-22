@@ -3,7 +3,7 @@ package samples
 import (
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 type Cfg struct {
@@ -14,17 +14,18 @@ type Cfg struct {
 var Config Cfg
 
 func init() {
-	log.SetLevel(log.DebugLevel)
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Warn("Error loading .env file")
+		logger.Warn("Error loading .env file")
 	}
 
 	err = env.Parse(&Config)
 	Config, err = env.ParseAs[Cfg]()
 
 	if err != nil {
-		log.WithError(err).Fatal("parse env vars")
+		logger.Fatal("parse env vars", zap.Error(err))
 	}
-
 }

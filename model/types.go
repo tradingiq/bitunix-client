@@ -696,3 +696,66 @@ func (s Channel) Normalize() Channel {
 
 	return Channel(normalized)
 }
+
+type LogLevel string
+
+const (
+	LogLevelNone           LogLevel = "NONE"
+	LogLevelAggressive     LogLevel = "AGGRESSIVE"
+	LogLevelVeryAggressive LogLevel = "VERY_AGGRESSIVE"
+)
+
+func (l LogLevel) IsValid() bool {
+	switch l {
+	case LogLevelNone, LogLevelAggressive, LogLevelVeryAggressive:
+		return true
+	}
+	return false
+}
+
+func (l LogLevel) String() string {
+	return string(l)
+}
+
+func ParseLogLevel(s string) (LogLevel, error) {
+	logLevel := LogLevel(s)
+	logLevel = logLevel.Normalize()
+
+	if !logLevel.IsValid() {
+		return logLevel, fmt.Errorf("%s is not a valid LogLevel", s)
+	}
+
+	return logLevel, nil
+}
+
+func (l LogLevel) Normalize() LogLevel {
+	normalized := strings.ToUpper(strings.TrimSpace(string(l)))
+
+	switch normalized {
+	case "NONE", "OFF", "DISABLED", "DISABLE":
+		return LogLevelNone
+	case "AGGRESSIVE", "DEBUG", "NORMAL":
+		return LogLevelAggressive
+	case "VERY_AGGRESSIVE", "VERYAGGRESSIVE", "VERBOSE", "TRACE":
+		return LogLevelVeryAggressive
+	}
+
+	return LogLevel(normalized)
+}
+
+func (l LogLevel) ToInt() int {
+	switch l {
+	case LogLevelNone:
+		return 0
+	case LogLevelAggressive:
+		return 1
+	case LogLevelVeryAggressive:
+		return 2
+	default:
+		return 0
+	}
+}
+
+func (l LogLevel) ShouldLog(targetLevel LogLevel) bool {
+	return l.ToInt() >= targetLevel.ToInt()
+}

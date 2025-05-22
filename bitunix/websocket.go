@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/websocket"
+	"go.uber.org/zap"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +28,7 @@ type websocketClient struct {
 	messageQueue     chan []byte
 	quit             chan struct{}
 	processFunc      func(bytes []byte)
+	logLevel         model.LogLevel
 }
 
 func (ws *websocketClient) Connect() error {
@@ -91,23 +92,50 @@ type publicWebsocketClient struct {
 	*websocketClient
 	subscriberMtx sync.Mutex
 	klineHandlers map[KLineSubscriber]struct{}
+	logger        *zap.Logger
 }
 
 type WebsocketClientOption func(*websocketClient)
 
+func createLoggerForLevel(level model.LogLevel) *zap.Logger {
+	switch level {
+	case model.LogLevelNone:
+		return zap.NewNop()
+	case model.LogLevelAggressive:
+		logger, _ := zap.NewDevelopment()
+		return logger
+	case model.LogLevelVeryAggressive:
+		config := zap.NewDevelopmentConfig()
+		config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		config.Development = true
+		config.DisableCaller = false
+		config.DisableStacktrace = false
+		logger, _ := config.Build()
+		return logger
+	default:
+		logger, _ := zap.NewDevelopment()
+		return logger
+	}
+}
+
 func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (PublicWebsocketClient, error) {
 	wsc := &websocketClient{
-		uri:  "wss://fapi.bitunix.com/public/",
-		quit: make(chan struct{}),
+		uri:      "wss://fapi.bitunix.com/public/",
+		quit:     make(chan struct{}),
+		logLevel: model.LogLevelNone,
 	}
 	for _, option := range options {
 		option(wsc)
 	}
 
+	var wsOptions []websocket.ClientOption
+	wsOptions = append(wsOptions, websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()))
+	wsOptions = append(wsOptions, websocket.WithLogLevel(wsc.logLevel))
+
 	wsc.client = websocket.New(
 		ctx,
 		wsc.uri,
-		websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()),
+		wsOptions...,
 	)
 
 	if wsc.workerPoolSize <= 0 {
@@ -120,10 +148,13 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 		wsc.messageQueue = make(chan []byte, 100)
 	}
 
+	logger := createLoggerForLevel(wsc.logLevel)
+
 	client := &publicWebsocketClient{
 		websocketClient: wsc,
 		subscriberMtx:   sync.Mutex{},
 		klineHandlers:   make(map[KLineSubscriber]struct{}),
+		logger:          logger,
 	}
 	wsc.processFunc = client.processMessage
 
@@ -248,9 +279,9 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 
 	err := json.Unmarshal(bytes, &result)
 	if err != nil {
-		log.WithError(
-			errors.NewInternalError("error unmarshaling JSON", err),
-		).Error("failed to process message")
+		if ws.logger != nil {
+			ws.logger.Error("failed to process message", zap.Error(errors.NewInternalError("error unmarshaling JSON", err)))
+		}
 		return
 	}
 
@@ -258,7 +289,9 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 		if sym, symbolOk := result["symbol"].(string); symbolOk {
 			interval, channel, priceType, err := parseChannel(ch)
 			if err != nil {
-				log.WithError(err).Error("error parsing channel")
+				if ws.logger != nil {
+					ws.logger.Error("error parsing channel", zap.Error(err))
+				}
 				return
 			}
 
@@ -272,9 +305,9 @@ func (ws *publicWebsocketClient) processMessage(bytes []byte) {
 						subscriber.SubscribePriceType().Normalize() == priceType {
 						var klineMsg model.KLineChannelMessage
 						if err := json.Unmarshal(bytes, &klineMsg); err != nil {
-							log.WithError(
-								errors.NewInternalError("error unmarshaling kline message", err),
-							).Error("failed to unmarshal kline message")
+							if ws.logger != nil {
+								ws.logger.Error("failed to unmarshal kline message", zap.Error(errors.NewInternalError("error unmarshaling kline message", err)))
+							}
 							return
 						}
 

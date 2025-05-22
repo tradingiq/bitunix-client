@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
 	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/samples"
+	"go.uber.org/zap"
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
 
 	bitunixClient, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
 
@@ -22,52 +23,50 @@ func main() {
 
 	request, err := requestBuilder.Build()
 	if err != nil {
-		log.Fatalf("Failed to build TPSL order: %v", err)
+		logger.Fatal("Failed to build TPSL order", zap.Error(err))
 	}
 
 	response, err := bitunixClient.PlaceTpSlOrder(ctx, &request)
 	if err != nil {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrAuthentication):
-			log.Fatalf("Authentication failed: %s", err.Error())
+			logger.Fatal("Authentication failed", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrSignatureError):
-			log.Fatalf("Signature error: %s", err.Error())
+			logger.Fatal("Signature error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrNetwork):
-			log.Fatalf("Network error: %s", err.Error())
+			logger.Fatal("Network error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrIPNotAllowed):
-			log.Fatalf("IP restriction error: %s", err.Error())
+			logger.Fatal("IP restriction error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrRateLimitExceeded):
-			log.Fatalf("Rate limit exceeded: %s", err.Error())
+			logger.Fatal("Rate limit exceeded", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrParameterError):
-			log.Fatalf("Parameter error: %s", err.Error())
+			logger.Fatal("Parameter error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrAccountNotAllowed):
-			log.Fatalf("Account not allowed error: %s", err.Error())
+			logger.Fatal("Account not allowed error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrDuplicateClientID):
-			log.Fatalf("Duplicated client id error: %s", err.Error())
+			logger.Fatal("Duplicated client id error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrTriggerPriceInvalid):
-			log.Fatalf("Trigger price invalid error: %s", err.Error())
+			logger.Fatal("Trigger price invalid error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrOrderPriceIssue):
-			log.Fatalf("Order Price Issue invalid error: %s", err.Error())
+			logger.Fatal("Order Price Issue invalid error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrOrderQuantityIssue):
-			log.Fatalf("Order Quantity Issue invalid error: %s", err.Error())
+			logger.Fatal("Order Quantity Issue invalid error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrTPSLOrderError):
-			log.Fatalf("TPSL order error: %s", err.Error())
+			logger.Fatal("TPSL order error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrOrderNotFound):
-			log.Fatalf("Order not found error: %s", err.Error())
-		case errors.Is(err, bitunix_errors.ErrParameterError):
-			log.Fatalf("Parameter error: %s", err.Error())
+			logger.Fatal("Order not found error", zap.Error(err))
 
 			// and so on...
 		default:
 			var apiErr *bitunix_errors.APIError
 			if errors.As(err, &apiErr) {
-				log.Fatalf("API error (code: %d): %s", apiErr.Code, apiErr.Message)
+				logger.Fatal("API error", zap.Int("code", apiErr.Code), zap.String("message", apiErr.Message))
 			} else {
-				log.Fatalf("Unexpected error: %s", err.Error())
+				logger.Fatal("Unexpected error", zap.Error(err))
 			}
 		}
 
 	}
 
-	log.WithField("response", response).Info("place tpsl order")
+	logger.Info("place tpsl order", zap.Any("response", response))
 }

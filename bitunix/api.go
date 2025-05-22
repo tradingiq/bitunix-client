@@ -32,6 +32,7 @@ func generateTimestamp() int64 { return time.Now().UnixMilli() }
 type apiClient struct {
 	restClient rest.Client
 	baseURI    string
+	logLevel   model.LogLevel
 }
 
 type ClientOption func(*apiClient)
@@ -42,15 +43,27 @@ func WithBaseURI(uri string) ClientOption {
 	}
 }
 
+func WithLogLevel(level model.LogLevel) ClientOption {
+	return func(c *apiClient) {
+		c.logLevel = level
+	}
+}
+
 func NewApiClient(apiKey, apiSecret string, option ...ClientOption) (ApiClient, error) {
 	client := &apiClient{
-		baseURI: "https://fapi.bitunix.com/",
+		baseURI:  "https://fapi.bitunix.com/",
+		logLevel: model.LogLevelNone,
 	}
 	for _, option := range option {
 		option(client)
 	}
 
-	restClient, err := rest.New(client.baseURI, rest.WithRequestSigner(RequestSigner(apiKey, apiSecret, generateTimestamp, security.GenerateNonce)))
+	restOptions := []rest.ClientOption{
+		rest.WithRequestSigner(RequestSigner(apiKey, apiSecret, generateTimestamp, security.GenerateNonce)),
+		rest.WithLogLevel(client.logLevel),
+	}
+
+	restClient, err := rest.New(client.baseURI, restOptions...)
 	if err != nil {
 		return nil, errors.NewInternalError("creating rest client", err)
 	}
