@@ -60,6 +60,12 @@ func WithLogLevel(level model.LogLevel) ClientOption {
 	}
 }
 
+func WithLogger(logger *zap.Logger) ClientOption {
+	return func(ws *Client) {
+		ws.logger = logger
+	}
+}
+
 type GenericMessage map[string]interface{}
 
 func createLoggerForLevel(level model.LogLevel) *zap.Logger {
@@ -98,7 +104,9 @@ func New(ctx context.Context, uri string, options ...ClientOption) *Client {
 		option(ws)
 	}
 
-	ws.logger = createLoggerForLevel(ws.logLevel)
+	if ws.logger == nil {
+		ws.logger = createLoggerForLevel(ws.logLevel)
+	}
 
 	return ws
 }

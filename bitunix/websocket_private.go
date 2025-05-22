@@ -40,7 +40,12 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 	var wsOptions []websocket.ClientOption
 	wsOptions = append(wsOptions, websocket.WithAuthentication(WebsocketSigner(apiKey, secretKey)))
 	wsOptions = append(wsOptions, websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()))
-	wsOptions = append(wsOptions, websocket.WithLogLevel(wsc.logLevel))
+	
+	if wsc.logger != nil {
+		wsOptions = append(wsOptions, websocket.WithLogger(wsc.logger))
+	} else {
+		wsOptions = append(wsOptions, websocket.WithLogLevel(wsc.logLevel))
+	}
 
 	wsc.client = websocket.New(
 		ctx,
@@ -58,7 +63,12 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 		wsc.messageQueue = make(chan []byte, 100)
 	}
 
-	logger := createLoggerForLevel(wsc.logLevel)
+	var logger *zap.Logger
+	if wsc.logger != nil {
+		logger = wsc.logger
+	} else {
+		logger = createLoggerForLevel(wsc.logLevel)
+	}
 
 	client := &privateWebsocketClient{
 		websocketClient:        wsc,
@@ -348,6 +358,12 @@ func WithWebsocketDebug(enabled bool) WebsocketClientOption {
 func WithWebsocketLogLevel(level model.LogLevel) WebsocketClientOption {
 	return func(ws *websocketClient) {
 		ws.logLevel = level
+	}
+}
+
+func WithWebsocketLogger(logger *zap.Logger) WebsocketClientOption {
+	return func(ws *websocketClient) {
+		ws.logger = logger
 	}
 }
 
