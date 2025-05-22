@@ -3,115 +3,126 @@ package main
 import (
 	"context"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/bitunix"
 	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/samples"
+	"go.uber.org/zap"
 )
 
-type BalanceHandler struct{}
+type BalanceHandler struct {
+	logger *zap.Logger
+}
 
 func (h *BalanceHandler) SubscribeBalance(balance *model.BalanceChannelMessage) {
-	log.WithField("balance", balance).Debug("got balance")
+	h.logger.Debug("got balance", zap.Any("balance", balance))
 }
 
-type PositionHandler struct{}
+type PositionHandler struct {
+	logger *zap.Logger
+}
 
 func (h *PositionHandler) SubscribePosition(position *model.PositionChannelMessage) {
-	log.WithField("position", position).Debug("got position")
+	h.logger.Debug("got position", zap.Any("position", position))
 }
 
-type OrderHandler struct{}
+type OrderHandler struct {
+	logger *zap.Logger
+}
 
 func (h *OrderHandler) SubscribeOrder(order *model.OrderChannelMessage) {
-	log.WithField("order", order).Debug("got order")
+	h.logger.Debug("got order", zap.Any("order", order))
 }
 
-type TpSlOrderHandler struct{}
+type TpSlOrderHandler struct {
+	logger *zap.Logger
+}
 
 func (h *TpSlOrderHandler) SubscribeTpSlOrder(order *model.TpSlOrderChannelMessage) {
-	log.WithField("tpslorder", order).Debug("got tpsl order")
+	h.logger.Debug("got tpsl order", zap.Any("tpslorder", order))
 }
 
 func main() {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	ctx := context.Background()
-	ws, _ := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey)
+	ws, _ := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
 	defer ws.Disconnect()
 
 	if err := ws.Connect(); err != nil {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrAuthentication):
-			log.Fatalf("Authentication failed: %s", err.Error())
+			logger.Fatal("Authentication failed", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrSignatureError):
-			log.Fatalf("Signature error: %s", err.Error())
+			logger.Fatal("Signature error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrNetwork):
-			log.Fatalf("Network error: %s", err.Error())
+			logger.Fatal("Network error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrIPNotAllowed):
-			log.Fatalf("IP restriction error: %s", err.Error())
+			logger.Fatal("IP restriction error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrTimeout):
-			log.Fatalf("Timeout error: %s", err.Error())
+			logger.Fatal("Timeout error", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrInternal):
-			log.Fatalf("Internal error: %s", err.Error())
+			logger.Fatal("Internal error", zap.Error(err))
 		default:
 			var sktErr *bitunix_errors.WebsocketError
 			if errors.As(err, &sktErr) {
-				log.Fatalf("Websocket error (code: %s): %s", sktErr.Operation, sktErr.Message)
+				logger.Fatal("Websocket error", zap.String("operation", sktErr.Operation), zap.String("message", sktErr.Message))
 			} else {
-				log.Fatalf("Unexpected error: %s", err.Error())
+				logger.Fatal("Unexpected error", zap.Error(err))
 			}
 		}
 	}
 
-	balanceHandler := &BalanceHandler{}
+	balanceHandler := &BalanceHandler{logger: logger}
 	if err := ws.SubscribeBalance(balanceHandler); err != nil {
-		handleError(err, "balance")
+		handleError(err, "balance", logger)
 	}
 
-	positionHandler := &PositionHandler{}
+	positionHandler := &PositionHandler{logger: logger}
 	if err := ws.SubscribePositions(positionHandler); err != nil {
-		handleError(err, "positions")
+		handleError(err, "positions", logger)
 	}
 
-	orderHandler := &OrderHandler{}
+	orderHandler := &OrderHandler{logger: logger}
 	if err := ws.SubscribeOrders(orderHandler); err != nil {
-		handleError(err, "orders")
+		handleError(err, "orders", logger)
 	}
 
-	tpslHandler := &TpSlOrderHandler{}
+	tpslHandler := &TpSlOrderHandler{logger: logger}
 	if err := ws.SubscribeTpSlOrders(tpslHandler); err != nil {
-		handleError(err, "tpsl orders")
+		handleError(err, "tpsl orders", logger)
 	}
 
 	if err := ws.Stream(); err != nil {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrTimeout):
-			log.WithError(err).Fatalf("timeout while streaming")
+			logger.Fatal("timeout while streaming", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrConnectionClosed):
-			log.WithError(err).Info("connection closed")
+			logger.Info("connection closed", zap.Error(err))
 		case errors.Is(err, bitunix_errors.ErrWorkgroupExhausted):
-			log.WithError(err).Info("workgroup is exhausted")
+			logger.Info("workgroup is exhausted", zap.Error(err))
 		default:
 			var apiErr *bitunix_errors.WebsocketError
 			if errors.As(err, &apiErr) {
-				log.Fatalf("Websocket error (code: %s): %s", apiErr.Operation, apiErr.Message)
+				logger.Fatal("Websocket error", zap.String("operation", apiErr.Operation), zap.String("message", apiErr.Message))
 			} else {
-				log.Fatalf("Unexpected error: %s", err.Error())
+				logger.Fatal("Unexpected error", zap.Error(err))
 			}
 		}
 	}
 }
 
-func handleError(err error, name string) {
+func handleError(err error, name string, logger *zap.Logger) {
 	switch {
 	case errors.Is(err, bitunix_errors.ErrValidation):
-		log.WithError(err).Fatalf("failed to subscribe to %s", name)
+		logger.Fatal("failed to subscribe", zap.String("name", name), zap.Error(err))
 	default:
 		var apiErr *bitunix_errors.WebsocketError
 		if errors.As(err, &apiErr) {
-			log.Fatalf("Websocket error (code: %s): %s", apiErr.Operation, apiErr.Message)
+			logger.Fatal("Websocket error", zap.String("operation", apiErr.Operation), zap.String("message", apiErr.Message))
 		} else {
-			log.Fatalf("Unexpected error: %s", err.Error())
+			logger.Fatal("Unexpected error", zap.Error(err))
 		}
 	}
 }

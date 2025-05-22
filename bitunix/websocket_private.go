@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/security"
 	"github.com/tradingiq/bitunix-client/websocket"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 )
@@ -24,22 +24,28 @@ type privateWebsocketClient struct {
 	positionSubscribersMtx sync.Mutex
 	balanceSubscriberMtx   sync.Mutex
 	tpSlOrderSubscriberMtx sync.Mutex
+	logger                 *zap.Logger
 }
 
 func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...WebsocketClientOption) (PrivateWebsocketClient, error) {
 	wsc := &websocketClient{
-		uri:  "wss://fapi.bitunix.com/private/",
-		quit: make(chan struct{}),
+		uri:      "wss://fapi.bitunix.com/private/",
+		quit:     make(chan struct{}),
+		logLevel: model.LogLevelNone,
 	}
 	for _, option := range options {
 		option(wsc)
 	}
 
+	var wsOptions []websocket.ClientOption
+	wsOptions = append(wsOptions, websocket.WithAuthentication(WebsocketSigner(apiKey, secretKey)))
+	wsOptions = append(wsOptions, websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()))
+	wsOptions = append(wsOptions, websocket.WithLogLevel(wsc.logLevel))
+
 	wsc.client = websocket.New(
 		ctx,
 		wsc.uri,
-		websocket.WithAuthentication(WebsocketSigner(apiKey, secretKey)),
-		websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()),
+		wsOptions...,
 	)
 
 	if wsc.workerPoolSize <= 0 {
@@ -52,6 +58,8 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 		wsc.messageQueue = make(chan []byte, 100)
 	}
 
+	logger := createLoggerForLevel(wsc.logLevel)
+
 	client := &privateWebsocketClient{
 		websocketClient:        wsc,
 		orderSubscriberMtx:     sync.Mutex{},
@@ -62,6 +70,7 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 		positionSubscribers:    map[PositionSubscriber]struct{}{},
 		orderSubscribers:       map[OrderSubscriber]struct{}{},
 		tpSlOrderSubscribers:   map[TpSlOrderSubscriber]struct{}{},
+		logger:                 logger,
 	}
 
 	wsc.processFunc = client.processMessage
@@ -198,16 +207,16 @@ func (ws *privateWebsocketClient) processMessage(bytes []byte) {
 
 	err := json.Unmarshal(bytes, &result)
 	if err != nil {
-		log.WithError(
-			errors.NewInternalError("error unmarshaling websocket message", err),
-		).Error("failed to process websocket message")
+		if ws.logger != nil {
+			ws.logger.Error("failed to process websocket message", zap.Error(errors.NewInternalError("error unmarshaling websocket message", err)))
+		}
 		return
 	}
 
 	if errMsg, hasError := result["error"].(string); hasError && errMsg != "" {
-		log.WithError(
-			errors.NewWebsocketError("message processing", errMsg, nil),
-		).Error("received error from websocket server")
+		if ws.logger != nil {
+			ws.logger.Error("received error from websocket server", zap.Error(errors.NewWebsocketError("message processing", errMsg, nil)))
+		}
 		return
 	}
 
@@ -228,9 +237,9 @@ func (ws *privateWebsocketClient) processMessage(bytes []byte) {
 func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 	res := model.TpSlOrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(
-			errors.NewInternalError("error unmarshaling tp/sl order response", err),
-		).Error("failed to process tp/sl order update")
+		if ws.logger != nil {
+			ws.logger.Error("failed to process tp/sl order update", zap.Error(errors.NewInternalError("error unmarshaling tp/sl order response", err)))
+		}
 		return
 	}
 
@@ -244,9 +253,9 @@ func (ws *privateWebsocketClient) populateTpSlOrderResponse(bytes []byte) {
 func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 	res := model.OrderChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(
-			errors.NewInternalError("error unmarshaling order response", err),
-		).Error("failed to process order update")
+		if ws.logger != nil {
+			ws.logger.Error("failed to process order update", zap.Error(errors.NewInternalError("error unmarshaling order response", err)))
+		}
 		return
 	}
 
@@ -260,9 +269,9 @@ func (ws *privateWebsocketClient) populateOrderResponse(bytes []byte) {
 func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 	res := model.PositionChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(
-			errors.NewInternalError("error unmarshaling position response", err),
-		).Error("failed to process position update")
+		if ws.logger != nil {
+			ws.logger.Error("failed to process position update", zap.Error(errors.NewInternalError("error unmarshaling position response", err)))
+		}
 		return
 	}
 
@@ -276,9 +285,9 @@ func (ws *privateWebsocketClient) populatePositionResponse(bytes []byte) {
 func (ws *privateWebsocketClient) populateBalanceResponse(bytes []byte) {
 	res := model.BalanceChannelMessage{}
 	if err := json.Unmarshal(bytes, &res); err != nil {
-		log.WithError(
-			errors.NewInternalError("error unmarshaling balance response", err),
-		).Error("failed to process balance update")
+		if ws.logger != nil {
+			ws.logger.Error("failed to process balance update", zap.Error(errors.NewInternalError("error unmarshaling balance response", err)))
+		}
 		return
 	}
 
@@ -323,6 +332,22 @@ func WithWorkerPoolSize(size int) WebsocketClientOption {
 func WithWorkerBufferSize(size int) WebsocketClientOption {
 	return func(ws *websocketClient) {
 		ws.workerBufferSize = size
+	}
+}
+
+func WithWebsocketDebug(enabled bool) WebsocketClientOption {
+	return func(ws *websocketClient) {
+		if enabled {
+			ws.logLevel = model.LogLevelAggressive
+		} else {
+			ws.logLevel = model.LogLevelNone
+		}
+	}
+}
+
+func WithWebsocketLogLevel(level model.LogLevel) WebsocketClientOption {
+	return func(ws *websocketClient) {
+		ws.logLevel = level
 	}
 }
 

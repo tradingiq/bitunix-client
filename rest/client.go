@@ -5,8 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/tradingiq/bitunix-client/errors"
+	"github.com/tradingiq/bitunix-client/model"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
@@ -23,6 +24,8 @@ type client struct {
 	httpClient  *http.Client
 	signRequest func(req *http.Request, body []byte) error
 	baseUri     *url.URL
+	logger      *zap.Logger
+	logLevel    model.LogLevel
 }
 
 type ClientOption func(*client)
@@ -39,6 +42,43 @@ func WithDefaultTimeout(timeout time.Duration) ClientOption {
 	}
 }
 
+func WithDebug(enabled bool) ClientOption {
+	return func(c *client) {
+		if enabled {
+			c.logLevel = model.LogLevelAggressive
+		} else {
+			c.logLevel = model.LogLevelNone
+		}
+	}
+}
+
+func WithLogLevel(level model.LogLevel) ClientOption {
+	return func(c *client) {
+		c.logLevel = level
+	}
+}
+
+func createLoggerForLevel(level model.LogLevel) *zap.Logger {
+	switch level {
+	case model.LogLevelNone:
+		return zap.NewNop()
+	case model.LogLevelAggressive:
+		logger, _ := zap.NewDevelopment()
+		return logger
+	case model.LogLevelVeryAggressive:
+		config := zap.NewDevelopmentConfig()
+		config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		config.Development = true
+		config.DisableCaller = false
+		config.DisableStacktrace = false
+		logger, _ := config.Build()
+		return logger
+	default:
+		logger, _ := zap.NewDevelopment()
+		return logger
+	}
+}
+
 func New(baseUri string, options ...ClientOption) (Client, error) {
 	uri, err := url.Parse(baseUri)
 	if err != nil {
@@ -51,10 +91,13 @@ func New(baseUri string, options ...ClientOption) (Client, error) {
 	c := &client{
 		httpClient: &http.Client{},
 		baseUri:    uri,
+		logLevel:   model.LogLevelAggressive,
 	}
 	for _, option := range options {
 		option(c)
 	}
+
+	c.logger = createLoggerForLevel(c.logLevel)
 
 	return c, nil
 }
@@ -67,11 +110,21 @@ type APIResponse struct {
 }
 
 func (c *client) request(ctx context.Context, method, path string, query url.Values, bodyBytes []byte) ([]byte, error) {
+	if c.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
+		c.logger.Debug("initiating HTTP request",
+			zap.String("method", method),
+			zap.String("path", path),
+			zap.Int("body_size", len(bodyBytes)))
+	}
+
 	reqURL := *c.baseUri
 	reqURL.Path = path
 
 	if query != nil {
 		reqURL.RawQuery = query.Encode()
+		if c.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
+			c.logger.Debug("request query parameters", zap.String("query", reqURL.RawQuery))
+		}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, reqURL.String(), bytes.NewReader(bodyBytes))
@@ -81,14 +134,25 @@ func (c *client) request(ctx context.Context, method, path string, query url.Val
 
 	req.Header.Set("Content-Type", "application/json")
 
+	if c.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
+		c.logger.Debug("signing request with authentication")
+	}
+
 	if err := c.signRequest(req, bodyBytes); err != nil {
 		return nil, errors.NewAuthenticationError("failed to sign request", err)
 	}
 
 	c.logRequest(req, bodyBytes)
 
+	if c.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
+		c.logger.Debug("sending HTTP request", zap.String("url", req.URL.String()))
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		if c.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
+			c.logger.Error("HTTP request failed", zap.Error(err))
+		}
 
 		if ctx.Err() != nil {
 			return nil, errors.NewTimeoutError("HTTP request", "", ctx.Err())
@@ -97,9 +161,17 @@ func (c *client) request(ctx context.Context, method, path string, query url.Val
 	}
 	defer resp.Body.Close()
 
+	if c.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
+		c.logger.Debug("HTTP request completed", zap.Int("status_code", resp.StatusCode))
+	}
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.NewNetworkError("reading response", "failed to read response body", err)
+	}
+
+	if c.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
+		c.logger.Debug("response body read", zap.Int("response_size", len(respBody)))
 	}
 
 	c.logResponse(resp, respBody)
@@ -152,27 +224,32 @@ func (c *client) Post(ctx context.Context, path string, query url.Values, body [
 }
 
 func (c *client) logRequest(req *http.Request, body []byte) {
-	logging := log.WithField("method", req.Method).WithField("uri", req.URL.String())
+	fields := []zap.Field{
+		zap.String("method", req.Method),
+		zap.String("uri", req.URL.String()),
+	}
 
 	for k, v := range req.Header {
-		logging.WithField(k, strings.Join(v, ","))
+		fields = append(fields, zap.String(k, strings.Join(v, ",")))
 	}
 	if len(body) > 0 {
-		logging.WithField("body", string(body))
+		fields = append(fields, zap.String("body", string(body)))
 	}
 
-	logging.Debug("request")
+	c.logger.Debug("request", fields...)
 }
 
 func (c *client) logResponse(resp *http.Response, body []byte) {
-	logging := log.WithField("status_code", resp.StatusCode)
+	fields := []zap.Field{
+		zap.Int("status_code", resp.StatusCode),
+	}
 
 	for k, v := range resp.Header {
-		logging.WithField(k, strings.Join(v, ","))
+		fields = append(fields, zap.String(k, strings.Join(v, ",")))
 	}
 	if len(body) > 0 {
-		logging.WithField("body", string(body))
+		fields = append(fields, zap.String("body", string(body)))
 	}
 
-	logging.Debug("response")
+	c.logger.Debug("response", fields...)
 }
