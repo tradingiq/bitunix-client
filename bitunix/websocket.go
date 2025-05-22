@@ -29,6 +29,7 @@ type websocketClient struct {
 	quit             chan struct{}
 	processFunc      func(bytes []byte)
 	logLevel         model.LogLevel
+	logger           *zap.Logger
 }
 
 func (ws *websocketClient) Connect() error {
@@ -130,7 +131,12 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 
 	var wsOptions []websocket.ClientOption
 	wsOptions = append(wsOptions, websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()))
-	wsOptions = append(wsOptions, websocket.WithLogLevel(wsc.logLevel))
+	
+	if wsc.logger != nil {
+		wsOptions = append(wsOptions, websocket.WithLogger(wsc.logger))
+	} else {
+		wsOptions = append(wsOptions, websocket.WithLogLevel(wsc.logLevel))
+	}
 
 	wsc.client = websocket.New(
 		ctx,
@@ -148,7 +154,12 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 		wsc.messageQueue = make(chan []byte, 100)
 	}
 
-	logger := createLoggerForLevel(wsc.logLevel)
+	var logger *zap.Logger
+	if wsc.logger != nil {
+		logger = wsc.logger
+	} else {
+		logger = createLoggerForLevel(wsc.logLevel)
+	}
 
 	client := &publicWebsocketClient{
 		websocketClient: wsc,

@@ -58,6 +58,12 @@ func WithLogLevel(level model.LogLevel) ClientOption {
 	}
 }
 
+func WithLogger(logger *zap.Logger) ClientOption {
+	return func(c *client) {
+		c.logger = logger
+	}
+}
+
 func createLoggerForLevel(level model.LogLevel) *zap.Logger {
 	switch level {
 	case model.LogLevelNone:
@@ -97,7 +103,9 @@ func New(baseUri string, options ...ClientOption) (Client, error) {
 		option(c)
 	}
 
-	c.logger = createLoggerForLevel(c.logLevel)
+	if c.logger == nil {
+		c.logger = createLoggerForLevel(c.logLevel)
+	}
 
 	return c, nil
 }
