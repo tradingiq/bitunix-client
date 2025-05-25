@@ -20,7 +20,6 @@ func main() {
 	startTime := time.Now().Add(-80 * time.Hour)
 
 	params := model.OrderHistoryParams{
-		Symbol:    model.ParseSymbol("BTCUSDT"),
 		StartTime: &startTime,
 		Limit:     10,
 	}
