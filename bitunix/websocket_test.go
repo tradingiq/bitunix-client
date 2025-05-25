@@ -170,6 +170,7 @@ type subTest struct {
 	msg         model.KLineChannelMessage
 	ch          chan struct{}
 	subscribeMu sync.Mutex
+	symbol      *model.Symbol
 }
 
 func (s *subTest) SubscribeKLine(message *model.KLineChannelMessage) {
@@ -188,7 +189,11 @@ func (s *subTest) SubscribeInterval() model.Interval {
 }
 
 func (s *subTest) SubscribeSymbol() model.Symbol {
-	return model.Symbol("BTCUSDT")
+	if s.symbol == nil {
+		return model.Symbol("BTCUSDT")
+	}
+
+	return *s.symbol
 }
 
 func (s *subTest) SubscribePriceType() model.PriceType {
@@ -491,6 +496,75 @@ func TestNewPublicWebsocket_WithOptions(t *testing.T) {
 	pubClient.Disconnect()
 }
 
+func TestPublicWebsocketClient_MultipleSubscribers(t *testing.T) {
+	mockWs := &mockWsClient{}
+	writeCount := 0
+	var writtenData [][]byte
+
+	mockWs.writeFn = func(data []byte) error {
+		writeCount++
+		writtenData = append(writtenData, data)
+		return nil
+	}
+
+	client := &publicWebsocketClient{
+		websocketClient: &websocketClient{
+			client:           mockWs,
+			uri:              "wss://test.com",
+			workerPoolSize:   10,
+			workerBufferSize: 100,
+			messageQueue:     make(chan []byte, 100),
+			quit:             make(chan struct{}),
+		},
+		klineHandlers: make(map[KLineSubscriber]struct{}),
+	}
+
+	// Create multiple subscribers for the same symbol
+	sub1 := &subTest{ch: make(chan struct{}, 1)}
+	sub2 := &subTest{ch: make(chan struct{}, 1)}
+	sub3 := &subTest{ch: make(chan struct{}, 1)}
+
+	// Subscribe first subscriber
+	err := client.SubscribeKLine(sub1)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, writeCount, "Should send subscribe request for first subscriber")
+
+	// Subscribe second subscriber for same symbol
+	err = client.SubscribeKLine(sub2)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, writeCount, "Should NOT send another subscribe request for second subscriber")
+
+	// Subscribe third subscriber for same symbol
+	err = client.SubscribeKLine(sub3)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, writeCount, "Should NOT send another subscribe request for third subscriber")
+
+	// Reset write count
+	writeCount = 0
+	writtenData = nil
+
+	// Unsubscribe first subscriber
+	err = client.UnsubscribeKLine(sub1)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, writeCount, "Should NOT send unsubscribe request when other subscribers exist")
+
+	// Unsubscribe second subscriber
+	err = client.UnsubscribeKLine(sub2)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, writeCount, "Should NOT send unsubscribe request when other subscribers exist")
+
+	// Unsubscribe third (last) subscriber
+	err = client.UnsubscribeKLine(sub3)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, writeCount, "SHOULD send unsubscribe request when last subscriber is removed")
+
+	// Verify the unsubscribe message
+	var unsubReq SubscribeRequest
+	err = json.Unmarshal(writtenData[0], &unsubReq)
+	assert.NoError(t, err)
+	assert.Equal(t, "unsubscribe", unsubReq.Op)
+}
+
 func TestParseChannel(t *testing.T) {
 	testCases := []struct {
 		name             string
@@ -556,7 +630,7 @@ func TestParseChannel(t *testing.T) {
 
 func TestConcurrentKLineSubscriptions(t *testing.T) {
 
-	numSubscribers := 10
+	numSubscribers := 3
 
 	mockWs := &mockWsClient{}
 	client := &publicWebsocketClient{
@@ -585,8 +659,16 @@ func TestConcurrentKLineSubscriptions(t *testing.T) {
 
 	msgNum := 5
 
+	symbols := []model.Symbol{model.Symbol("BTCUSDT"), model.Symbol("ETHUSDT"), model.Symbol("SUIUSDT")}
+
 	for i := 0; i < numSubscribers; i++ {
-		subscribers[i] = &subTest{ch: make(chan struct{}, msgNum)}
+		subscribers[i] = &subTest{
+			symbol:      &symbols[i],
+			called:      false,
+			msg:         model.KLineChannelMessage{},
+			ch:          make(chan struct{}, msgNum),
+			subscribeMu: sync.Mutex{},
+		}
 
 		go func(idx int) {
 			defer wg.Done()
@@ -605,7 +687,7 @@ func TestConcurrentKLineSubscriptions(t *testing.T) {
 
 	klineData := `{
 		"ch": "market_kline_1min",
-		"symbol": "BTCUSDT",
+		"symbol": "%s",
 		"ts": 1732178884994,
 		"data": {
 			"o": "0.0010",
@@ -619,9 +701,11 @@ func TestConcurrentKLineSubscriptions(t *testing.T) {
 
 	client.websocketClient.startWorkerPool(context.Background())
 
-	for i := 0; i < msgNum; i++ {
-		client.websocketClient.messageQueue <- []byte(klineData)
-		time.Sleep(10 * time.Millisecond)
+	for _, symbol := range symbols {
+		for i := 0; i < msgNum; i++ {
+			client.websocketClient.messageQueue <- []byte(fmt.Sprintf(klineData, symbol.String()))
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
 
 	time.Sleep(200 * time.Millisecond)
@@ -645,7 +729,7 @@ func TestConcurrentKLineSubscriptions(t *testing.T) {
 }
 
 func TestConcurrentUnsubscribe(t *testing.T) {
-	numSubscribers := 10
+	numSubscribers := 3
 
 	mockWs := &mockWsClient{}
 	client := &publicWebsocketClient{
@@ -681,10 +765,11 @@ func TestConcurrentUnsubscribe(t *testing.T) {
 
 		return nil
 	}
+	symbols := []model.Symbol{model.Symbol("BTCUSDT"), model.Symbol("ETHUSDT"), model.Symbol("SUIUSDT")}
 
 	subscribers := make([]*subTest, numSubscribers)
 	for i := 0; i < numSubscribers; i++ {
-		subscribers[i] = &subTest{ch: make(chan struct{}, 1)}
+		subscribers[i] = &subTest{symbol: &symbols[i], ch: make(chan struct{}, 1)}
 		err := client.SubscribeKLine(subscribers[i])
 		assert.NoError(t, err)
 	}

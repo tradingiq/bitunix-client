@@ -131,7 +131,7 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 
 	var wsOptions []websocket.ClientOption
 	wsOptions = append(wsOptions, websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()))
-	
+
 	if wsc.logger != nil {
 		wsOptions = append(wsOptions, websocket.WithLogger(wsc.logger))
 	} else {
@@ -190,25 +190,37 @@ func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) erro
 	ws.subscriberMtx.Lock()
 	defer ws.subscriberMtx.Unlock()
 
+	needsSubscription := true
+	for existingSubscriber := range ws.klineHandlers {
+		if existingSubscriber.SubscribeSymbol().Normalize() == symbol &&
+			existingSubscriber.SubscribeInterval().Normalize() == interval &&
+			existingSubscriber.SubscribePriceType().Normalize() == priceType {
+			needsSubscription = false
+			break
+		}
+	}
+
 	ws.klineHandlers[subscriber] = struct{}{}
 
-	req := SubscribeRequest{
-		Op: "subscribe",
-		Args: []interface{}{
-			SubscribeKLineRequest{
-				Symbol: symbol.String(),
-				Ch:     channelName,
+	if needsSubscription {
+		req := SubscribeRequest{
+			Op: "subscribe",
+			Args: []interface{}{
+				SubscribeKLineRequest{
+					Symbol: symbol.String(),
+					Ch:     channelName,
+				},
 			},
-		},
-	}
+		}
 
-	bytes, err := json.Marshal(req)
-	if err != nil {
-		return errors.NewInternalError("failed to marshal subscription request", err)
-	}
+		bytes, err := json.Marshal(req)
+		if err != nil {
+			return errors.NewInternalError("failed to marshal subscription request", err)
+		}
 
-	if err := ws.client.Write(bytes); err != nil {
-		return errors.NewWebsocketError("subscribe", "failed to send subscription request", err)
+		if err := ws.client.Write(bytes); err != nil {
+			return errors.NewWebsocketError("subscribe", "failed to send subscription request", err)
+		}
 	}
 
 	return nil
@@ -230,23 +242,35 @@ func (ws *publicWebsocketClient) UnsubscribeKLine(subscriber KLineSubscriber) er
 
 	delete(ws.klineHandlers, subscriber)
 
-	req := SubscribeRequest{
-		Op: "unsubscribe",
-		Args: []interface{}{
-			SubscribeKLineRequest{
-				Symbol: symbol.String(),
-				Ch:     channelName,
+	hasRemainingSubscribers := false
+	for remainingSubscriber := range ws.klineHandlers {
+		if remainingSubscriber.SubscribeSymbol().Normalize() == symbol &&
+			remainingSubscriber.SubscribeInterval().Normalize() == interval &&
+			remainingSubscriber.SubscribePriceType().Normalize() == priceType {
+			hasRemainingSubscribers = true
+			break
+		}
+	}
+
+	if !hasRemainingSubscribers {
+		req := SubscribeRequest{
+			Op: "unsubscribe",
+			Args: []interface{}{
+				SubscribeKLineRequest{
+					Symbol: symbol.String(),
+					Ch:     channelName,
+				},
 			},
-		},
-	}
+		}
 
-	bytes, err := json.Marshal(req)
-	if err != nil {
-		return errors.NewInternalError("failed to marshal unsubscription request", err)
-	}
+		bytes, err := json.Marshal(req)
+		if err != nil {
+			return errors.NewInternalError("failed to marshal unsubscription request", err)
+		}
 
-	if err := ws.client.Write(bytes); err != nil {
-		return errors.NewWebsocketError("unsubscribe", "failed to send unsubscription request", err)
+		if err := ws.client.Write(bytes); err != nil {
+			return errors.NewWebsocketError("unsubscribe", "failed to send unsubscription request", err)
+		}
 	}
 
 	return nil

@@ -40,7 +40,7 @@ func NewPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options 
 	var wsOptions []websocket.ClientOption
 	wsOptions = append(wsOptions, websocket.WithAuthentication(WebsocketSigner(apiKey, secretKey)))
 	wsOptions = append(wsOptions, websocket.WithKeepAliveMonitor(30*time.Second, KeepAliveMonitor()))
-	
+
 	if wsc.logger != nil {
 		wsOptions = append(wsOptions, websocket.WithLogger(wsc.logger))
 	} else {

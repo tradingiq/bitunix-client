@@ -16,10 +16,10 @@ func main() {
 
 	// Example: Use a custom logger configuration
 	// You can either use WithLogLevel for predefined log levels or WithLogger for custom loggers
-	
+
 	// Option 1: Use predefined log levels
 	client, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey, bitunix.WithLogLevel(model.LogLevelVeryAggressive))
-	
+
 	// Option 2: Use custom logger (commented out for this example)
 	// customLogger, _ := zap.NewProduction() // or any other zap logger configuration
 	// client, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey, bitunix.WithLogger(customLogger))
