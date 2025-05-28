@@ -176,6 +176,16 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 	return client, nil
 }
 
+func (ws *publicWebsocketClient) Connect() error {
+	if err := ws.client.Connect(); err != nil {
+		return errors.NewWebsocketError("connect", "client failed to connect", err)
+	}
+
+	ws.klineHandlers = make(map[KLineSubscriber]struct{})
+
+	return nil
+}
+
 func (ws *publicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) error {
 	if subscriber == nil {
 		return errors.NewValidationError("subscriber", "cannot be nil", nil)
