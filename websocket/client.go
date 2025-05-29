@@ -317,7 +317,6 @@ func (ws *Client) sendHeartbeat() {
 			heartbeat, err := ws.generateHeartbeatMessage()
 			if err != nil {
 				ws.logger.Error("error generating heartbeat message", zap.Error(err))
-				ws.Close()
 				return
 			}
 
@@ -328,7 +327,6 @@ func (ws *Client) sendHeartbeat() {
 			err = ws.Write(heartbeat)
 			if err != nil {
 				ws.logger.Error("writing heartbeat message", zap.Error(err))
-				ws.Close()
 				return
 			}
 
