@@ -235,7 +235,7 @@ func (ws *Client) Listen(handler HandlerFunc) error {
 			if ws.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
 				ws.logger.Debug("listen loop terminated via done channel")
 			}
-			return nil
+			return bitunix_errors.NewWebsocketError("listen", "connection closed", nil)
 		default:
 			if ws.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
 				ws.logger.Debug("waiting for incoming message")
@@ -317,6 +317,7 @@ func (ws *Client) sendHeartbeat() {
 			heartbeat, err := ws.generateHeartbeatMessage()
 			if err != nil {
 				ws.logger.Error("error generating heartbeat message", zap.Error(err))
+				ws.Close()
 				return
 			}
 
