@@ -18,7 +18,7 @@ func main() {
 	bitunixClient, _ := bitunix.NewApiClient(samples.Config.ApiKey, samples.Config.SecretKey)
 
 	params := model.PositionHistoryParams{
-		Limit: 2,
+		Limit: 100,
 	}
 
 	ctx := context.Background()
@@ -48,6 +48,16 @@ func main() {
 	}
 
 	logger.Info("got HistoricalPosition History", zap.Any("response", response))
+
+	var totalPnL float64
+	for _, position := range response.Data.Positions {
+		totalPnL += position.RealizedPNL
+	}
+
+	logger.Info("Summary",
+		zap.Int("positions_count", len(response.Data.Positions)),
+		zap.Float64("total_pnl", totalPnL),
+	)
 
 	time.Sleep(5000 * time.Second)
 }
