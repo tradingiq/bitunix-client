@@ -660,3 +660,143 @@ func (o *HistoricalOrder) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+type PendingTPSLOrderParams struct {
+	Symbol       Symbol
+	PositionID   string
+	Side         TradeSide
+	PositionMode PositionMode
+	Skip         int64
+	Limit        int64
+}
+
+type PendingTPSLOrderResponse struct {
+	BaseResponse
+	Data []PendingTPSLOrder `json:"data"`
+}
+
+type PendingTPSLOrder struct {
+	ID           string     `json:"id"`
+	PositionID   string     `json:"positionId"`
+	Symbol       Symbol     `json:"-"`
+	Base         string     `json:"base"`
+	Quote        string     `json:"quote"`
+	TpPrice      *float64   `json:"-"`
+	TpStopType   *StopType  `json:"-"`
+	SlPrice      *float64   `json:"-"`
+	SlStopType   *StopType  `json:"-"`
+	TpOrderType  *OrderType `json:"-"`
+	TpOrderPrice *float64   `json:"-"`
+	SlOrderType  *OrderType `json:"-"`
+	SlOrderPrice *float64   `json:"-"`
+	TpQty        *float64   `json:"-"`
+	SlQty        *float64   `json:"-"`
+}
+
+func (o *PendingTPSLOrder) UnmarshalJSON(data []byte) error {
+	type Alias PendingTPSLOrder
+	aux := &struct {
+		Symbol       string  `json:"symbol"`
+		TpPrice      *string `json:"tpPrice"`
+		TpStopType   *string `json:"tpStopType"`
+		SlPrice      *string `json:"slPrice"`
+		SlStopType   *string `json:"slStopType"`
+		TpOrderType  *string `json:"tpOrderType"`
+		TpOrderPrice *string `json:"tpOrderPrice"`
+		SlOrderType  *string `json:"slOrderType"`
+		SlOrderPrice *string `json:"slOrderPrice"`
+		TpQty        *string `json:"tpQty"`
+		SlQty        *string `json:"slQty"`
+		*Alias
+	}{
+		Alias: (*Alias)(o),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	o.Symbol = ParseSymbol(aux.Symbol)
+
+	if aux.TpPrice != nil && *aux.TpPrice != "" {
+		tpPrice, err := strconv.ParseFloat(*aux.TpPrice, 64)
+		if err != nil {
+			return fmt.Errorf("invalid tp price: %w", err)
+		}
+		o.TpPrice = &tpPrice
+	}
+
+	if aux.SlPrice != nil && *aux.SlPrice != "" {
+		slPrice, err := strconv.ParseFloat(*aux.SlPrice, 64)
+		if err != nil {
+			return fmt.Errorf("invalid sl price: %w", err)
+		}
+		o.SlPrice = &slPrice
+	}
+
+	if aux.TpOrderPrice != nil && *aux.TpOrderPrice != "" {
+		tpOrderPrice, err := strconv.ParseFloat(*aux.TpOrderPrice, 64)
+		if err != nil {
+			return fmt.Errorf("invalid tp order price: %w", err)
+		}
+		o.TpOrderPrice = &tpOrderPrice
+	}
+
+	if aux.SlOrderPrice != nil && *aux.SlOrderPrice != "" {
+		slOrderPrice, err := strconv.ParseFloat(*aux.SlOrderPrice, 64)
+		if err != nil {
+			return fmt.Errorf("invalid sl order price: %w", err)
+		}
+		o.SlOrderPrice = &slOrderPrice
+	}
+
+	if aux.TpQty != nil && *aux.TpQty != "" {
+		tpQty, err := strconv.ParseFloat(*aux.TpQty, 64)
+		if err != nil {
+			return fmt.Errorf("invalid tp qty: %w", err)
+		}
+		o.TpQty = &tpQty
+	}
+
+	if aux.SlQty != nil && *aux.SlQty != "" {
+		slQty, err := strconv.ParseFloat(*aux.SlQty, 64)
+		if err != nil {
+			return fmt.Errorf("invalid sl qty: %w", err)
+		}
+		o.SlQty = &slQty
+	}
+
+	if aux.TpStopType != nil && *aux.TpStopType != "" {
+		tpStopType, err := ParseStopType(*aux.TpStopType)
+		if err != nil {
+			return fmt.Errorf("invalid tp stop type: %w", err)
+		}
+		o.TpStopType = &tpStopType
+	}
+
+	if aux.SlStopType != nil && *aux.SlStopType != "" {
+		slStopType, err := ParseStopType(*aux.SlStopType)
+		if err != nil {
+			return fmt.Errorf("invalid sl stop type: %w", err)
+		}
+		o.SlStopType = &slStopType
+	}
+
+	if aux.TpOrderType != nil && *aux.TpOrderType != "" {
+		tpOrderType, err := ParseOrderType(*aux.TpOrderType)
+		if err != nil {
+			return fmt.Errorf("invalid tp order type: %w", err)
+		}
+		o.TpOrderType = &tpOrderType
+	}
+
+	if aux.SlOrderType != nil && *aux.SlOrderType != "" {
+		slOrderType, err := ParseOrderType(*aux.SlOrderType)
+		if err != nil {
+			return fmt.Errorf("invalid sl order type: %w", err)
+		}
+		o.SlOrderType = &slOrderType
+	}
+
+	return nil
+}
