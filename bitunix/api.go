@@ -23,6 +23,7 @@ type ApiClient interface {
 	GetOrderHistory(ctx context.Context, params model.OrderHistoryParams) (*model.OrderHistoryResponse, error)
 	GetPositionHistory(ctx context.Context, params model.PositionHistoryParams) (*model.PositionHistoryResponse, error)
 	PlaceTpSlOrder(ctx context.Context, request *model.TPSLOrderRequest) (*model.TpSlOrderResponse, error)
+	GetPendingTPSLOrder(ctx context.Context, params model.PendingTPSLOrderParams) (*model.PendingTPSLOrderResponse, error)
 	GetAccountBalance(ctx context.Context, params model.AccountBalanceParams) (*model.AccountBalanceResponse, error)
 	GetPendingPositions(ctx context.Context, params model.PendingPositionParams) (*model.PendingPositionResponse, error)
 	GetOrderDetail(ctx context.Context, request *OrderDetailRequest) (*model.OrderDetailResponse, error)
