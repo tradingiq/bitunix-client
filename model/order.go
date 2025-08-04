@@ -800,3 +800,203 @@ func (o *PendingTPSLOrder) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+type TPSLOrderHistoryParams struct {
+	Symbol       Symbol
+	Side         TradeSide
+	PositionMode PositionMode
+	StartTime    *time.Time
+	EndTime      *time.Time
+	Skip         int64
+	Limit        int64
+}
+
+type TPSLOrderHistoryResponse struct {
+	BaseResponse
+	Data struct {
+		OrderList []HistoricalTPSLOrder `json:"orderList"`
+		Total     int64                 `json:"-"`
+	} `json:"data"`
+}
+
+func (r *TPSLOrderHistoryResponse) UnmarshalJSON(data []byte) error {
+	type Alias TPSLOrderHistoryResponse
+	aux := &struct {
+		Data struct {
+			OrderList []HistoricalTPSLOrder `json:"orderList"`
+			Total     string                `json:"total"`
+		} `json:"data"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Copy the data
+	r.Data.OrderList = aux.Data.OrderList
+
+	// Parse Total from string to int64
+	if aux.Data.Total != "" {
+		total, err := strconv.ParseInt(aux.Data.Total, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid total: %w", err)
+		}
+		r.Data.Total = total
+	}
+
+	return nil
+}
+
+type HistoricalTPSLOrder struct {
+	ID           string       `json:"id"`
+	PositionID   string       `json:"positionId"`
+	Symbol       Symbol       `json:"-"`
+	Base         string       `json:"base"`
+	Quote        string       `json:"quote"`
+	TpPrice      *float64     `json:"-"`
+	TpStopType   *StopType    `json:"-"`
+	SlPrice      *float64     `json:"-"`
+	SlStopType   *StopType    `json:"-"`
+	TpOrderType  *OrderType   `json:"-"`
+	TpOrderPrice *float64     `json:"-"`
+	SlOrderType  *OrderType   `json:"-"`
+	SlOrderPrice *float64     `json:"-"`
+	TpQty        *float64     `json:"-"`
+	SlQty        *float64     `json:"-"`
+	Status       string       `json:"status"`
+	Ctime        time.Time    `json:"-"`
+	TriggerTime  *time.Time   `json:"-"`
+}
+
+func (o *HistoricalTPSLOrder) UnmarshalJSON(data []byte) error {
+	aux := struct {
+		ID           string  `json:"id"`
+		PositionID   string  `json:"positionId"`
+		Symbol       string  `json:"symbol"`
+		Base         string  `json:"base"`
+		Quote        string  `json:"quote"`
+		TpPrice      *string `json:"tpPrice"`
+		TpStopType   *string `json:"tpStopType"`
+		SlPrice      *string `json:"slPrice"`
+		SlStopType   *string `json:"slStopType"`
+		TpOrderType  *string `json:"tpOrderType"`
+		TpOrderPrice *string `json:"tpOrderPrice"`
+		SlOrderType  *string `json:"slOrderType"`
+		SlOrderPrice *string `json:"slOrderPrice"`
+		TpQty        *string `json:"tpQty"`
+		SlQty        *string `json:"slQty"`
+		Status       string  `json:"status"`
+		Ctime        string  `json:"ctime"`
+		TriggerTime  *string `json:"triggerTime"`
+	}{}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	o.ID = aux.ID
+	o.PositionID = aux.PositionID
+	o.Base = aux.Base
+	o.Quote = aux.Quote
+	o.Status = aux.Status
+
+	// Parse Ctime from string to time.Time
+	if aux.Ctime != "" {
+		ctimeInt, err := strconv.ParseInt(aux.Ctime, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid ctime: %w", err)
+		}
+		o.Ctime = time.Unix(0, ctimeInt*1000000) // Convert milliseconds to nanoseconds
+	}
+
+	// Parse TriggerTime from string to time.Time (can be null)
+	if aux.TriggerTime != nil && *aux.TriggerTime != "" {
+		triggerTimeInt, err := strconv.ParseInt(*aux.TriggerTime, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid triggerTime: %w", err)
+		}
+		triggerTime := time.Unix(0, triggerTimeInt*1000000) // Convert milliseconds to nanoseconds
+		o.TriggerTime = &triggerTime
+	}
+
+	if aux.Symbol != "" {
+		o.Symbol = Symbol(aux.Symbol)
+	} else if aux.Base != "" && aux.Quote != "" {
+		o.Symbol = Symbol(aux.Base + aux.Quote)
+	}
+
+	if aux.TpPrice != nil {
+		tpPrice, err := strconv.ParseFloat(*aux.TpPrice, 64)
+		if err == nil {
+			o.TpPrice = &tpPrice
+		}
+	}
+
+	if aux.TpStopType != nil && *aux.TpStopType != "" {
+		tpStopType, err := ParseStopType(*aux.TpStopType)
+		if err == nil {
+			o.TpStopType = &tpStopType
+		}
+	}
+
+	if aux.SlPrice != nil {
+		slPrice, err := strconv.ParseFloat(*aux.SlPrice, 64)
+		if err == nil {
+			o.SlPrice = &slPrice
+		}
+	}
+
+	if aux.SlStopType != nil && *aux.SlStopType != "" {
+		slStopType, err := ParseStopType(*aux.SlStopType)
+		if err == nil {
+			o.SlStopType = &slStopType
+		}
+	}
+
+	if aux.TpOrderType != nil && *aux.TpOrderType != "" {
+		tpOrderType, err := ParseOrderType(*aux.TpOrderType)
+		if err == nil {
+			o.TpOrderType = &tpOrderType
+		}
+	}
+
+	if aux.TpOrderPrice != nil {
+		tpOrderPrice, err := strconv.ParseFloat(*aux.TpOrderPrice, 64)
+		if err == nil {
+			o.TpOrderPrice = &tpOrderPrice
+		}
+	}
+
+	if aux.SlOrderType != nil && *aux.SlOrderType != "" {
+		slOrderType, err := ParseOrderType(*aux.SlOrderType)
+		if err == nil {
+			o.SlOrderType = &slOrderType
+		}
+	}
+
+	if aux.SlOrderPrice != nil {
+		slOrderPrice, err := strconv.ParseFloat(*aux.SlOrderPrice, 64)
+		if err == nil {
+			o.SlOrderPrice = &slOrderPrice
+		}
+	}
+
+	if aux.TpQty != nil {
+		tpQty, err := strconv.ParseFloat(*aux.TpQty, 64)
+		if err == nil {
+			o.TpQty = &tpQty
+		}
+	}
+
+	if aux.SlQty != nil {
+		slQty, err := strconv.ParseFloat(*aux.SlQty, 64)
+		if err == nil {
+			o.SlQty = &slQty
+		}
+	}
+
+	return nil
+}
