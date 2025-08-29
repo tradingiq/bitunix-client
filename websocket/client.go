@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"go.uber.org/zap"
-	"net/http"
-	"net/url"
-	"time"
 )
 
 type Client struct {
@@ -328,6 +329,7 @@ func (ws *Client) sendHeartbeat() {
 			err = ws.Write(heartbeat)
 			if err != nil {
 				ws.logger.Error("writing heartbeat message", zap.Error(err))
+				ws.Close()
 				return
 			}
 
