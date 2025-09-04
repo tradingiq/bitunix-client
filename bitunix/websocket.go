@@ -408,3 +408,183 @@ type PublicWebsocketClient interface {
 	SubscribeKLine(subscriber KLineSubscriber) error
 	UnsubscribeKLine(subscriber KLineSubscriber) error
 }
+
+type ReconnectingPublicWebsocketClient struct {
+	client                PublicWebsocketClient
+	ctx                   context.Context
+	maxReconnectAttempts  int
+	reconnectDelay        time.Duration
+	logger                *zap.Logger
+	isConnected           bool
+	mu                    sync.RWMutex
+	stopReconnecting      chan struct{}
+	subscribers           map[KLineSubscriber]struct{}
+	subscriberMu          sync.RWMutex
+}
+
+type ReconnectingClientOption func(*ReconnectingPublicWebsocketClient)
+
+func WithMaxReconnectAttempts(attempts int) ReconnectingClientOption {
+	return func(r *ReconnectingPublicWebsocketClient) {
+		r.maxReconnectAttempts = attempts
+	}
+}
+
+func WithReconnectDelay(delay time.Duration) ReconnectingClientOption {
+	return func(r *ReconnectingPublicWebsocketClient) {
+		r.reconnectDelay = delay
+	}
+}
+
+func WithReconnectLogger(logger *zap.Logger) ReconnectingClientOption {
+	return func(r *ReconnectingPublicWebsocketClient) {
+		r.logger = logger
+	}
+}
+
+func NewReconnectingPublicWebsocket(ctx context.Context, client PublicWebsocketClient, options ...ReconnectingClientOption) *ReconnectingPublicWebsocketClient {
+	r := &ReconnectingPublicWebsocketClient{
+		client:               client,
+		ctx:                  ctx,
+		maxReconnectAttempts: 0,
+		reconnectDelay:       5 * time.Second,
+		logger:               zap.NewNop(),
+		stopReconnecting:     make(chan struct{}),
+		subscribers:          make(map[KLineSubscriber]struct{}),
+	}
+
+	for _, option := range options {
+		option(r)
+	}
+
+	return r
+}
+
+func (r *ReconnectingPublicWebsocketClient) Connect() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	err := r.client.Connect()
+	if err == nil {
+		r.isConnected = true
+	}
+	return err
+}
+
+func (r *ReconnectingPublicWebsocketClient) Disconnect() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	close(r.stopReconnecting)
+	r.isConnected = false
+	r.client.Disconnect()
+}
+
+func (r *ReconnectingPublicWebsocketClient) SubscribeKLine(subscriber KLineSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.SubscribeKLine(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		r.subscribers[subscriber] = struct{}{}
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPublicWebsocketClient) UnsubscribeKLine(subscriber KLineSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.UnsubscribeKLine(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		delete(r.subscribers, subscriber)
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPublicWebsocketClient) Stream() error {
+	attempt := 0
+	for {
+		r.mu.RLock()
+		if !r.isConnected {
+			r.mu.RUnlock()
+			return errors.NewWebsocketError("stream", "not connected", nil)
+		}
+		r.mu.RUnlock()
+
+		err := r.client.Stream()
+		if err == nil {
+			return nil
+		}
+
+		r.logger.Error("websocket stream error", zap.Error(err), zap.Int("attempt", attempt+1))
+
+		r.mu.Lock()
+		r.isConnected = false
+		r.mu.Unlock()
+
+		if r.maxReconnectAttempts > 0 && attempt >= r.maxReconnectAttempts {
+			r.logger.Error("max reconnect attempts reached", zap.Int("attempts", attempt))
+			return errors.NewWebsocketError("stream", "max reconnect attempts reached", err)
+		}
+
+		select {
+		case <-r.ctx.Done():
+			return errors.NewConnectionClosedError("stream", "context cancelled during reconnection", r.ctx.Err())
+		case <-r.stopReconnecting:
+			return errors.NewWebsocketError("stream", "reconnection stopped", nil)
+		case <-time.After(r.reconnectDelay):
+		}
+
+		r.logger.Info("attempting to reconnect", zap.Int("attempt", attempt+1))
+
+		if reconnectErr := r.connectWithResubscription(); reconnectErr != nil {
+			r.logger.Error("reconnection failed", zap.Error(reconnectErr), zap.Int("attempt", attempt+1))
+			attempt++
+			continue
+		}
+
+		r.logger.Info("reconnected successfully", zap.Int("attempt", attempt+1))
+		attempt = 0
+	}
+}
+
+func (r *ReconnectingPublicWebsocketClient) connectWithResubscription() error {
+	err := r.client.Connect()
+	if err != nil {
+		return err
+	}
+
+	r.mu.Lock()
+	r.isConnected = true
+	r.mu.Unlock()
+
+	return r.resubscribeAll()
+}
+
+func (r *ReconnectingPublicWebsocketClient) resubscribeAll() error {
+	r.subscriberMu.RLock()
+	defer r.subscriberMu.RUnlock()
+
+	for subscriber := range r.subscribers {
+		err := r.client.SubscribeKLine(subscriber)
+		if err != nil {
+			r.logger.Error("failed to resubscribe", 
+				zap.String("symbol", subscriber.SubscribeSymbol().String()),
+				zap.String("interval", subscriber.SubscribeInterval().String()),
+				zap.String("price_type", subscriber.SubscribePriceType().String()),
+				zap.Error(err))
+			return err
+		}
+		r.logger.Debug("resubscribed successfully", 
+			zap.String("symbol", subscriber.SubscribeSymbol().String()),
+			zap.String("interval", subscriber.SubscribeInterval().String()),
+			zap.String("price_type", subscriber.SubscribePriceType().String()))
+	}
+
+	return nil
+}

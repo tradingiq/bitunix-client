@@ -24,7 +24,7 @@ connection management, and detailed error handling.
 - **Comprehensive Type System**: Strong typing for all API objects and parameters
 - **Builder Pattern**: Order builders to simplify creating complex order requests
 - **Authentication**: Automatic request signing and authentication
-- **Connection Resilience**: Improved WebSocket reconnection and error handling
+- **Connection Resilience**: Automatic WebSocket reconnection with configurable retry logic and subscription restoration
 - **Thread Safety**: Race-condition free implementation for concurrent usage
 - **Work Group Pattern**: Limits resource extension for websocket connections
 
@@ -157,6 +157,116 @@ log.WithError(err).Fatal("Failed to stream")
 }
 ```
 
+### Working with Reconnecting WebSockets (Public)
+
+The client provides a reconnecting WebSocket wrapper that automatically handles connection failures and reestablishes subscriptions:
+
+```go
+ctx := context.Background()
+
+// Create logger for reconnection events
+logger, _ := zap.NewDevelopment()
+
+// Create base websocket client
+baseClient, err := bitunix.NewPublicWebsocket(ctx, 
+	bitunix.WithLogger(logger),
+)
+if err != nil {
+	log.Fatalf("Failed to create base client: %v", err)
+}
+
+// Create reconnecting websocket client with custom options
+reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
+	bitunix.WithMaxReconnectAttempts(0), // 0 = infinite attempts, or set a specific limit
+	bitunix.WithReconnectDelay(10*time.Second), // delay between reconnection attempts
+	bitunix.WithReconnectLogger(logger), // optional logger for reconnection events
+)
+
+// Connect
+if err := reconnectingClient.Connect(); err != nil {
+	log.Fatalf("Failed to connect: %v", err)
+}
+
+// Subscribe to channels (subscriptions are automatically restored on reconnection)
+subscriber := &ExampleKLineSubscriber{
+	symbol:    model.ParseSymbol("BTCUSDT"),
+	interval:  model.Interval1m,
+	priceType: model.PriceTypeIndex,
+}
+
+if err := reconnectingClient.SubscribeKLine(subscriber); err != nil {
+	log.Fatalf("Failed to subscribe: %v", err)
+}
+
+// Start streaming - this will automatically reconnect on failures
+go func() {
+	if err := reconnectingClient.Stream(); err != nil {
+		log.Printf("Stream ended with error: %v", err)
+	}
+}()
+
+// Keep running
+select {}
+```
+
+## WebSocket Connection Resilience
+
+The library provides robust WebSocket connection management with automatic reconnection capabilities:
+
+### Reconnection Features
+
+- **Automatic Reconnection**: When a WebSocket connection fails, the reconnecting client automatically attempts to reestablish the connection
+- **Configurable Retry Logic**: Set maximum retry attempts (0 for infinite) and delay between attempts
+- **Subscription Persistence**: All active subscriptions are automatically restored after successful reconnection
+- **Graceful Error Handling**: Connection errors are logged and handled gracefully without terminating the application
+- **Thread-Safe Operations**: The reconnection logic is thread-safe and can be used in concurrent applications
+
+### Reconnection Behavior
+
+1. **Connection Monitoring**: The client continuously monitors the WebSocket connection status
+2. **Failure Detection**: When a connection failure is detected (network error, server disconnect, etc.), the client immediately marks itself as disconnected
+3. **Reconnection Loop**: The client enters a reconnection loop that:
+   - Waits for the configured delay period (`WithReconnectDelay`)
+   - Attempts to reconnect to the WebSocket server
+   - If successful, resubscribes to all previously active channels
+   - If failed, increments the attempt counter and retries (unless max attempts reached)
+4. **Subscription Restoration**: After successful reconnection, all subscribers are automatically resubscribed to their respective channels
+5. **Logging**: All reconnection events, failures, and successes are logged for monitoring and debugging
+
+### Configuration Options
+
+```go
+// Configure reconnection behavior
+reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
+    // Maximum number of reconnection attempts (0 = infinite)
+    bitunix.WithMaxReconnectAttempts(5),
+    
+    // Delay between reconnection attempts
+    bitunix.WithReconnectDelay(30*time.Second),
+    
+    // Logger for reconnection events
+    bitunix.WithReconnectLogger(logger),
+)
+```
+
+### Error Handling
+
+The reconnecting client handles several types of connection errors:
+- Network connectivity issues
+- Server-side disconnections
+- Context cancellation
+- Connection timeout errors
+
+When maximum reconnection attempts are reached, the client returns an error and stops attempting to reconnect. Applications should monitor this error to decide whether to restart the connection or handle the failure gracefully.
+
+### Best Practices
+
+1. **Use Appropriate Delays**: Set reasonable reconnection delays (5-30 seconds) to avoid overwhelming the server
+2. **Monitor Logs**: Enable logging to track connection health and reconnection events
+3. **Handle Final Failures**: Implement error handling for cases where reconnection ultimately fails
+4. **Resource Management**: Properly disconnect clients when shutting down to release resources
+5. **Context Management**: Use proper context cancellation to gracefully stop reconnection attempts
+
 ## Documentation
 
 The project includes detailed documentation in the `/documentation` directory:
@@ -181,8 +291,9 @@ The project includes detailed documentation in the `/documentation` directory:
 
 ## Sample Applications
 
-The `/samples` directory contains example applications demonstrating the client's functionality:
+The `/samples` and `/examples` directories contain example applications demonstrating the client's functionality:
 
+### REST API Examples
 - Account Balance: `/samples/get_account_balance/main.go`
 - Place Order: `/samples/place_order/main.go`
 - Cancel Order: `/samples/cancel_order/main.go`
@@ -190,8 +301,11 @@ The `/samples` directory contains example applications demonstrating the client'
 - Position History: `/samples/get_position_history/main.go`
 - Trade History: `/samples/get_trade_history/main.go`
 - Take-Profit Order: `/samples/place_tp/main.go`
+
+### WebSocket Examples
 - WebSocket Private Client: `/samples/websocket_private/main.go`
 - WebSocket Public Client: `/samples/websocket_public/main.go`
+- **Reconnecting WebSocket Client**: `/examples/reconnecting_websocket.go` - Demonstrates automatic reconnection with subscription restoration
 
 ## Authentication
 
