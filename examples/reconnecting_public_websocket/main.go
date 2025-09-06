@@ -40,7 +40,7 @@ func main() {
 	
 	// Create base websocket client
 	baseClient, err := bitunix.NewPublicWebsocket(ctx, 
-		bitunix.WithLogger(logger),
+		bitunix.WithWebsocketLogger(logger),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create base client: %v", err)
@@ -61,8 +61,8 @@ func main() {
 	// Create subscriber
 	subscriber := &ExampleKLineSubscriber{
 		symbol:    model.ParseSymbol("BTCUSDT"),
-		interval:  model.Interval1m,
-		priceType: model.PriceTypeIndex,
+		interval:  model.Interval1Min,
+		priceType: model.PriceTypeMark,
 	}
 	
 	// Subscribe to KLine
