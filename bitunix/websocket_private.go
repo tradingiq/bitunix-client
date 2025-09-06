@@ -410,3 +410,287 @@ type PrivateWebsocketClient interface {
 	Connect() error
 	Disconnect()
 }
+
+type ReconnectingPrivateWebsocketClient struct {
+	client                   PrivateWebsocketClient
+	ctx                      context.Context
+	maxReconnectAttempts     int
+	reconnectDelay           time.Duration
+	logger                   *zap.Logger
+	isConnected              bool
+	mu                       sync.RWMutex
+	stopReconnecting         chan struct{}
+	balanceSubscribers       map[BalanceSubscriber]struct{}
+	positionSubscribers      map[PositionSubscriber]struct{}
+	orderSubscribers         map[OrderSubscriber]struct{}
+	tpSlOrderSubscribers     map[TpSlOrderSubscriber]struct{}
+	subscriberMu             sync.RWMutex
+}
+
+type ReconnectingPrivateClientOption func(*ReconnectingPrivateWebsocketClient)
+
+func WithPrivateMaxReconnectAttempts(attempts int) ReconnectingPrivateClientOption {
+	return func(r *ReconnectingPrivateWebsocketClient) {
+		r.maxReconnectAttempts = attempts
+	}
+}
+
+func WithPrivateReconnectDelay(delay time.Duration) ReconnectingPrivateClientOption {
+	return func(r *ReconnectingPrivateWebsocketClient) {
+		r.reconnectDelay = delay
+	}
+}
+
+func WithPrivateReconnectLogger(logger *zap.Logger) ReconnectingPrivateClientOption {
+	return func(r *ReconnectingPrivateWebsocketClient) {
+		r.logger = logger
+	}
+}
+
+func NewReconnectingPrivateWebsocket(ctx context.Context, client PrivateWebsocketClient, options ...ReconnectingPrivateClientOption) *ReconnectingPrivateWebsocketClient {
+	r := &ReconnectingPrivateWebsocketClient{
+		client:               client,
+		ctx:                  ctx,
+		maxReconnectAttempts: 0,
+		reconnectDelay:       5 * time.Second,
+		logger:               zap.NewNop(),
+		stopReconnecting:     make(chan struct{}),
+		balanceSubscribers:   make(map[BalanceSubscriber]struct{}),
+		positionSubscribers:  make(map[PositionSubscriber]struct{}),
+		orderSubscribers:     make(map[OrderSubscriber]struct{}),
+		tpSlOrderSubscribers: make(map[TpSlOrderSubscriber]struct{}),
+	}
+
+	for _, option := range options {
+		option(r)
+	}
+
+	return r
+}
+
+func (r *ReconnectingPrivateWebsocketClient) Connect() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	err := r.client.Connect()
+	if err == nil {
+		r.isConnected = true
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) Disconnect() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	close(r.stopReconnecting)
+	r.isConnected = false
+	r.client.Disconnect()
+}
+
+func (r *ReconnectingPrivateWebsocketClient) SubscribeBalance(subscriber BalanceSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.SubscribeBalance(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		r.balanceSubscribers[subscriber] = struct{}{}
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) UnsubscribeBalance(subscriber BalanceSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.UnsubscribeBalance(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		delete(r.balanceSubscribers, subscriber)
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) SubscribePositions(subscriber PositionSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.SubscribePositions(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		r.positionSubscribers[subscriber] = struct{}{}
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) UnsubscribePositions(subscriber PositionSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.UnsubscribePositions(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		delete(r.positionSubscribers, subscriber)
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) SubscribeOrders(subscriber OrderSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.SubscribeOrders(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		r.orderSubscribers[subscriber] = struct{}{}
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) UnsubscribeOrders(subscriber OrderSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.UnsubscribeOrders(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		delete(r.orderSubscribers, subscriber)
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) SubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.SubscribeTpSlOrders(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		r.tpSlOrderSubscribers[subscriber] = struct{}{}
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) UnsubscribeTpSlOrders(subscriber TpSlOrderSubscriber) error {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	err := r.client.UnsubscribeTpSlOrders(subscriber)
+	if err == nil {
+		r.subscriberMu.Lock()
+		delete(r.tpSlOrderSubscribers, subscriber)
+		r.subscriberMu.Unlock()
+	}
+	return err
+}
+
+func (r *ReconnectingPrivateWebsocketClient) Stream() error {
+	attempt := 0
+	for {
+		r.mu.RLock()
+		if !r.isConnected {
+			r.mu.RUnlock()
+			return errors.NewWebsocketError("stream", "not connected", nil)
+		}
+		r.mu.RUnlock()
+
+		err := r.client.Stream()
+		if err == nil {
+			return nil
+		}
+
+		r.logger.Error("private websocket stream error", zap.Error(err), zap.Int("attempt", attempt+1))
+
+		r.mu.Lock()
+		r.isConnected = false
+		r.mu.Unlock()
+
+		if r.maxReconnectAttempts > 0 && attempt >= r.maxReconnectAttempts {
+			r.logger.Error("max reconnect attempts reached for private websocket", zap.Int("attempts", attempt))
+			return errors.NewWebsocketError("stream", "max reconnect attempts reached", err)
+		}
+
+		select {
+		case <-r.ctx.Done():
+			return errors.NewConnectionClosedError("stream", "context cancelled during reconnection", r.ctx.Err())
+		case <-r.stopReconnecting:
+			return errors.NewWebsocketError("stream", "reconnection stopped", nil)
+		case <-time.After(r.reconnectDelay):
+		}
+
+		r.logger.Info("attempting to reconnect private websocket", zap.Int("attempt", attempt+1))
+
+		if reconnectErr := r.connectWithResubscription(); reconnectErr != nil {
+			r.logger.Error("private websocket reconnection failed", zap.Error(reconnectErr), zap.Int("attempt", attempt+1))
+			attempt++
+			continue
+		}
+
+		r.logger.Info("private websocket reconnected successfully", zap.Int("attempt", attempt+1))
+		attempt = 0
+	}
+}
+
+func (r *ReconnectingPrivateWebsocketClient) connectWithResubscription() error {
+	err := r.client.Connect()
+	if err != nil {
+		return err
+	}
+
+	r.mu.Lock()
+	r.isConnected = true
+	r.mu.Unlock()
+
+	return r.resubscribeAll()
+}
+
+func (r *ReconnectingPrivateWebsocketClient) resubscribeAll() error {
+	r.subscriberMu.RLock()
+	defer r.subscriberMu.RUnlock()
+
+	for subscriber := range r.balanceSubscribers {
+		err := r.client.SubscribeBalance(subscriber)
+		if err != nil {
+			r.logger.Error("failed to resubscribe to balance updates", zap.Error(err))
+			return err
+		}
+		r.logger.Debug("resubscribed to balance updates successfully")
+	}
+
+	for subscriber := range r.positionSubscribers {
+		err := r.client.SubscribePositions(subscriber)
+		if err != nil {
+			r.logger.Error("failed to resubscribe to position updates", zap.Error(err))
+			return err
+		}
+		r.logger.Debug("resubscribed to position updates successfully")
+	}
+
+	for subscriber := range r.orderSubscribers {
+		err := r.client.SubscribeOrders(subscriber)
+		if err != nil {
+			r.logger.Error("failed to resubscribe to order updates", zap.Error(err))
+			return err
+		}
+		r.logger.Debug("resubscribed to order updates successfully")
+	}
+
+	for subscriber := range r.tpSlOrderSubscribers {
+		err := r.client.SubscribeTpSlOrders(subscriber)
+		if err != nil {
+			r.logger.Error("failed to resubscribe to tp/sl order updates", zap.Error(err))
+			return err
+		}
+		r.logger.Debug("resubscribed to tp/sl order updates successfully")
+	}
+
+	return nil
+}

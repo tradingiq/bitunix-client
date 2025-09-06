@@ -87,12 +87,15 @@ fmt.Printf("Order placed successfully: %+v\n", response)
 ```go
 // Create a WebSocket client
 ctx := context.Background()
-ws := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY")
+ws, err := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY")
+if err != nil {
+    log.Fatalf("Failed to create WebSocket client: %v", err)
+}
 defer ws.Disconnect()
 
 // Connect to the WebSocket server
 if err := ws.Connect(); err != nil {
-log.Fatalf("Failed to connect to WebSocket: %v", err)
+    log.Fatalf("Failed to connect to WebSocket: %v", err)
 }
 
 // Subscribe to balance updates
@@ -157,9 +160,11 @@ log.WithError(err).Fatal("Failed to stream")
 }
 ```
 
-### Working with Reconnecting WebSockets (Public)
+### Working with Reconnecting WebSockets
 
-The client provides a reconnecting WebSocket wrapper that automatically handles connection failures and reestablishes subscriptions:
+The client provides reconnecting WebSocket wrappers that automatically handle connection failures and reestablish subscriptions for both public and private WebSockets:
+
+#### Reconnecting Private WebSocket
 
 ```go
 ctx := context.Background()
@@ -167,15 +172,76 @@ ctx := context.Background()
 // Create logger for reconnection events
 logger, _ := zap.NewDevelopment()
 
-// Create base websocket client
+// Create base private websocket client
+baseClient, err := bitunix.NewPrivateWebsocket(ctx, "YOUR_API_KEY", "YOUR_SECRET_KEY",
+	bitunix.WithWebsocketLogger(logger),
+)
+if err != nil {
+	log.Fatalf("Failed to create base private client: %v", err)
+}
+
+// Create reconnecting private websocket client with custom options
+reconnectingClient := bitunix.NewReconnectingPrivateWebsocket(ctx, baseClient,
+	bitunix.WithPrivateMaxReconnectAttempts(0), // 0 = infinite attempts, or set a specific limit
+	bitunix.WithPrivateReconnectDelay(10*time.Second), // delay between reconnection attempts
+	bitunix.WithPrivateReconnectLogger(logger), // optional logger for reconnection events
+)
+
+// Connect
+if err := reconnectingClient.Connect(); err != nil {
+	log.Fatalf("Failed to connect: %v", err)
+}
+
+// Subscribe to private channels (subscriptions are automatically restored on reconnection)
+balanceSubscriber := &ExampleBalanceSubscriber{}
+positionSubscriber := &ExamplePositionSubscriber{}
+orderSubscriber := &ExampleOrderSubscriber{}
+tpSlOrderSubscriber := &ExampleTpSlOrderSubscriber{}
+
+if err := reconnectingClient.SubscribeBalance(balanceSubscriber); err != nil {
+	log.Fatalf("Failed to subscribe to balance: %v", err)
+}
+
+if err := reconnectingClient.SubscribePositions(positionSubscriber); err != nil {
+	log.Fatalf("Failed to subscribe to positions: %v", err)
+}
+
+if err := reconnectingClient.SubscribeOrders(orderSubscriber); err != nil {
+	log.Fatalf("Failed to subscribe to orders: %v", err)
+}
+
+if err := reconnectingClient.SubscribeTpSlOrders(tpSlOrderSubscriber); err != nil {
+	log.Fatalf("Failed to subscribe to TP/SL orders: %v", err)
+}
+
+// Start streaming - this will automatically reconnect on failures
+go func() {
+	if err := reconnectingClient.Stream(); err != nil {
+		log.Printf("Stream ended with error: %v", err)
+	}
+}()
+
+// Keep running
+select {}
+```
+
+#### Reconnecting Public WebSocket
+
+```go
+ctx := context.Background()
+
+// Create logger for reconnection events
+logger, _ := zap.NewDevelopment()
+
+// Create base public websocket client
 baseClient, err := bitunix.NewPublicWebsocket(ctx, 
 	bitunix.WithLogger(logger),
 )
 if err != nil {
-	log.Fatalf("Failed to create base client: %v", err)
+	log.Fatalf("Failed to create base public client: %v", err)
 }
 
-// Create reconnecting websocket client with custom options
+// Create reconnecting public websocket client with custom options
 reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
 	bitunix.WithMaxReconnectAttempts(0), // 0 = infinite attempts, or set a specific limit
 	bitunix.WithReconnectDelay(10*time.Second), // delay between reconnection attempts
@@ -187,7 +253,7 @@ if err := reconnectingClient.Connect(); err != nil {
 	log.Fatalf("Failed to connect: %v", err)
 }
 
-// Subscribe to channels (subscriptions are automatically restored on reconnection)
+// Subscribe to public channels (subscriptions are automatically restored on reconnection)
 subscriber := &ExampleKLineSubscriber{
 	symbol:    model.ParseSymbol("BTCUSDT"),
 	interval:  model.Interval1m,
@@ -235,8 +301,9 @@ The library provides robust WebSocket connection management with automatic recon
 
 ### Configuration Options
 
+**For Public WebSocket:**
 ```go
-// Configure reconnection behavior
+// Configure public websocket reconnection behavior
 reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
     // Maximum number of reconnection attempts (0 = infinite)
     bitunix.WithMaxReconnectAttempts(5),
@@ -246,6 +313,21 @@ reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
     
     // Logger for reconnection events
     bitunix.WithReconnectLogger(logger),
+)
+```
+
+**For Private WebSocket:**
+```go
+// Configure private websocket reconnection behavior
+reconnectingClient := bitunix.NewReconnectingPrivateWebsocket(ctx, baseClient,
+    // Maximum number of reconnection attempts (0 = infinite)
+    bitunix.WithPrivateMaxReconnectAttempts(5),
+    
+    // Delay between reconnection attempts
+    bitunix.WithPrivateReconnectDelay(30*time.Second),
+    
+    // Logger for reconnection events
+    bitunix.WithPrivateReconnectLogger(logger),
 )
 ```
 
@@ -305,7 +387,8 @@ The `/samples` and `/examples` directories contain example applications demonstr
 ### WebSocket Examples
 - WebSocket Private Client: `/samples/websocket_private/main.go`
 - WebSocket Public Client: `/samples/websocket_public/main.go`
-- **Reconnecting WebSocket Client**: `/examples/reconnecting_websocket.go` - Demonstrates automatic reconnection with subscription restoration
+- **Reconnecting Public WebSocket Client**: `/examples/reconnecting_websocket.go` - Demonstrates automatic reconnection with subscription restoration for public WebSocket
+- **Reconnecting Private WebSocket Client**: `/examples/reconnecting_private_websocket.go` - Demonstrates automatic reconnection with subscription restoration for private WebSocket
 
 ## Authentication
 

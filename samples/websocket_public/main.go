@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"time"
 	"github.com/tradingiq/bitunix-client/bitunix"
 	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
@@ -37,9 +38,22 @@ func main() {
 	defer logger.Sync()
 
 	ctx := context.Background()
-	ws, _ := bitunix.NewPublicWebsocket(ctx, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
+	
+	// Create base public websocket client
+	baseWs, err := bitunix.NewPublicWebsocket(ctx, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
+	if err != nil {
+		logger.Fatal("Failed to create base public websocket client", zap.Error(err))
+	}
+
+	// Create reconnecting public websocket client
+	ws := bitunix.NewReconnectingPublicWebsocket(ctx, baseWs,
+		bitunix.WithMaxReconnectAttempts(0), // Infinite reconnect attempts
+		bitunix.WithReconnectDelay(5*time.Second), // 5 second delay between attempts
+		bitunix.WithReconnectLogger(logger), // Use logger for reconnection events
+	)
 	defer ws.Disconnect()
 
+	logger.Info("Connecting to public websocket with automatic reconnection enabled")
 	if err := ws.Connect(); err != nil {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrNetwork):
@@ -63,7 +77,7 @@ func main() {
 		logger.Fatal("failed to parse interval", zap.Error(err))
 	}
 
-	symbol := model.ParseSymbol("BTcUSDT")
+	symbol := model.ParseSymbol("BTCUSDT")
 
 	priceType, err := model.ParsePriceType("mark")
 	if err != nil {
@@ -77,6 +91,7 @@ func main() {
 		logger:    logger,
 	}
 
+	// Subscribe to KLine - this subscription will be automatically restored on reconnection
 	err = ws.SubscribeKLine(sub)
 	if err != nil {
 		switch {
@@ -97,7 +112,11 @@ func main() {
 			}
 		}
 	}
+	logger.Info("Subscribed to KLine updates", zap.String("symbol", symbol.String()), zap.String("interval", interval.String()), zap.String("priceType", priceType.String()))
 
+	logger.Info("Starting websocket stream with automatic reconnection - the connection will automatically reconnect if it fails")
+
+	// Start streaming - this will automatically handle reconnections
 	if err := ws.Stream(); err != nil {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrConnectionClosed):

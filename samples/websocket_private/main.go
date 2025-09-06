@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/tradingiq/bitunix-client/bitunix"
 	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
@@ -47,9 +49,22 @@ func main() {
 	defer logger.Sync()
 
 	ctx := context.Background()
-	ws, _ := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
+
+	// Create base private websocket client
+	baseWs, err := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
+	if err != nil {
+		logger.Fatal("Failed to create base private websocket client", zap.Error(err))
+	}
+
+	// Create reconnecting private websocket client
+	ws := bitunix.NewReconnectingPrivateWebsocket(ctx, baseWs,
+		bitunix.WithPrivateMaxReconnectAttempts(0),       // Infinite reconnect attempts
+		bitunix.WithPrivateReconnectDelay(5*time.Second), // 5 second delay between attempts
+		bitunix.WithPrivateReconnectLogger(logger),       // Use logger for reconnection events
+	)
 	defer ws.Disconnect()
 
+	logger.Info("Connecting to private websocket with automatic reconnection enabled")
 	if err := ws.Connect(); err != nil {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrAuthentication):
@@ -74,26 +89,34 @@ func main() {
 		}
 	}
 
+	// Subscribe to all private channels - these will be automatically restored on reconnection
 	balanceHandler := &BalanceHandler{logger: logger}
 	if err := ws.SubscribeBalance(balanceHandler); err != nil {
 		handleError(err, "balance", logger)
 	}
+	logger.Info("Subscribed to balance updates")
 
 	positionHandler := &PositionHandler{logger: logger}
 	if err := ws.SubscribePositions(positionHandler); err != nil {
 		handleError(err, "positions", logger)
 	}
+	logger.Info("Subscribed to position updates")
 
 	orderHandler := &OrderHandler{logger: logger}
 	if err := ws.SubscribeOrders(orderHandler); err != nil {
 		handleError(err, "orders", logger)
 	}
+	logger.Info("Subscribed to order updates")
 
 	tpslHandler := &TpSlOrderHandler{logger: logger}
 	if err := ws.SubscribeTpSlOrders(tpslHandler); err != nil {
 		handleError(err, "tpsl orders", logger)
 	}
+	logger.Info("Subscribed to TP/SL order updates")
 
+	logger.Info("Starting websocket stream with automatic reconnection - the connection will automatically reconnect if it fails")
+
+	// Start streaming - this will automatically handle reconnections
 	if err := ws.Stream(); err != nil {
 		switch {
 		case errors.Is(err, bitunix_errors.ErrTimeout):
