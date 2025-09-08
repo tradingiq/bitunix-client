@@ -5,14 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
-	"github.com/tradingiq/bitunix-client/security"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
+	"github.com/tradingiq/bitunix-client/security"
 
 	"github.com/coder/websocket"
 	"github.com/stretchr/testify/assert"

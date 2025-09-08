@@ -2,9 +2,10 @@ package bitunix
 
 import (
 	"context"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"testing"
+
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 func TestTPSLOrderBuilderCreation(t *testing.T) {

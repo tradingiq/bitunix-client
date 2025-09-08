@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/tradingiq/bitunix-client/errors"
-	"github.com/tradingiq/bitunix-client/model"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/tradingiq/bitunix-client/errors"
+	"github.com/tradingiq/bitunix-client/model"
+	"go.uber.org/zap"
 )
 
 type Client interface {

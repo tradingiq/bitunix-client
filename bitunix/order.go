@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/tradingiq/bitunix-client/errors"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/url"
 	"time"
+
+	"github.com/tradingiq/bitunix-client/errors"
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 func (c *apiClient) PlaceOrder(ctx context.Context, request *model.OrderRequest) (*model.OrderResponse, error) {

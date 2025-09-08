@@ -2,11 +2,12 @@ package bitunix
 
 import (
 	"context"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 func TestGetPendingPositions(t *testing.T) {

@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/tradingiq/bitunix-client/samples"
 	"log"
 	"time"
+
+	"github.com/tradingiq/bitunix-client/samples"
 
 	"github.com/tradingiq/bitunix-client/bitunix"
 	"github.com/tradingiq/bitunix-client/model"

@@ -3,14 +3,15 @@ package bitunix
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
-	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
-	"github.com/tradingiq/bitunix-client/model"
-	"github.com/tradingiq/bitunix-client/rest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
+	"github.com/tradingiq/bitunix-client/model"
+	"github.com/tradingiq/bitunix-client/rest"
 )
 
 func TestClientTimeout(t *testing.T) {

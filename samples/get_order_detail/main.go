@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/tradingiq/bitunix-client/bitunix"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/samples"
 	"go.uber.org/zap"
-	"strings"
-	"time"
 )
 
 func main() {

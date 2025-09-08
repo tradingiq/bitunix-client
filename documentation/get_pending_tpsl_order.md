@@ -3,21 +3,23 @@
 **Rate Limit:** 10 req/sec/uid
 
 ## Description
+
 Get Pending TP/SL Order
 
 ## HTTP Request
+
 `GET /api/v1/futures/tpsl/get_pending_orders`
 
 ## Request Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| symbol | string | false | Trading pair |
-| positionId | string | false | Position ID |
-| side | int32 | false | Order side |
-| positionMode | int32 | false | Order position mode |
-| skip | int64 | false | Skip order count (default: 0) |
-| limit | int64 | false | Number of queries: Maximum: 100, default: 10 |
+| Parameter    | Type   | Required | Description                                  |
+|--------------|--------|----------|----------------------------------------------|
+| symbol       | string | false    | Trading pair                                 |
+| positionId   | string | false    | Position ID                                  |
+| side         | int32  | false    | Order side                                   |
+| positionMode | int32  | false    | Order position mode                          |
+| skip         | int64  | false    | Skip order count (default: 0)                |
+| limit        | int64  | false    | Number of queries: Maximum: 100, default: 10 |
 
 ## Request Example
 
@@ -33,23 +35,23 @@ curl -X 'GET' --location 'https://fapi.bitunix.com/api/v1/futures/tpsl/get_pendi
 
 ## Response Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | string | Order ID |
-| positionId | string | Position ID |
-| symbol | string | Coin pair |
-| base | string | Base currency |
-| quote | string | Quote currency |
-| tpPrice | string | Take-profit trigger price |
-| tpStopType | string | Take-profit trigger type: `LAST_PRICE`, `MARK_PRICE` |
-| slPrice | string | Stop-loss trigger price |
-| slStopType | string | Stop-loss trigger type: `LAST_PRICE`, `MARK_PRICE` |
-| tpOrderType | string | Take-profit order type: `LIMIT`, `MARKET` (default: market) |
-| tpOrderPrice | string | Take-profit order price |
-| slOrderType | string | Stop-loss order type: `LIMIT`, `MARKET` (default: market) |
-| slOrderPrice | string | Stop-loss order price |
-| tpQty | string | Take-profit order quantity (base coin)* |
-| slQty | string | Stop-loss order quantity (base coin)* |
+| Parameter    | Type   | Description                                                 |
+|--------------|--------|-------------------------------------------------------------|
+| id           | string | Order ID                                                    |
+| positionId   | string | Position ID                                                 |
+| symbol       | string | Coin pair                                                   |
+| base         | string | Base currency                                               |
+| quote        | string | Quote currency                                              |
+| tpPrice      | string | Take-profit trigger price                                   |
+| tpStopType   | string | Take-profit trigger type: `LAST_PRICE`, `MARK_PRICE`        |
+| slPrice      | string | Stop-loss trigger price                                     |
+| slStopType   | string | Stop-loss trigger type: `LAST_PRICE`, `MARK_PRICE`          |
+| tpOrderType  | string | Take-profit order type: `LIMIT`, `MARKET` (default: market) |
+| tpOrderPrice | string | Take-profit order price                                     |
+| slOrderType  | string | Stop-loss order type: `LIMIT`, `MARKET` (default: market)   |
+| slOrderPrice | string | Stop-loss order price                                       |
+| tpQty        | string | Take-profit order quantity (base coin)*                     |
+| slQty        | string | Stop-loss order quantity (base coin)*                       |
 
 *At least one of `tpQty` or `slQty` is required.
 

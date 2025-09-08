@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+
 	"github.com/tradingiq/bitunix-client/bitunix"
 	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"

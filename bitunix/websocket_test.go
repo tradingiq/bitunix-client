@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/tradingiq/bitunix-client/model"
-	"github.com/tradingiq/bitunix-client/websocket"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/tradingiq/bitunix-client/model"
+	"github.com/tradingiq/bitunix-client/websocket"
 )
 
 func TestHeartbeatMessage(t *testing.T) {
