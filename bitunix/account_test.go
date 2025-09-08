@@ -3,11 +3,12 @@ package bitunix
 import (
 	"context"
 	stderrors "errors"
-	"github.com/tradingiq/bitunix-client/errors"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/tradingiq/bitunix-client/errors"
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 func TestGetAccountBalance(t *testing.T) {

@@ -2,11 +2,12 @@ package bitunix
 
 import (
 	"context"
-	"github.com/tradingiq/bitunix-client/errors"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/tradingiq/bitunix-client/errors"
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 type MockAPI struct {

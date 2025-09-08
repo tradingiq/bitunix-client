@@ -162,7 +162,8 @@ log.WithError(err).Fatal("Failed to stream")
 
 ### Working with Reconnecting WebSockets
 
-The client provides reconnecting WebSocket wrappers that automatically handle connection failures and reestablish subscriptions for both public and private WebSockets:
+The client provides reconnecting WebSocket wrappers that automatically handle connection failures and reestablish
+subscriptions for both public and private WebSockets:
 
 #### Reconnecting Private WebSocket
 
@@ -281,7 +282,8 @@ The library provides robust WebSocket connection management with automatic recon
 
 ### Reconnection Features
 
-- **Automatic Reconnection**: When a WebSocket connection fails, the reconnecting client automatically attempts to reestablish the connection
+- **Automatic Reconnection**: When a WebSocket connection fails, the reconnecting client automatically attempts to
+  reestablish the connection
 - **Configurable Retry Logic**: Set maximum retry attempts (0 for infinite) and delay between attempts
 - **Subscription Persistence**: All active subscriptions are automatically restored after successful reconnection
 - **Graceful Error Handling**: Connection errors are logged and handled gracefully without terminating the application
@@ -290,18 +292,21 @@ The library provides robust WebSocket connection management with automatic recon
 ### Reconnection Behavior
 
 1. **Connection Monitoring**: The client continuously monitors the WebSocket connection status
-2. **Failure Detection**: When a connection failure is detected (network error, server disconnect, etc.), the client immediately marks itself as disconnected
+2. **Failure Detection**: When a connection failure is detected (network error, server disconnect, etc.), the client
+   immediately marks itself as disconnected
 3. **Reconnection Loop**: The client enters a reconnection loop that:
-   - Waits for the configured delay period (`WithReconnectDelay`)
-   - Attempts to reconnect to the WebSocket server
-   - If successful, resubscribes to all previously active channels
-   - If failed, increments the attempt counter and retries (unless max attempts reached)
-4. **Subscription Restoration**: After successful reconnection, all subscribers are automatically resubscribed to their respective channels
+    - Waits for the configured delay period (`WithReconnectDelay`)
+    - Attempts to reconnect to the WebSocket server
+    - If successful, resubscribes to all previously active channels
+    - If failed, increments the attempt counter and retries (unless max attempts reached)
+4. **Subscription Restoration**: After successful reconnection, all subscribers are automatically resubscribed to their
+   respective channels
 5. **Logging**: All reconnection events, failures, and successes are logged for monitoring and debugging
 
 ### Configuration Options
 
 **For Public WebSocket:**
+
 ```go
 // Configure public websocket reconnection behavior
 reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
@@ -317,6 +322,7 @@ reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
 ```
 
 **For Private WebSocket:**
+
 ```go
 // Configure private websocket reconnection behavior
 reconnectingClient := bitunix.NewReconnectingPrivateWebsocket(ctx, baseClient,
@@ -334,12 +340,14 @@ reconnectingClient := bitunix.NewReconnectingPrivateWebsocket(ctx, baseClient,
 ### Error Handling
 
 The reconnecting client handles several types of connection errors:
+
 - Network connectivity issues
 - Server-side disconnections
 - Context cancellation
 - Connection timeout errors
 
-When maximum reconnection attempts are reached, the client returns an error and stops attempting to reconnect. Applications should monitor this error to decide whether to restart the connection or handle the failure gracefully.
+When maximum reconnection attempts are reached, the client returns an error and stops attempting to reconnect.
+Applications should monitor this error to decide whether to restart the connection or handle the failure gracefully.
 
 ### Best Practices
 
@@ -376,6 +384,7 @@ The project includes detailed documentation in the `/documentation` directory:
 The `/samples` and `/examples` directories contain example applications demonstrating the client's functionality:
 
 ### REST API Examples
+
 - Account Balance: `/samples/get_account_balance/main.go`
 - Place Order: `/samples/place_order/main.go`
 - Cancel Order: `/samples/cancel_order/main.go`
@@ -385,10 +394,13 @@ The `/samples` and `/examples` directories contain example applications demonstr
 - Take-Profit Order: `/samples/place_tp/main.go`
 
 ### WebSocket Examples
+
 - WebSocket Private Client: `/samples/websocket_private/main.go`
 - WebSocket Public Client: `/samples/websocket_public/main.go`
-- **Reconnecting Public WebSocket Client**: `/examples/reconnecting_websocket.go` - Demonstrates automatic reconnection with subscription restoration for public WebSocket
-- **Reconnecting Private WebSocket Client**: `/examples/reconnecting_private_websocket.go` - Demonstrates automatic reconnection with subscription restoration for private WebSocket
+- **Reconnecting Public WebSocket Client**: `/examples/reconnecting_websocket.go` - Demonstrates automatic reconnection
+  with subscription restoration for public WebSocket
+- **Reconnecting Private WebSocket Client**: `/examples/reconnecting_private_websocket.go` - Demonstrates automatic
+  reconnection with subscription restoration for private WebSocket
 
 ## Authentication
 

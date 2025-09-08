@@ -5,15 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/rest"
 	"github.com/tradingiq/bitunix-client/security"
 	"go.uber.org/zap"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type ApiClient interface {

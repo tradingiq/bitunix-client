@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"github.com/tradingiq/bitunix-client/security"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/tradingiq/bitunix-client/security"
 )
 
 func MockNonceGenerator(bytes []byte) func(int) ([]byte, error) {

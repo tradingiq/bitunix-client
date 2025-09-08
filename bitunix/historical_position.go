@@ -2,9 +2,10 @@ package bitunix
 
 import (
 	"context"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/url"
 	"strconv"
+
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 func (c *apiClient) GetPositionHistory(ctx context.Context, params model.PositionHistoryParams) (*model.PositionHistoryResponse, error) {

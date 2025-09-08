@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"time"
+
 	"github.com/tradingiq/bitunix-client/bitunix"
 	bitunix_errors "github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
@@ -38,7 +39,7 @@ func main() {
 	defer logger.Sync()
 
 	ctx := context.Background()
-	
+
 	// Create base public websocket client
 	baseWs, err := bitunix.NewPublicWebsocket(ctx, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
 	if err != nil {
@@ -47,9 +48,9 @@ func main() {
 
 	// Create reconnecting public websocket client
 	ws := bitunix.NewReconnectingPublicWebsocket(ctx, baseWs,
-		bitunix.WithMaxReconnectAttempts(0), // Infinite reconnect attempts
+		bitunix.WithMaxReconnectAttempts(0),       // Infinite reconnect attempts
 		bitunix.WithReconnectDelay(5*time.Second), // 5 second delay between attempts
-		bitunix.WithReconnectLogger(logger), // Use logger for reconnection events
+		bitunix.WithReconnectLogger(logger),       // Use logger for reconnection events
 	)
 	defer ws.Disconnect()
 

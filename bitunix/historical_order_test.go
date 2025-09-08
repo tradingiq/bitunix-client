@@ -2,11 +2,12 @@ package bitunix
 
 import (
 	"context"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 func TestGetOrderHistory(t *testing.T) {

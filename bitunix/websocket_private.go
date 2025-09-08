@@ -5,13 +5,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/security"
 	"github.com/tradingiq/bitunix-client/websocket"
 	"go.uber.org/zap"
-	"sync"
-	"time"
 )
 
 type privateWebsocketClient struct {
@@ -412,19 +413,19 @@ type PrivateWebsocketClient interface {
 }
 
 type ReconnectingPrivateWebsocketClient struct {
-	client                   PrivateWebsocketClient
-	ctx                      context.Context
-	maxReconnectAttempts     int
-	reconnectDelay           time.Duration
-	logger                   *zap.Logger
-	isConnected              bool
-	mu                       sync.RWMutex
-	stopReconnecting         chan struct{}
-	balanceSubscribers       map[BalanceSubscriber]struct{}
-	positionSubscribers      map[PositionSubscriber]struct{}
-	orderSubscribers         map[OrderSubscriber]struct{}
-	tpSlOrderSubscribers     map[TpSlOrderSubscriber]struct{}
-	subscriberMu             sync.RWMutex
+	client               PrivateWebsocketClient
+	ctx                  context.Context
+	maxReconnectAttempts int
+	reconnectDelay       time.Duration
+	logger               *zap.Logger
+	isConnected          bool
+	mu                   sync.RWMutex
+	stopReconnecting     chan struct{}
+	balanceSubscribers   map[BalanceSubscriber]struct{}
+	positionSubscribers  map[PositionSubscriber]struct{}
+	orderSubscribers     map[OrderSubscriber]struct{}
+	tpSlOrderSubscribers map[TpSlOrderSubscriber]struct{}
+	subscriberMu         sync.RWMutex
 }
 
 type ReconnectingPrivateClientOption func(*ReconnectingPrivateWebsocketClient)

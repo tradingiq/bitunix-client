@@ -2,10 +2,11 @@ package bitunix
 
 import (
 	"context"
-	"github.com/tradingiq/bitunix-client/model"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/tradingiq/bitunix-client/model"
 )
 
 func TestGetTradeHistory(t *testing.T) {

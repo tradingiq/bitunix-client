@@ -2,9 +2,10 @@ package bitunix
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
-	"net/url"
 )
 
 func (c *apiClient) GetAccountBalance(ctx context.Context, params model.AccountBalanceParams) (*model.AccountBalanceResponse, error) {

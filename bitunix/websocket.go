@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 	"github.com/tradingiq/bitunix-client/websocket"
 	"go.uber.org/zap"
-	"strings"
-	"sync"
-	"time"
 )
 
 type wsClientInterface interface {
@@ -410,16 +411,16 @@ type PublicWebsocketClient interface {
 }
 
 type ReconnectingPublicWebsocketClient struct {
-	client                PublicWebsocketClient
-	ctx                   context.Context
-	maxReconnectAttempts  int
-	reconnectDelay        time.Duration
-	logger                *zap.Logger
-	isConnected           bool
-	mu                    sync.RWMutex
-	stopReconnecting      chan struct{}
-	subscribers           map[KLineSubscriber]struct{}
-	subscriberMu          sync.RWMutex
+	client               PublicWebsocketClient
+	ctx                  context.Context
+	maxReconnectAttempts int
+	reconnectDelay       time.Duration
+	logger               *zap.Logger
+	isConnected          bool
+	mu                   sync.RWMutex
+	stopReconnecting     chan struct{}
+	subscribers          map[KLineSubscriber]struct{}
+	subscriberMu         sync.RWMutex
 }
 
 type ReconnectingClientOption func(*ReconnectingPublicWebsocketClient)
@@ -573,14 +574,14 @@ func (r *ReconnectingPublicWebsocketClient) resubscribeAll() error {
 	for subscriber := range r.subscribers {
 		err := r.client.SubscribeKLine(subscriber)
 		if err != nil {
-			r.logger.Error("failed to resubscribe", 
+			r.logger.Error("failed to resubscribe",
 				zap.String("symbol", subscriber.SubscribeSymbol().String()),
 				zap.String("interval", subscriber.SubscribeInterval().String()),
 				zap.String("price_type", subscriber.SubscribePriceType().String()),
 				zap.Error(err))
 			return err
 		}
-		r.logger.Debug("resubscribed successfully", 
+		r.logger.Debug("resubscribed successfully",
 			zap.String("symbol", subscriber.SubscribeSymbol().String()),
 			zap.String("interval", subscriber.SubscribeInterval().String()),
 			zap.String("price_type", subscriber.SubscribePriceType().String()))

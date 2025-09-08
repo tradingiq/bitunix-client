@@ -3,6 +3,7 @@ package bitunix
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/tradingiq/bitunix-client/errors"
 	"github.com/tradingiq/bitunix-client/model"
 )
