@@ -105,9 +105,11 @@ func TestGetTPSLOrderHistory(t *testing.T) {
 	assert.NotNil(t, order.SlQty)
 	assert.Equal(t, 0.5, *order.SlQty)
 	assert.Equal(t, "TRIGGERED", order.Status)
-	assert.Equal(t, time.Time(time.Date(2022, time.July, 29, 8, 37, 50, 0, time.Local)), order.Ctime)
+	expectedCtime := time.Unix(0, 1659076670000*1000000) // Same conversion as in the model
+	assert.Equal(t, expectedCtime, order.Ctime)
 	assert.NotNil(t, order.TriggerTime)
-	assert.Equal(t, time.Time(time.Date(2022, time.July, 29, 8, 38, 0, 0, time.Local)), *order.TriggerTime)
+	expectedTriggerTime := time.Unix(0, 1659076680000*1000000) // Same conversion as in the model
+	assert.Equal(t, expectedTriggerTime, *order.TriggerTime)
 }
 
 func TestGetTPSLOrderHistoryError(t *testing.T) {
