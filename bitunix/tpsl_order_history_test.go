@@ -32,11 +32,11 @@ func TestGetTPSLOrderHistory(t *testing.T) {
 					"tpQty": "0.5",
 					"slQty": "0.5",
 					"status": "TRIGGERED",
-					"ctime": 1659076670000,
-					"triggerTime": 1659076680000
+					"ctime": "1659076670000",
+					"triggerTime": "1659076680000"
 				}
 			],
-			"total": 1
+			"total": "1"
 		}
 	}`
 
@@ -48,7 +48,7 @@ func TestGetTPSLOrderHistory(t *testing.T) {
 		assert.Equal(t, "HEDGE", r.URL.Query().Get("positionMode"))
 		assert.Equal(t, "1659076600000", r.URL.Query().Get("startTime"))
 		assert.Equal(t, "1659076700000", r.URL.Query().Get("endTime"))
-		assert.Equal(t, "0", r.URL.Query().Get("skip"))
+		assert.Equal(t, "", r.URL.Query().Get("skip"))
 		assert.Equal(t, "10", r.URL.Query().Get("limit"))
 
 		w.Header().Set("Content-Type", "application/json")
@@ -65,7 +65,7 @@ func TestGetTPSLOrderHistory(t *testing.T) {
 
 	params := model.TPSLOrderHistoryParams{
 		Symbol:       model.Symbol("BTCUSDT"),
-		Side:         model.TradeSideLong,
+		Side:         model.PositionSideLong,
 		PositionMode: model.PositionModeHedge,
 		StartTime:    &startTime,
 		EndTime:      &endTime,
@@ -105,9 +105,9 @@ func TestGetTPSLOrderHistory(t *testing.T) {
 	assert.NotNil(t, order.SlQty)
 	assert.Equal(t, 0.5, *order.SlQty)
 	assert.Equal(t, "TRIGGERED", order.Status)
-	assert.Equal(t, int64(1659076670000), order.Ctime)
+	assert.Equal(t, time.Time(time.Date(2022, time.July, 29, 8, 37, 50, 0, time.Local)), order.Ctime)
 	assert.NotNil(t, order.TriggerTime)
-	assert.Equal(t, int64(1659076680000), *order.TriggerTime)
+	assert.Equal(t, time.Time(time.Date(2022, time.July, 29, 8, 38, 0, 0, time.Local)), *order.TriggerTime)
 }
 
 func TestGetTPSLOrderHistoryError(t *testing.T) {

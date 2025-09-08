@@ -803,7 +803,7 @@ func (o *PendingTPSLOrder) UnmarshalJSON(data []byte) error {
 
 type TPSLOrderHistoryParams struct {
 	Symbol       Symbol
-	Side         TradeSide
+	Side         PositionSide
 	PositionMode PositionMode
 	StartTime    *time.Time
 	EndTime      *time.Time
@@ -851,24 +851,24 @@ func (r *TPSLOrderHistoryResponse) UnmarshalJSON(data []byte) error {
 }
 
 type HistoricalTPSLOrder struct {
-	ID           string       `json:"id"`
-	PositionID   string       `json:"positionId"`
-	Symbol       Symbol       `json:"-"`
-	Base         string       `json:"base"`
-	Quote        string       `json:"quote"`
-	TpPrice      *float64     `json:"-"`
-	TpStopType   *StopType    `json:"-"`
-	SlPrice      *float64     `json:"-"`
-	SlStopType   *StopType    `json:"-"`
-	TpOrderType  *OrderType   `json:"-"`
-	TpOrderPrice *float64     `json:"-"`
-	SlOrderType  *OrderType   `json:"-"`
-	SlOrderPrice *float64     `json:"-"`
-	TpQty        *float64     `json:"-"`
-	SlQty        *float64     `json:"-"`
-	Status       string       `json:"status"`
-	Ctime        time.Time    `json:"-"`
-	TriggerTime  *time.Time   `json:"-"`
+	ID           string     `json:"id"`
+	PositionID   string     `json:"positionId"`
+	Symbol       Symbol     `json:"-"`
+	Base         string     `json:"base"`
+	Quote        string     `json:"quote"`
+	TpPrice      *float64   `json:"-"`
+	TpStopType   *StopType  `json:"-"`
+	SlPrice      *float64   `json:"-"`
+	SlStopType   *StopType  `json:"-"`
+	TpOrderType  *OrderType `json:"-"`
+	TpOrderPrice *float64   `json:"-"`
+	SlOrderType  *OrderType `json:"-"`
+	SlOrderPrice *float64   `json:"-"`
+	TpQty        *float64   `json:"-"`
+	SlQty        *float64   `json:"-"`
+	Status       string     `json:"status"`
+	Ctime        time.Time  `json:"-"`
+	TriggerTime  *time.Time `json:"-"`
 }
 
 func (o *HistoricalTPSLOrder) UnmarshalJSON(data []byte) error {
