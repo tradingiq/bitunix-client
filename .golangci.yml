@@ -11,8 +11,6 @@
 #
 # See the file `.golangci.reference.yml` to have a list of all available configuration options.
 
-version: "2"
-
 linters:
   default: none
   # This list of linters is not a recommendation (same thing for all this configuration file).

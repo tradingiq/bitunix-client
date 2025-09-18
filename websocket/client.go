@@ -318,8 +318,9 @@ func (ws *Client) sendHeartbeat() {
 			heartbeat, err := ws.generateHeartbeatMessage()
 			if err != nil {
 				ws.logger.Error("error generating heartbeat message", zap.Error(err))
-				ws.Close()
-				return
+				// Don't close connection on heartbeat generation errors
+				// Let the reconnection logic handle this
+				continue
 			}
 
 			if ws.logLevel.ShouldLog(model.LogLevelVeryAggressive) {
@@ -329,8 +330,9 @@ func (ws *Client) sendHeartbeat() {
 			err = ws.Write(heartbeat)
 			if err != nil {
 				ws.logger.Error("writing heartbeat message", zap.Error(err))
-				ws.Close()
-				return
+				// Don't close connection on heartbeat write errors
+				// Let the reconnection logic handle connection issues
+				continue
 			}
 
 		case <-ws.done:
