@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
 	"github.com/tradingiq/bitunix-client/bitunix"
 	"github.com/tradingiq/bitunix-client/model"
+	"github.com/tradingiq/bitunix-client/samples"
 	"go.uber.org/zap"
 )
 
@@ -38,19 +38,11 @@ func (s *ExampleTpSlOrderSubscriber) SubscribeTpSlOrder(msg *model.TpSlOrderChan
 func main() {
 	ctx := context.Background()
 
-	// Get API credentials from environment variables
-	apiKey := os.Getenv("BITUNIX_API_KEY")
-	secretKey := os.Getenv("BITUNIX_SECRET_KEY")
-
-	if apiKey == "" || secretKey == "" {
-		log.Fatal("Please set BITUNIX_API_KEY and BITUNIX_SECRET_KEY environment variables")
-	}
-
 	// Create logger
 	logger, _ := zap.NewDevelopment()
 
 	// Create base private websocket client
-	baseClient, err := bitunix.NewPrivateWebsocket(ctx, apiKey, secretKey,
+	baseClient, err := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey,
 		bitunix.WithWebsocketLogger(logger),
 	)
 	if err != nil {
