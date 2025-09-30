@@ -35,7 +35,7 @@ type websocketClient struct {
 
 func (ws *websocketClient) Connect() error {
 	if err := ws.client.Connect(); err != nil {
-		return errors.NewWebsocketError("connect", "client failed to connect", err)
+		return errors.NewWebsocketError("connect", fmt.Sprintf("client failed to connect: %v", err), err)
 	}
 
 	return nil
@@ -179,7 +179,7 @@ func NewPublicWebsocket(ctx context.Context, options ...WebsocketClientOption) (
 
 func (ws *publicWebsocketClient) Connect() error {
 	if err := ws.client.Connect(); err != nil {
-		return errors.NewWebsocketError("connect", "client failed to connect", err)
+		return errors.NewWebsocketError("connect", fmt.Sprintf("client failed to connect: %v", err), err)
 	}
 
 	ws.klineHandlers = make(map[KLineSubscriber]struct{})
