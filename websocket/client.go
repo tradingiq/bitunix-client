@@ -198,6 +198,21 @@ func (ws *Client) Close() {
 	}
 }
 
+func (ws *Client) softClose() {
+	if ws.conn != nil {
+		ws.logger.Error("soft closing websocket connection")
+
+		select {
+		case <-ws.done:
+
+		default:
+			close(ws.done)
+		}
+
+		ws.conn.Close(websocket.StatusInternalError, "")
+	}
+}
+
 func (ws *Client) Write(bytes []byte) error {
 	if ws.conn == nil {
 		return bitunix_errors.NewWebsocketError("write", "connection not established", nil)
@@ -318,7 +333,7 @@ func (ws *Client) sendHeartbeat() {
 			heartbeat, err := ws.generateHeartbeatMessage()
 			if err != nil {
 				ws.logger.Error("error generating heartbeat message", zap.Error(err))
-				ws.Close()
+				ws.softClose()
 				return
 			}
 
@@ -329,7 +344,7 @@ func (ws *Client) sendHeartbeat() {
 			err = ws.Write(heartbeat)
 			if err != nil {
 				ws.logger.Error("writing heartbeat message", zap.Error(err))
-				ws.Close()
+				ws.softClose()
 				return
 			}
 
