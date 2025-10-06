@@ -415,6 +415,9 @@ type PrivateWebsocketClient interface {
 type ReconnectingPrivateWebsocketClient struct {
 	client               PrivateWebsocketClient
 	ctx                  context.Context
+	apiKey               string
+	secretKey            string
+	clientOptions        []WebsocketClientOption
 	maxReconnectAttempts int
 	reconnectDelay       time.Duration
 	logger               *zap.Logger
@@ -448,10 +451,18 @@ func WithPrivateReconnectLogger(logger *zap.Logger) ReconnectingPrivateClientOpt
 	}
 }
 
-func NewReconnectingPrivateWebsocket(ctx context.Context, client PrivateWebsocketClient, options ...ReconnectingPrivateClientOption) *ReconnectingPrivateWebsocketClient {
+func NewReconnectingPrivateWebsocket(ctx context.Context, apiKey, secretKey string, clientOptions []WebsocketClientOption, options ...ReconnectingPrivateClientOption) (*ReconnectingPrivateWebsocketClient, error) {
+	client, err := NewPrivateWebsocket(ctx, apiKey, secretKey, clientOptions...)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &ReconnectingPrivateWebsocketClient{
 		client:               client,
 		ctx:                  ctx,
+		apiKey:               apiKey,
+		secretKey:            secretKey,
+		clientOptions:        clientOptions,
 		maxReconnectAttempts: 0,
 		reconnectDelay:       5 * time.Second,
 		logger:               zap.NewNop(),
@@ -466,7 +477,7 @@ func NewReconnectingPrivateWebsocket(ctx context.Context, client PrivateWebsocke
 		option(r)
 	}
 
-	return r
+	return r, nil
 }
 
 func (r *ReconnectingPrivateWebsocketClient) Connect() error {
@@ -641,10 +652,23 @@ func (r *ReconnectingPrivateWebsocketClient) Stream() error {
 }
 
 func (r *ReconnectingPrivateWebsocketClient) connectWithResubscription() error {
-	err := r.client.Connect()
+	// Disconnect old client first
+	r.client.Disconnect()
+
+	// Create a new client instance
+	newClient, err := NewPrivateWebsocket(r.ctx, r.apiKey, r.secretKey, r.clientOptions...)
 	if err != nil {
 		return err
 	}
+
+	// Connect the new client
+	err = newClient.Connect()
+	if err != nil {
+		return err
+	}
+
+	// Replace the old client with the new one
+	r.client = newClient
 
 	r.mu.Lock()
 	r.isConnected = true

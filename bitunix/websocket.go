@@ -413,6 +413,7 @@ type PublicWebsocketClient interface {
 type ReconnectingPublicWebsocketClient struct {
 	client               PublicWebsocketClient
 	ctx                  context.Context
+	clientOptions        []WebsocketClientOption
 	maxReconnectAttempts int
 	reconnectDelay       time.Duration
 	logger               *zap.Logger
@@ -443,10 +444,16 @@ func WithReconnectLogger(logger *zap.Logger) ReconnectingClientOption {
 	}
 }
 
-func NewReconnectingPublicWebsocket(ctx context.Context, client PublicWebsocketClient, options ...ReconnectingClientOption) *ReconnectingPublicWebsocketClient {
+func NewReconnectingPublicWebsocket(ctx context.Context, clientOptions []WebsocketClientOption, options ...ReconnectingClientOption) (*ReconnectingPublicWebsocketClient, error) {
+	client, err := NewPublicWebsocket(ctx, clientOptions...)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &ReconnectingPublicWebsocketClient{
 		client:               client,
 		ctx:                  ctx,
+		clientOptions:        clientOptions,
 		maxReconnectAttempts: 0,
 		reconnectDelay:       5 * time.Second,
 		logger:               zap.NewNop(),
@@ -458,7 +465,7 @@ func NewReconnectingPublicWebsocket(ctx context.Context, client PublicWebsocketC
 		option(r)
 	}
 
-	return r
+	return r, nil
 }
 
 func (r *ReconnectingPublicWebsocketClient) Connect() error {
@@ -555,10 +562,23 @@ func (r *ReconnectingPublicWebsocketClient) Stream() error {
 }
 
 func (r *ReconnectingPublicWebsocketClient) connectWithResubscription() error {
-	err := r.client.Connect()
+	// Disconnect old client first
+	r.client.Disconnect()
+
+	// Create a new client instance
+	newClient, err := NewPublicWebsocket(r.ctx, r.clientOptions...)
 	if err != nil {
 		return err
 	}
+
+	// Connect the new client
+	err = newClient.Connect()
+	if err != nil {
+		return err
+	}
+
+	// Replace the old client with the new one
+	r.client = newClient
 
 	r.mu.Lock()
 	r.isConnected = true
