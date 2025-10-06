@@ -38,20 +38,18 @@ func main() {
 	// Create logger
 	logger, _ := zap.NewDevelopment()
 
-	// Create base websocket client
-	baseClient, err := bitunix.NewPublicWebsocket(ctx,
-		bitunix.WithWebsocketLogger(logger),
-	)
-	if err != nil {
-		log.Fatalf("Failed to create base client: %v", err)
-	}
-
 	// Create reconnecting websocket client
-	reconnectingClient := bitunix.NewReconnectingPublicWebsocket(ctx, baseClient,
+	reconnectingClient, err := bitunix.NewReconnectingPublicWebsocket(ctx,
+		[]bitunix.WebsocketClientOption{
+			bitunix.WithWebsocketLogger(logger),
+		},
 		bitunix.WithMaxReconnectAttempts(0), // Infinite reconnect attempts
 		bitunix.WithReconnectDelay(10*time.Second),
 		bitunix.WithReconnectLogger(logger),
 	)
+	if err != nil {
+		log.Fatalf("Failed to create reconnecting client: %v", err)
+	}
 
 	// Connect
 	if err := reconnectingClient.Connect(); err != nil {
