@@ -654,19 +654,19 @@ func (r *ReconnectingPrivateWebsocketClient) Stream() error {
 func (r *ReconnectingPrivateWebsocketClient) connectWithResubscription() error {
 	// Disconnect old client first
 	r.client.Disconnect()
-	
+
 	// Create a new client instance
 	newClient, err := NewPrivateWebsocket(r.ctx, r.apiKey, r.secretKey, r.clientOptions...)
 	if err != nil {
 		return err
 	}
-	
+
 	// Connect the new client
 	err = newClient.Connect()
 	if err != nil {
 		return err
 	}
-	
+
 	// Replace the old client with the new one
 	r.client = newClient
 

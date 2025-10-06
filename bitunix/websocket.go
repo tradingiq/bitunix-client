@@ -564,19 +564,19 @@ func (r *ReconnectingPublicWebsocketClient) Stream() error {
 func (r *ReconnectingPublicWebsocketClient) connectWithResubscription() error {
 	// Disconnect old client first
 	r.client.Disconnect()
-	
+
 	// Create a new client instance
 	newClient, err := NewPublicWebsocket(r.ctx, r.clientOptions...)
 	if err != nil {
 		return err
 	}
-	
+
 	// Connect the new client
 	err = newClient.Connect()
 	if err != nil {
 		return err
 	}
-	
+
 	// Replace the old client with the new one
 	r.client = newClient
 
