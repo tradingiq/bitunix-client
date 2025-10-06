@@ -424,28 +424,51 @@ type ReconnectingPublicWebsocketClient struct {
 	subscriberMu         sync.RWMutex
 }
 
-type ReconnectingClientOption func(*ReconnectingPublicWebsocketClient)
+type ReconnectingPublicWebsocketOptions struct {
+	WebsocketOptions     []WebsocketClientOption
+	MaxReconnectAttempts int
+	ReconnectDelay       time.Duration
+	Logger               *zap.Logger
+}
+
+type ReconnectingClientOption func(*ReconnectingPublicWebsocketOptions)
 
 func WithMaxReconnectAttempts(attempts int) ReconnectingClientOption {
-	return func(r *ReconnectingPublicWebsocketClient) {
-		r.maxReconnectAttempts = attempts
+	return func(r *ReconnectingPublicWebsocketOptions) {
+		r.MaxReconnectAttempts = attempts
 	}
 }
 
 func WithReconnectDelay(delay time.Duration) ReconnectingClientOption {
-	return func(r *ReconnectingPublicWebsocketClient) {
-		r.reconnectDelay = delay
+	return func(r *ReconnectingPublicWebsocketOptions) {
+		r.ReconnectDelay = delay
 	}
 }
 
 func WithReconnectLogger(logger *zap.Logger) ReconnectingClientOption {
-	return func(r *ReconnectingPublicWebsocketClient) {
-		r.logger = logger
+	return func(r *ReconnectingPublicWebsocketOptions) {
+		r.Logger = logger
 	}
 }
 
-func NewReconnectingPublicWebsocket(ctx context.Context, clientOptions []WebsocketClientOption, options ...ReconnectingClientOption) (*ReconnectingPublicWebsocketClient, error) {
-	client, err := NewPublicWebsocket(ctx, clientOptions...)
+func WithWebsocketOptions(options ...WebsocketClientOption) ReconnectingClientOption {
+	return func(r *ReconnectingPublicWebsocketOptions) {
+		r.WebsocketOptions = append(r.WebsocketOptions, options...)
+	}
+}
+
+func NewReconnectingPublicWebsocket(ctx context.Context, options ...ReconnectingClientOption) (*ReconnectingPublicWebsocketClient, error) {
+	opts := &ReconnectingPublicWebsocketOptions{
+		MaxReconnectAttempts: 0,
+		ReconnectDelay:       5 * time.Second,
+		Logger:               zap.NewNop(),
+	}
+
+	for _, option := range options {
+		option(opts)
+	}
+
+	client, err := NewPublicWebsocket(ctx, opts.WebsocketOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -453,16 +476,12 @@ func NewReconnectingPublicWebsocket(ctx context.Context, clientOptions []Websock
 	r := &ReconnectingPublicWebsocketClient{
 		client:               client,
 		ctx:                  ctx,
-		clientOptions:        clientOptions,
-		maxReconnectAttempts: 0,
-		reconnectDelay:       5 * time.Second,
-		logger:               zap.NewNop(),
+		clientOptions:        opts.WebsocketOptions,
+		maxReconnectAttempts: opts.MaxReconnectAttempts,
+		reconnectDelay:       opts.ReconnectDelay,
+		logger:               opts.Logger,
 		stopReconnecting:     make(chan struct{}),
 		subscribers:          make(map[KLineSubscriber]struct{}),
-	}
-
-	for _, option := range options {
-		option(r)
 	}
 
 	return r, nil
