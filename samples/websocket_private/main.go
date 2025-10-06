@@ -52,9 +52,7 @@ func main() {
 
 	// Create reconnecting private websocket client
 	ws, err := bitunix.NewReconnectingPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey,
-		[]bitunix.WebsocketClientOption{
-			bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive),
-		},
+		bitunix.WithPrivateWebsocketOptions(bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive)),
 		bitunix.WithPrivateMaxReconnectAttempts(0),       // Infinite reconnect attempts
 		bitunix.WithPrivateReconnectDelay(5*time.Second), // 5 second delay between attempts
 		bitunix.WithPrivateReconnectLogger(logger),       // Use logger for reconnection events

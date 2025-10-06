@@ -431,28 +431,51 @@ type ReconnectingPrivateWebsocketClient struct {
 	subscriberMu         sync.RWMutex
 }
 
-type ReconnectingPrivateClientOption func(*ReconnectingPrivateWebsocketClient)
+type ReconnectingPrivateWebsocketOptions struct {
+	WebsocketOptions     []WebsocketClientOption
+	MaxReconnectAttempts int
+	ReconnectDelay       time.Duration
+	Logger               *zap.Logger
+}
+
+type ReconnectingPrivateClientOption func(*ReconnectingPrivateWebsocketOptions)
 
 func WithPrivateMaxReconnectAttempts(attempts int) ReconnectingPrivateClientOption {
-	return func(r *ReconnectingPrivateWebsocketClient) {
-		r.maxReconnectAttempts = attempts
+	return func(r *ReconnectingPrivateWebsocketOptions) {
+		r.MaxReconnectAttempts = attempts
 	}
 }
 
 func WithPrivateReconnectDelay(delay time.Duration) ReconnectingPrivateClientOption {
-	return func(r *ReconnectingPrivateWebsocketClient) {
-		r.reconnectDelay = delay
+	return func(r *ReconnectingPrivateWebsocketOptions) {
+		r.ReconnectDelay = delay
 	}
 }
 
 func WithPrivateReconnectLogger(logger *zap.Logger) ReconnectingPrivateClientOption {
-	return func(r *ReconnectingPrivateWebsocketClient) {
-		r.logger = logger
+	return func(r *ReconnectingPrivateWebsocketOptions) {
+		r.Logger = logger
 	}
 }
 
-func NewReconnectingPrivateWebsocket(ctx context.Context, apiKey, secretKey string, clientOptions []WebsocketClientOption, options ...ReconnectingPrivateClientOption) (*ReconnectingPrivateWebsocketClient, error) {
-	client, err := NewPrivateWebsocket(ctx, apiKey, secretKey, clientOptions...)
+func WithPrivateWebsocketOptions(options ...WebsocketClientOption) ReconnectingPrivateClientOption {
+	return func(r *ReconnectingPrivateWebsocketOptions) {
+		r.WebsocketOptions = append(r.WebsocketOptions, options...)
+	}
+}
+
+func NewReconnectingPrivateWebsocket(ctx context.Context, apiKey, secretKey string, options ...ReconnectingPrivateClientOption) (*ReconnectingPrivateWebsocketClient, error) {
+	opts := &ReconnectingPrivateWebsocketOptions{
+		MaxReconnectAttempts: 0,
+		ReconnectDelay:       5 * time.Second,
+		Logger:               zap.NewNop(),
+	}
+
+	for _, option := range options {
+		option(opts)
+	}
+
+	client, err := NewPrivateWebsocket(ctx, apiKey, secretKey, opts.WebsocketOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -462,19 +485,15 @@ func NewReconnectingPrivateWebsocket(ctx context.Context, apiKey, secretKey stri
 		ctx:                  ctx,
 		apiKey:               apiKey,
 		secretKey:            secretKey,
-		clientOptions:        clientOptions,
-		maxReconnectAttempts: 0,
-		reconnectDelay:       5 * time.Second,
-		logger:               zap.NewNop(),
+		clientOptions:        opts.WebsocketOptions,
+		maxReconnectAttempts: opts.MaxReconnectAttempts,
+		reconnectDelay:       opts.ReconnectDelay,
+		logger:               opts.Logger,
 		stopReconnecting:     make(chan struct{}),
 		balanceSubscribers:   make(map[BalanceSubscriber]struct{}),
 		positionSubscribers:  make(map[PositionSubscriber]struct{}),
 		orderSubscribers:     make(map[OrderSubscriber]struct{}),
 		tpSlOrderSubscribers: make(map[TpSlOrderSubscriber]struct{}),
-	}
-
-	for _, option := range options {
-		option(r)
 	}
 
 	return r, nil

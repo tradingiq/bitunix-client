@@ -42,9 +42,7 @@ func main() {
 
 	// Create reconnecting public websocket client
 	ws, err := bitunix.NewReconnectingPublicWebsocket(ctx,
-		[]bitunix.WebsocketClientOption{
-			bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive),
-		},
+		bitunix.WithWebsocketOptions(bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive)),
 		bitunix.WithMaxReconnectAttempts(0),       // Infinite reconnect attempts
 		bitunix.WithReconnectDelay(5*time.Second), // 5 second delay between attempts
 		bitunix.WithReconnectLogger(logger),       // Use logger for reconnection events
