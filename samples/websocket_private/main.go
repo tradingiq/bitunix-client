@@ -50,18 +50,18 @@ func main() {
 
 	ctx := context.Background()
 
-	// Create base private websocket client
-	baseWs, err := bitunix.NewPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
-	if err != nil {
-		logger.Fatal("Failed to create base private websocket client", zap.Error(err))
-	}
-
 	// Create reconnecting private websocket client
-	ws := bitunix.NewReconnectingPrivateWebsocket(ctx, baseWs,
+	ws, err := bitunix.NewReconnectingPrivateWebsocket(ctx, samples.Config.ApiKey, samples.Config.SecretKey,
+		[]bitunix.WebsocketClientOption{
+			bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive),
+		},
 		bitunix.WithPrivateMaxReconnectAttempts(0),       // Infinite reconnect attempts
 		bitunix.WithPrivateReconnectDelay(5*time.Second), // 5 second delay between attempts
 		bitunix.WithPrivateReconnectLogger(logger),       // Use logger for reconnection events
 	)
+	if err != nil {
+		logger.Fatal("Failed to create reconnecting private websocket client", zap.Error(err))
+	}
 	defer ws.Disconnect()
 
 	logger.Info("Connecting to private websocket with automatic reconnection enabled")

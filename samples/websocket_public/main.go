@@ -40,18 +40,18 @@ func main() {
 
 	ctx := context.Background()
 
-	// Create base public websocket client
-	baseWs, err := bitunix.NewPublicWebsocket(ctx, bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive))
-	if err != nil {
-		logger.Fatal("Failed to create base public websocket client", zap.Error(err))
-	}
-
 	// Create reconnecting public websocket client
-	ws := bitunix.NewReconnectingPublicWebsocket(ctx, baseWs,
+	ws, err := bitunix.NewReconnectingPublicWebsocket(ctx,
+		[]bitunix.WebsocketClientOption{
+			bitunix.WithWebsocketLogLevel(model.LogLevelVeryAggressive),
+		},
 		bitunix.WithMaxReconnectAttempts(0),       // Infinite reconnect attempts
 		bitunix.WithReconnectDelay(5*time.Second), // 5 second delay between attempts
 		bitunix.WithReconnectLogger(logger),       // Use logger for reconnection events
 	)
+	if err != nil {
+		logger.Fatal("Failed to create reconnecting public websocket client", zap.Error(err))
+	}
 	defer ws.Disconnect()
 
 	logger.Info("Connecting to public websocket with automatic reconnection enabled")
