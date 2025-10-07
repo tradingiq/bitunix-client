@@ -413,6 +413,8 @@ type PublicWebsocketClient interface {
 type ReconnectingPublicWebsocketClient struct {
 	client               PublicWebsocketClient
 	ctx                  context.Context
+	clientCtx            context.Context
+	clientCancel         context.CancelFunc
 	clientOptions        []WebsocketClientOption
 	maxReconnectAttempts int
 	reconnectDelay       time.Duration
@@ -468,14 +470,20 @@ func NewReconnectingPublicWebsocket(ctx context.Context, options ...Reconnecting
 		option(opts)
 	}
 
-	client, err := NewPublicWebsocket(ctx, opts.WebsocketOptions...)
+	// Create initial client context
+	clientCtx, clientCancel := context.WithCancel(ctx)
+
+	client, err := NewPublicWebsocket(clientCtx, opts.WebsocketOptions...)
 	if err != nil {
+		clientCancel()
 		return nil, err
 	}
 
 	r := &ReconnectingPublicWebsocketClient{
 		client:               client,
 		ctx:                  ctx,
+		clientCtx:            clientCtx,
+		clientCancel:         clientCancel,
 		clientOptions:        opts.WebsocketOptions,
 		maxReconnectAttempts: opts.MaxReconnectAttempts,
 		reconnectDelay:       opts.ReconnectDelay,
@@ -581,11 +589,21 @@ func (r *ReconnectingPublicWebsocketClient) Stream() error {
 }
 
 func (r *ReconnectingPublicWebsocketClient) connectWithResubscription() error {
-	// Disconnect old client first
-	r.client.Disconnect()
+	// Cancel old client context to terminate all goroutines
+	if r.clientCancel != nil {
+		r.clientCancel()
+	}
 
-	// Create a new client instance
-	newClient, err := NewPublicWebsocket(r.ctx, r.clientOptions...)
+	// Disconnect old client
+	if r.client != nil {
+		r.client.Disconnect()
+	}
+
+	// Create fresh context for new client
+	r.clientCtx, r.clientCancel = context.WithCancel(r.ctx)
+
+	// Create a new client instance with the fresh context
+	newClient, err := NewPublicWebsocket(r.clientCtx, r.clientOptions...)
 	if err != nil {
 		return err
 	}
