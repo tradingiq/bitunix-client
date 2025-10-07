@@ -415,6 +415,8 @@ type PrivateWebsocketClient interface {
 type ReconnectingPrivateWebsocketClient struct {
 	client               PrivateWebsocketClient
 	ctx                  context.Context
+	clientCtx            context.Context
+	clientCancel         context.CancelFunc
 	apiKey               string
 	secretKey            string
 	clientOptions        []WebsocketClientOption
@@ -475,14 +477,20 @@ func NewReconnectingPrivateWebsocket(ctx context.Context, apiKey, secretKey stri
 		option(opts)
 	}
 
-	client, err := NewPrivateWebsocket(ctx, apiKey, secretKey, opts.WebsocketOptions...)
+	// Create initial client context
+	clientCtx, clientCancel := context.WithCancel(ctx)
+
+	client, err := NewPrivateWebsocket(clientCtx, apiKey, secretKey, opts.WebsocketOptions...)
 	if err != nil {
+		clientCancel()
 		return nil, err
 	}
 
 	r := &ReconnectingPrivateWebsocketClient{
 		client:               client,
 		ctx:                  ctx,
+		clientCtx:            clientCtx,
+		clientCancel:         clientCancel,
 		apiKey:               apiKey,
 		secretKey:            secretKey,
 		clientOptions:        opts.WebsocketOptions,
@@ -671,22 +679,26 @@ func (r *ReconnectingPrivateWebsocketClient) Stream() error {
 }
 
 func (r *ReconnectingPrivateWebsocketClient) connectWithResubscription() error {
-	// Disconnect old client first
-	r.client.Disconnect()
+	if r.clientCancel != nil {
+		r.clientCancel()
+	}
 
-	// Create a new client instance
-	newClient, err := NewPrivateWebsocket(r.ctx, r.apiKey, r.secretKey, r.clientOptions...)
+	if r.client != nil {
+		r.client.Disconnect()
+	}
+
+	r.clientCtx, r.clientCancel = context.WithCancel(r.ctx)
+
+	newClient, err := NewPrivateWebsocket(r.clientCtx, r.apiKey, r.secretKey, r.clientOptions...)
 	if err != nil {
 		return err
 	}
 
-	// Connect the new client
 	err = newClient.Connect()
 	if err != nil {
 		return err
 	}
 
-	// Replace the old client with the new one
 	r.client = newClient
 
 	r.mu.Lock()
