@@ -29,6 +29,7 @@ type ApiClient interface {
 	GetAccountBalance(ctx context.Context, params model.AccountBalanceParams) (*model.AccountBalanceResponse, error)
 	GetPendingPositions(ctx context.Context, params model.PendingPositionParams) (*model.PendingPositionResponse, error)
 	GetOrderDetail(ctx context.Context, request *OrderDetailRequest) (*model.OrderDetailResponse, error)
+	GetPendingOrder(ctx context.Context, params model.PendingOrderParams) (*model.PendingOrderResponse, error)
 }
 
 func generateTimestamp() int64 { return time.Now().UnixMilli() }

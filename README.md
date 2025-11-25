@@ -82,6 +82,28 @@ log.Fatalf("Failed to place order: %v", err)
 fmt.Printf("Order placed successfully: %+v\n", response)
 ```
 
+### Getting pending orders
+
+```go
+// Get pending orders with optional filters
+params := model.PendingOrderParams{
+    Symbol: model.ParseSymbol("BTCUSDT"),
+    Status: model.OrderStatusNew,  // Filter by order status (NEW or PART_FILLED)
+    Limit:  100,
+}
+
+response, err := client.GetPendingOrder(ctx, params)
+if err != nil {
+    log.Fatalf("Failed to get pending orders: %v", err)
+}
+
+fmt.Printf("Total pending orders: %d\n", response.Data.Total)
+for _, order := range response.Data.OrderList {
+    fmt.Printf("Order ID: %s, Symbol: %s, Price: %.2f, Qty: %.4f\n",
+        order.OrderID, order.Symbol, order.Price, order.Quantity)
+}
+```
+
 ### Working with WebSockets (Private)
 
 ```go
@@ -388,6 +410,7 @@ The `/samples` and `/examples` directories contain example applications demonstr
 - Account Balance: `/samples/get_account_balance/main.go`
 - Place Order: `/samples/place_order/main.go`
 - Cancel Order: `/samples/cancel_order/main.go`
+- Pending Orders: `/samples/get_pending_orders/main.go`
 - Order History: `/samples/get_order_history/main.go`
 - Position History: `/samples/get_position_history/main.go`
 - Trade History: `/samples/get_trade_history/main.go`

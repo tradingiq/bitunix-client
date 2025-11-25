@@ -375,6 +375,7 @@ func TestOrderStatusNormalize(t *testing.T) {
 		{OrderStatus("init"), OrderStatusInit},
 		{OrderStatus("NEW"), OrderStatusNew},
 		{OrderStatus("new"), OrderStatusNew},
+		{OrderStatus("NEW_"), OrderStatusNew}, // API sometimes returns "NEW_" with trailing underscore
 		{OrderStatus("PART_FILLED"), OrderStatusPartFilled},
 		{OrderStatus("part_filled"), OrderStatusPartFilled},
 		{OrderStatus("CANCELED"), OrderStatusCanceled},

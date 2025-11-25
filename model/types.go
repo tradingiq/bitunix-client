@@ -329,7 +329,10 @@ func ParseOrderStatus(s string) (OrderStatus, error) {
 }
 
 func (s OrderStatus) Normalize() OrderStatus {
-	return OrderStatus(strings.ToUpper(strings.TrimSpace(string(s))))
+	normalized := strings.ToUpper(strings.TrimSpace(string(s)))
+	// Remove trailing underscore (API sometimes returns "NEW_" instead of "NEW")
+	normalized = strings.TrimSuffix(normalized, "_")
+	return OrderStatus(normalized)
 }
 
 type PositionSide string
